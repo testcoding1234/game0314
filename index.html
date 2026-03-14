@@ -88,6 +88,13 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .fac-float{position:absolute;font-size:12px;font-weight:700;color:#7dd3fc;white-space:nowrap;pointer-events:none;z-index:300;transform:translateX(-50%);text-shadow:0 0 8px rgba(125,211,252,.5);animation:ffAnim 1.2s ease-out forwards;}
 @keyframes ffAnim{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-32px)}}
 
+/* ===== 施設インラインLVUPボタン ===== */
+.fc-lvup-btn{position:absolute;top:4px;right:4px;font-size:8px;font-weight:700;color:#fff;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:5px;padding:2px 5px;cursor:pointer;display:none;white-space:nowrap;line-height:1.4;transition:opacity .2s;}
+.fc-lvup-btn.show{display:block;}
+.fc-lvup-btn:disabled{opacity:.4;cursor:default;}
+/* ===== 施設キューバッジ ===== */
+.fc-queue{font-size:8px;color:#7dd3fc;font-weight:700;min-height:10px;}
+
 /* ===== コイン飛翔アニメーション ===== */
 .fly-coin{position:fixed;pointer-events:none;z-index:9999;font-size:18px;animation:fcAnim .72s cubic-bezier(.36,.07,.19,.97) forwards;}
 @keyframes fcAnim{0%{opacity:1;transform:scale(1.2) translate(0,0)}80%{opacity:1}100%{opacity:0;transform:scale(.25) translate(var(--dx),var(--dy))}}
@@ -161,13 +168,17 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
       <div class="fc-icon">🍳</div>
       <div class="fc-name">調理場</div>
       <div class="fc-lv" id="lv-cooking">LV.1</div>
+      <div class="fc-queue" id="queue-cooking"></div>
       <div class="fc-prog-wrap"><div class="fc-prog-bar" id="prog-cooking"></div></div>
+      <button class="fc-lvup-btn" id="lvup-cooking" onclick="buyUpgrade('cooking')">⬆️LV2<br>🪙30</button>
     </div>
     <div class="fc" id="fc-workshop" data-ftype="workshop">
       <div class="fc-icon">⚙️</div>
       <div class="fc-name">加工場</div>
       <div class="fc-lv" id="lv-workshop">LV.1</div>
+      <div class="fc-queue" id="queue-workshop"></div>
       <div class="fc-prog-wrap"><div class="fc-prog-bar" id="prog-workshop"></div></div>
+      <button class="fc-lvup-btn" id="lvup-workshop" onclick="buyUpgrade('workshop')">⬆️LV2<br>🪙30</button>
     </div>
     <div id="marketCard">
       <div class="mkt-icon">🏪</div>
@@ -189,24 +200,6 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 
   <div id="shopModal">
     <div class="shop-title">🏗️ 拡張ショップ</div>
-    <div class="shop-card">
-      <div class="sc-icon">🍳</div>
-      <div class="sc-info">
-        <div class="sc-name">調理場 LV.2</div>
-        <div class="sc-desc">調理速度が2倍に！</div>
-      </div>
-      <span class="sc-bought" id="bought-cooking">✓ 購入済</span>
-      <button class="shop-btn" id="btn-cooking" onclick="buyUpgrade('cooking')">購入<span class="sbp">🪙30</span></button>
-    </div>
-    <div class="shop-card">
-      <div class="sc-icon">⚙️</div>
-      <div class="sc-info">
-        <div class="sc-name">加工場 LV.2</div>
-        <div class="sc-desc">加工速度が2倍に！</div>
-      </div>
-      <span class="sc-bought" id="bought-workshop">✓ 購入済</span>
-      <button class="shop-btn" id="btn-workshop" onclick="buyUpgrade('workshop')">購入<span class="sbp">🪙30</span></button>
-    </div>
     <div class="shop-card">
       <div class="sc-icon">🏹</div>
       <div class="sc-info">
@@ -238,6 +231,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 const GW = 375, GH = 667;
 const CTA_THRESHOLD = 100;
 const SHOP_CYCLE_INTERVAL = 3;
+const REPLACEMENT_SPAWN_DELAY = 800;
 
 // ===== ゲーム状態 =====
 const gs = {
@@ -247,14 +241,15 @@ const gs = {
   animals: [],
   inventory: [],
   facilities: {
-    cooking:  { level: 1, busy: false, speedMult: 1 },
-    workshop: { level: 1, busy: false, speedMult: 1 },
+    cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
+    workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
   },
   upgrades: { cooking: false, workshop: false, hunting: false },
   animalCount: 3,
   nextId: 1,
   ctaShown: false,
   huntCycle: 0,
+  waveKills: 0,
   respawning: false,
   hintTimer: null,
 };
@@ -264,10 +259,10 @@ const tut = { step: 0, shown: [false, false, false] };
 
 // ===== 動物の定義 =====
 const ANIMAL_DEFS = [
-  { type: 'bear', e: '🐻', hp: 5, drops: ['meat', 'meat', 'skin'] },
-  { type: 'deer', e: '🦌', hp: 3, drops: ['meat', 'skin'] },
-  { type: 'wolf', e: '🐺', hp: 4, drops: ['meat', 'skin', 'bone'] },
-  { type: 'fox',  e: '🦊', hp: 2, drops: ['skin', 'bone'] },
+  { type: 'bear', e: '🐻', hp: 3, drops: ['meat', 'meat', 'skin'] },
+  { type: 'deer', e: '🦌', hp: 2, drops: ['meat', 'skin'] },
+  { type: 'wolf', e: '🐺', hp: 2, drops: ['meat', 'skin', 'bone'] },
+  { type: 'fox',  e: '🦊', hp: 1, drops: ['skin', 'bone'] },
 ];
 
 // ===== アイテム定義 =====
@@ -375,6 +370,7 @@ function addCoins(n) {
     gs.ctaShown = true;
     setTimeout(openCTAPopup, 1200);
   }
+  updateLvUpButtons();
 }
 
 function spawnCoinAnim(count, fromEl) {
@@ -480,6 +476,7 @@ function renderInv() {
 // ===== 狩猟 =====
 function startHunting() {
   gs.respawning = false;
+  gs.waveKills = 0;
   $respawnBadge.style.display = 'none';
   if (gs.huntCycle > 0) flashText('🏹 新しい動物が現れた！');
 
@@ -565,7 +562,23 @@ function killAnimal(ani, el) {
 }
 
 function checkHuntingComplete() {
-  if (!gs.animals.every(a => !a.alive) || gs.respawning) return;
+  if (gs.respawning) return;
+  gs.waveKills++;
+  if (gs.waveKills < gs.animalCount) {
+    // Spawn a replacement animal while others still live
+    const slots = [
+      { x: 28,  y: 120 }, { x: 148, y: 95  }, { x: 268, y: 120 },
+      { x: 88,  y: 195 }, { x: 215, y: 200 },
+    ];
+    setTimeout(() => {
+      if (!gs.respawning) {
+        const slot = slots[Math.floor(Math.random() * slots.length)];
+        const def = ANIMAL_DEFS[Math.floor(Math.random() * ANIMAL_DEFS.length)];
+        spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y);
+      }
+    }, REPLACEMENT_SPAWN_DELAY);
+    return;
+  }
   gs.respawning = true;
   gs.huntCycle++;
   // 一定サイクルごとにショップ
@@ -593,16 +606,23 @@ function processMaterial(facType, itemId) {
     if (facEl) facFloat(facEl, '❌ 対応外の素材');
     return false;
   }
-  if (fac.busy) {
-    const facEl = document.getElementById(`fc-${facType}`);
-    if (facEl) facFloat(facEl, '⏳ 処理中...');
-    return false;
-  }
-
   removeItem(itemId);
-  fac.busy = true;
-  document.getElementById(`fc-${facType}`).classList.add('busy');
+  if (fac.busy) {
+    fac.queue.push(recipe);
+    updateQueueBadge(facType);
+    const facEl = document.getElementById(`fc-${facType}`);
+    if (facEl) facFloat(facEl, `⏳ 待機中 (${fac.queue.length}件)`);
+    return true;
+  }
+  startFacilityProcessing(facType, recipe);
+  return true;
+}
 
+function startFacilityProcessing(facType, recipe) {
+  const fac = gs.facilities[facType];
+  fac.busy = true;
+  const facEl = document.getElementById(`fc-${facType}`);
+  if (facEl) facEl.classList.add('busy');
   const dur = recipe.duration / fac.speedMult;
   const prog = document.getElementById(`prog-${facType}`);
   let elapsed = 0;
@@ -614,13 +634,24 @@ function processMaterial(facType, itemId) {
       clearInterval(timer);
       fac.busy = false;
       if (prog) prog.style.width = '0%';
-      document.getElementById(`fc-${facType}`).classList.remove('busy');
+      if (facEl) facEl.classList.remove('busy');
       addItem(recipe.output);
-      const facEl = document.getElementById(`fc-${facType}`);
       if (facEl) facFloat(facEl, `✅ ${ITEM_DEF[recipe.output].name}完成！`);
+      // Process next queued item
+      if (fac.queue.length > 0) {
+        const next = fac.queue.shift();
+        updateQueueBadge(facType);
+        setTimeout(() => startFacilityProcessing(facType, next), 100);
+      }
     }
   }, interval);
-  return true;
+}
+
+function updateQueueBadge(facType) {
+  const badge = document.getElementById(`queue-${facType}`);
+  if (!badge) return;
+  const count = gs.facilities[facType].queue.length;
+  badge.textContent = count > 0 ? `⏳×${count}` : '';
 }
 
 // ===== 売却 =====
@@ -635,18 +666,15 @@ function sellItem(itemId) {
 
 // ===== ショップ =====
 function openShop() {
-  ['cooking', 'workshop', 'hunting'].forEach(k => {
-    const btn = document.getElementById(`btn-${k}`);
-    const bought = document.getElementById(`bought-${k}`);
-    const price = k === 'hunting' ? 50 : 30;
-    if (gs.upgrades[k]) {
-      if (btn)    btn.style.display = 'none';
-      if (bought) bought.style.display = 'inline';
-    } else {
-      if (btn)    { btn.disabled = gs.coins < price; btn.style.display = ''; }
-      if (bought) bought.style.display = 'none';
-    }
-  });
+  const btn = document.getElementById('btn-hunting');
+  const bought = document.getElementById('bought-hunting');
+  if (gs.upgrades.hunting) {
+    if (btn)    btn.style.display = 'none';
+    if (bought) bought.style.display = 'inline';
+  } else {
+    if (btn)    { btn.disabled = gs.coins < 50; btn.style.display = ''; }
+    if (bought) bought.style.display = 'none';
+  }
   $shop.classList.add('open');
 }
 
@@ -673,7 +701,8 @@ function buyUpgrade(type) {
       gs.animalCount = Math.min(5, gs.animalCount + 1);
       break;
   }
-  openShop();
+  updateLvUpButtons();
+  if ($shop.classList.contains('open')) openShop();
 }
 
 function skipShop() {
@@ -776,11 +805,6 @@ function quickUseItem(itemId) {
   if (!item.isProduct) {
     const facType = MATERIAL_TO_FACILITY_MAP[item.type];
     if (!facType) return false;
-    const facEl = document.getElementById(`fc-${facType}`);
-    if (gs.facilities[facType].busy) {
-      if (facEl) facFloat(facEl, '⏳ 空くまで待とう');
-      return false;
-    }
     return processMaterial(facType, itemId);
   } else {
     sellItem(itemId);
@@ -897,9 +921,24 @@ function highlightDropTargets(cx, cy) {
   }
 }
 
+// ===== 施設レベルアップボタン更新 =====
+function updateLvUpButtons() {
+  ['cooking', 'workshop'].forEach(facType => {
+    const btn = document.getElementById(`lvup-${facType}`);
+    if (!btn) return;
+    if (!gs.upgrades[facType]) {
+      btn.classList.add('show');
+      btn.disabled = gs.coins < 30;
+    } else {
+      btn.classList.remove('show');
+    }
+  });
+}
+
 // ===== ゲーム開始 =====
 startHunting();
 setTimeout(() => showTutStep(0), 600);
+updateLvUpButtons();
 </script>
 </body>
 </html>

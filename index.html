@@ -285,6 +285,16 @@ const RECIPES = {
     { input: 'skin', output: 'coat', duration: 5000 },
   ],
 };
+const FACILITY_TYPES = Object.keys(RECIPES);
+// タップ操作時に素材を自動投入する「素材 → 施設」の対応表
+const MATERIAL_TO_FACILITY_MAP = FACILITY_TYPES.reduce((map, facType) => {
+  RECIPES[facType].forEach(recipe => {
+    if (!map[recipe.input]) map[recipe.input] = facType;
+  });
+  return map;
+}, {});
+// タップとドラッグを切り分ける移動しきい値（px）
+const DRAG_MOVEMENT_THRESHOLD = 10;
 
 // ===== DOM参照 =====
 const $game     = document.getElementById('game');
@@ -599,7 +609,7 @@ function checkHuntingComplete() {
 function startProduction() {
   gs.phase = 'PRODUCTION';
   $phase.textContent = '⚙️ 生産フェーズ';
-  setInstruction('素材をタップ or 施設にドラッグ！');
+  setInstruction('素材をタップ、または施設にドラッグ！');
   flashText('⚙️ 生産開始！');
   renderInv();
 
@@ -697,7 +707,7 @@ function skipToSelling() {
 function startSelling() {
   gs.phase = 'SELLING';
   $phase.textContent = '💰 売却フェーズ';
-  setInstruction('製品をタップ or 🏪へドラッグ！');
+  setInstruction('製品をタップ、または🏪へドラッグ！');
   $market.classList.add('visible');
   hideHint();
   flashText('💰 売却開始！');
@@ -812,7 +822,7 @@ function ctaPressed() {
 }
 
 // ===== ドラッグ＆ドロップ =====
-const drag = {
+const INITIAL_DRAG_STATE = {
   active: false,
   itemId: null,
   offsetX: 0,
@@ -821,6 +831,11 @@ const drag = {
   startY: 0,
   moved: false,
 };
+const drag = { ...INITIAL_DRAG_STATE };
+
+function resetDragState() {
+  Object.assign(drag, INITIAL_DRAG_STATE);
+}
 
 function quickUseItem(itemId) {
   const item = gs.inventory.find(i => i.id === itemId);
@@ -828,7 +843,7 @@ function quickUseItem(itemId) {
 
   if (gs.phase === 'PRODUCTION') {
     if (item.isProduct) return false;
-    const facType = Object.keys(RECIPES).find(type => RECIPES[type].some(recipe => recipe.input === item.type));
+    const facType = MATERIAL_TO_FACILITY_MAP[item.type];
     if (!facType) return false;
     const facEl = document.getElementById(`fc-${facType}`);
     if (gs.facilities[facType].busy) {
@@ -902,7 +917,7 @@ function onDragMove(e) {
   e.preventDefault();
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
-  if (Math.abs(cx - drag.startX) > 10 || Math.abs(cy - drag.startY) > 10) {
+  if (Math.abs(cx - drag.startX) > DRAG_MOVEMENT_THRESHOLD || Math.abs(cy - drag.startY) > DRAG_MOVEMENT_THRESHOLD) {
     drag.moved = true;
   }
   $ghost.style.left = `${cx - drag.offsetX - 26}px`;
@@ -925,14 +940,14 @@ function onDragEnd(e) {
 
   if (!drag.moved) {
     dropped = quickUseItem(drag.itemId);
-    ['cooking', 'workshop'].forEach(facType => {
+    FACILITY_TYPES.forEach(facType => {
       const facEl = document.getElementById(`fc-${facType}`);
       if (facEl) facEl.classList.remove('drop-active');
     });
     $market.classList.remove('drop-active');
   } else if (gs.phase === 'PRODUCTION') {
     // 施設へのドロップ判定
-    ['cooking', 'workshop'].forEach(facType => {
+    FACILITY_TYPES.forEach(facType => {
       const facEl = document.getElementById(`fc-${facType}`);
       if (!facEl) return;
       const r = facEl.getBoundingClientRect();
@@ -959,13 +974,12 @@ function onDragEnd(e) {
 
   // ゴーストを非表示（全クラスをクリア）
   $ghost.className = '';
-  drag.active = false;
-  drag.itemId = null;
+  resetDragState();
 }
 
 function highlightDropTargets(cx, cy) {
   if (gs.phase === 'PRODUCTION') {
-    ['cooking', 'workshop'].forEach(ft => {
+    FACILITY_TYPES.forEach(ft => {
       const el = document.getElementById(`fc-${ft}`);
       if (!el) return;
       const r = el.getBoundingClientRect();

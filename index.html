@@ -26,7 +26,6 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 /* ===== ゲームエリア（動物・背景） ===== */
 #gameArea{position:relative;z-index:5;width:375px;height:320px;overflow:hidden;}
 .snow-ground{position:absolute;bottom:0;left:0;right:0;height:52px;background:linear-gradient(0deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.05) 100%);border-top:2px solid rgba(255,255,255,.28);}
-/* 雪山シルエット */
 .mtn{position:absolute;bottom:0;width:0;height:0;border-left:solid transparent;border-right:solid transparent;border-bottom:solid rgba(255,255,255,.11);}
 
 /* ===== 動物 ===== */
@@ -37,10 +36,8 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .hp-fill.danger{background:linear-gradient(90deg,#f87171,#fca5a5);}
 @keyframes hitShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 .animal.shake{animation:hitShake .22s ease;}
-/* ダメージテキスト */
 .dmg{position:absolute;pointer-events:none;z-index:200;font-size:22px;font-weight:900;color:#fbbf24;text-shadow:2px 2px 0 #92400e,0 0 12px rgba(251,191,36,.7);animation:dmgUp .85s ease-out forwards;}
 @keyframes dmgUp{0%{opacity:1;transform:translateY(0) scale(1)}50%{opacity:1;transform:translateY(-34px) scale(1.2)}100%{opacity:0;transform:translateY(-62px) scale(.7)}}
-/* スパークル */
 .spark{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:150;animation:sparkFly .5s ease-out forwards;}
 @keyframes sparkFly{from{opacity:1;transform:scale(1) translate(0,0)}to{opacity:0;transform:scale(0) translate(var(--dx),var(--dy))}}
 
@@ -53,9 +50,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .fc-lv{font-size:9px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,.15);border-radius:6px;padding:1px 5px;}
 .fc-prog-wrap{position:absolute;bottom:6px;left:8px;right:8px;height:4px;background:rgba(0,0,0,.4);border-radius:2px;overflow:hidden;}
 .fc-prog-bar{height:100%;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:2px;width:0%;transition:width .1s linear;}
-/* マーケットカード */
-#marketCard{flex:1;height:86px;background:rgba(30,12,4,.9);border:2px dashed rgba(249,115,22,.5);border-radius:14px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;transition:border-color .2s,background .2s,transform .15s;}
-#marketCard.visible{display:flex;}
+#marketCard{flex:1;height:86px;background:rgba(30,12,4,.9);border:2px dashed rgba(249,115,22,.5);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;transition:border-color .2s,background .2s,transform .15s;}
 #marketCard.drop-active{border-color:#fb923c;background:rgba(249,115,22,.2);transform:scale(1.04);}
 .mkt-icon{font-size:28px;}.mkt-name{font-size:9px;font-weight:700;color:#fb923c;}.mkt-hint{font-size:8px;color:#78716c;}
 
@@ -111,46 +106,56 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .shop-skip{padding:10px 32px;background:transparent;border:1.5px solid rgba(125,211,252,.35);border-radius:20px;color:#7dd3fc;font-size:13px;font-weight:600;cursor:pointer;letter-spacing:.03em;}
 .shop-skip:active{background:rgba(125,211,252,.1);}
 
-/* ===== CTAモーダル ===== */
-#ctaModal{position:absolute;inset:0;z-index:500;background:rgba(0,4,20,.9);backdrop-filter:blur(18px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:22px;}
-#ctaModal.open{display:flex;}
-.cta-title{font-size:30px;font-weight:900;color:#fff;text-align:center;line-height:1.3;text-shadow:0 0 32px rgba(249,115,22,.75);}
-.cta-sub{font-size:14px;color:#94a3b8;text-align:center;line-height:1.55;}
-.cta-score-box{background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.4);border-radius:16px;padding:12px 28px;text-align:center;}
-.cta-slbl{font-size:11px;color:#fb923c;font-weight:700;letter-spacing:.08em;}
-.cta-sval{font-size:38px;font-weight:900;color:#fbbf24;}
-#ctaBtn{width:100%;max-width:280px;padding:18px;background:linear-gradient(135deg,#f97316,#dc2626);border:none;border-radius:50px;color:#fff;font-size:22px;font-weight:900;cursor:pointer;letter-spacing:.03em;box-shadow:0 0 40px rgba(249,115,22,.5),0 8px 24px rgba(0,0,0,.3);animation:ctaPulse 1.5s ease-in-out infinite;}
-@keyframes ctaPulse{0%,100%{transform:scale(1);box-shadow:0 0 40px rgba(249,115,22,.5),0 8px 24px rgba(0,0,0,.3)}50%{transform:scale(1.04);box-shadow:0 0 60px rgba(249,115,22,.8),0 12px 32px rgba(0,0,0,.4)}}
+/* ===== CTAポップアップ（右上・バツで閉じる） ===== */
+#ctaPopup{position:absolute;top:60px;right:8px;z-index:500;background:linear-gradient(135deg,#f97316,#dc2626);border-radius:14px;padding:12px 14px 12px 14px;display:none;flex-direction:column;align-items:flex-start;gap:5px;min-width:148px;box-shadow:0 4px 20px rgba(249,115,22,.55),0 8px 24px rgba(0,0,0,.4);animation:popupSlideIn .35s cubic-bezier(.34,1.56,.64,1) both;}
+#ctaPopup.visible{display:flex;}
+@keyframes popupSlideIn{from{opacity:0;transform:translateX(40px) scale(.85)}to{opacity:1;transform:translateX(0) scale(1)}}
+#ctaPopupClose{position:absolute;top:6px;right:7px;background:rgba(0,0,0,.25);border:none;color:#fff;font-size:13px;font-weight:900;cursor:pointer;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+#ctaPopupClose:active{background:rgba(0,0,0,.45);}
+.cta-popup-title{font-size:13px;font-weight:900;color:#fff;line-height:1.3;padding-right:18px;}
+.cta-popup-sub{font-size:10px;color:rgba(255,255,255,.8);}
+#ctaPopupBtn{margin-top:4px;width:100%;padding:7px 0;background:#fff;border:none;border-radius:8px;color:#f97316;font-size:12px;font-weight:900;cursor:pointer;letter-spacing:.02em;}
+#ctaPopupBtn:active{background:rgba(255,255,255,.85);}
 
 /* ===== ドラッグゴースト ===== */
 #dragGhost{position:fixed;z-index:9998;pointer-events:none;width:52px;height:52px;border-radius:14px;display:none;align-items:center;justify-content:center;font-size:26px;opacity:.88;transform:scale(1.18) rotate(-8deg);box-shadow:0 8px 20px rgba(0,0,0,.45);}
 #dragGhost.show{display:flex;}
+
+/* ===== 動物リスポーンバッジ ===== */
+#respawnBadge{position:absolute;left:50%;bottom:56px;transform:translateX(-50%);z-index:30;background:rgba(0,0,0,.65);border:1px solid rgba(125,211,252,.3);border-radius:20px;padding:5px 16px;font-size:12px;color:#7dd3fc;font-weight:700;display:none;white-space:nowrap;}
+
+/* ===== チュートリアルオーバーレイ ===== */
+#tutOverlay{position:absolute;inset:0;z-index:460;pointer-events:none;}
+.tut-ring{position:absolute;border-radius:16px;border:3px solid #fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,.25),0 0 20px rgba(251,191,36,.45);pointer-events:none;animation:tutRing 1s ease-in-out infinite;}
+@keyframes tutRing{0%,100%{box-shadow:0 0 0 4px rgba(251,191,36,.25),0 0 20px rgba(251,191,36,.45)}50%{box-shadow:0 0 0 10px rgba(251,191,36,.4),0 0 32px rgba(251,191,36,.7)}}
+.tut-arrow{position:absolute;font-size:30px;pointer-events:none;animation:tutBounce .65s ease-in-out infinite alternate;}
+@keyframes tutBounce{from{transform:translateY(0)}to{transform:translateY(-9px)}}
+.tut-bubble{position:absolute;background:rgba(251,191,36,.97);border-radius:12px;padding:8px 13px;pointer-events:all;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.45);min-width:130px;max-width:200px;}
+.tut-bubble-text{font-size:13px;font-weight:800;color:#1c1008;line-height:1.3;}
+.tut-bubble-sub{font-size:10px;color:#4a2800;margin-top:2px;line-height:1.4;}
+.tut-bubble-btn{margin-top:6px;width:100%;padding:5px 0;background:#f97316;border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;}
 </style>
 </head>
 <body>
 <div id="game">
-  <!-- 背景Canvas（雪のパーティクル） -->
   <canvas id="bgCanvas" width="375" height="667"></canvas>
 
-  <!-- ヘッダー -->
   <div id="header">
-    <div id="phaseLabel">🏹 狩猟フェーズ</div>
+    <div id="phaseLabel">🎮 スノーサバイバル</div>
     <div id="coinDisplay">
       <span style="font-size:16px">🪙</span>
       <span id="coinCount">0</span>
     </div>
   </div>
 
-  <!-- ゲームエリア（動物が出現する場所） -->
   <div id="gameArea">
     <div class="snow-ground"></div>
-    <!-- 雪山シルエット -->
     <div class="mtn" style="left:-20px;border-left-width:175px;border-right-width:175px;border-bottom-width:125px;"></div>
     <div class="mtn" style="right:-30px;border-left-width:195px;border-right-width:195px;border-bottom-width:138px;"></div>
     <div class="mtn" style="left:90px;border-left-width:110px;border-right-width:110px;border-bottom-width:85px;"></div>
+    <div id="respawnBadge">⏳ 次の動物が来る...</div>
   </div>
 
-  <!-- 施設行（調理場・加工場・マーケット） -->
   <div id="facilityRow">
     <div class="fc" id="fc-cooking" data-ftype="cooking">
       <div class="fc-icon">🍳</div>
@@ -171,21 +176,17 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
     </div>
   </div>
 
-  <!-- インベントリ行（所持品） -->
   <div id="invRow">
     <div class="inv-lbl">🎒 所持品</div>
   </div>
 
-  <!-- フッター（指示テキスト・ヒントボタン） -->
   <div id="footer">
-    <div id="instruction">動物をタップして攻撃！</div>
+    <div id="instruction">動物をタップ→素材を施設へ→製品をマーケットへ！</div>
     <button id="hintBtn" onclick="onHint()">💡 ヒント</button>
   </div>
 
-  <!-- スコアバー（CTAまでの進捗） -->
   <div id="scoreBar"><div id="scoreFill"></div></div>
 
-  <!-- ショップモーダル（拡張フェーズ） -->
   <div id="shopModal">
     <div class="shop-title">🏗️ 拡張ショップ</div>
     <div class="shop-card">
@@ -218,34 +219,33 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
     <button class="shop-skip" onclick="skipShop()">次のサイクルへ →</button>
   </div>
 
-  <!-- CTAモーダル -->
-  <div id="ctaModal">
-    <div class="cta-title">⚡ 本格サバイバルを<br>体験しよう！</div>
-    <div class="cta-sub">仲間を率いて極寒の地を<br>生き延びろ！</div>
-    <div class="cta-score-box">
-      <div class="cta-slbl">🪙 獲得コイン</div>
-      <div class="cta-sval" id="ctaScore">0</div>
-    </div>
-    <button id="ctaBtn" onclick="ctaPressed()">🎮 今すぐプレイ！</button>
-    <div style="font-size:11px;color:#475569;">無料でダウンロード</div>
+  <!-- CTAポップアップ（右上・バツボタンで消せる） -->
+  <div id="ctaPopup">
+    <button id="ctaPopupClose" onclick="closeCTAPopup()">✕</button>
+    <div class="cta-popup-title">⚡ 本格版を<br>プレイしよう！</div>
+    <div class="cta-popup-sub">極寒の地を生き延びろ！</div>
+    <button id="ctaPopupBtn" onclick="ctaPressed()">🎮 今すぐ無料で！</button>
   </div>
 
-  <!-- ドラッグ中のゴーストアイテム -->
+  <!-- チュートリアルオーバーレイ -->
+  <div id="tutOverlay"></div>
+
   <div id="dragGhost"></div>
 </div>
 
 <script>
 // ===== 定数 =====
 const GW = 375, GH = 667;
-const CTA_THRESHOLD = 100; // このコイン数に達したらCTAを表示
+const CTA_THRESHOLD = 100;
+const SHOP_CYCLE_INTERVAL = 3;
 
 // ===== ゲーム状態 =====
 const gs = {
-  phase: 'HUNTING',
+  phase: 'PLAYING',
   coins: 0,
   totalCoins: 0,
   animals: [],
-  inventory: [],      // { id, type, isProduct }
+  inventory: [],
   facilities: {
     cooking:  { level: 1, busy: false, speedMult: 1 },
     workshop: { level: 1, busy: false, speedMult: 1 },
@@ -254,8 +254,13 @@ const gs = {
   animalCount: 3,
   nextId: 1,
   ctaShown: false,
+  huntCycle: 0,
+  respawning: false,
   hintTimer: null,
 };
+
+// ===== チュートリアル状態 =====
+const tut = { step: 0, shown: [false, false, false] };
 
 // ===== 動物の定義 =====
 const ANIMAL_DEFS = [
@@ -286,35 +291,33 @@ const RECIPES = {
   ],
 };
 const FACILITY_TYPES = Object.keys(RECIPES);
-// タップ操作時に素材を自動投入する「素材 → 施設」の対応表
 const MATERIAL_TO_FACILITY_MAP = FACILITY_TYPES.reduce((map, facType) => {
   RECIPES[facType].forEach(recipe => {
     if (!map[recipe.input]) map[recipe.input] = facType;
   });
   return map;
 }, {});
-// タップとドラッグを切り分ける移動しきい値（px）
 const DRAG_MOVEMENT_THRESHOLD = 10;
 
 // ===== DOM参照 =====
-const $game     = document.getElementById('game');
-const $canvas   = document.getElementById('bgCanvas');
-const $gameArea = document.getElementById('gameArea');
-const $invRow   = document.getElementById('invRow');
-const $phase    = document.getElementById('phaseLabel');
-const $coins    = document.getElementById('coinCount');
-const $instr    = document.getElementById('instruction');
-const $hint     = document.getElementById('hintBtn');
-const $market   = document.getElementById('marketCard');
-const $shop     = document.getElementById('shopModal');
-const $cta      = document.getElementById('ctaModal');
-const $ghost    = document.getElementById('dragGhost');
+const $game       = document.getElementById('game');
+const $canvas     = document.getElementById('bgCanvas');
+const $gameArea   = document.getElementById('gameArea');
+const $invRow     = document.getElementById('invRow');
+const $phase      = document.getElementById('phaseLabel');
+const $coins      = document.getElementById('coinCount');
+const $instr      = document.getElementById('instruction');
+const $hint       = document.getElementById('hintBtn');
+const $market     = document.getElementById('marketCard');
+const $shop       = document.getElementById('shopModal');
+const $ghost      = document.getElementById('dragGhost');
+const $tutOverlay = document.getElementById('tutOverlay');
+const $respawnBadge = document.getElementById('respawnBadge');
 
 // ===== Canvas 雪パーティクル =====
 const ctx = $canvas.getContext('2d');
 const snow = Array.from({ length: 55 }, () => ({
-  x: Math.random() * GW,
-  y: Math.random() * GH,
+  x: Math.random() * GW, y: Math.random() * GH,
   r: Math.random() * 2.4 + 0.5,
   vy: Math.random() * 0.75 + 0.2,
   vx: Math.random() * 0.35 - 0.17,
@@ -337,7 +340,6 @@ const snow = Array.from({ length: 55 }, () => ({
 // ===== ユーティリティ =====
 function nid() { return gs.nextId++; }
 
-// フェーズ移行テキストをフラッシュ表示
 function flashText(text) {
   const el = document.createElement('div');
   el.className = 'phase-flash';
@@ -346,7 +348,6 @@ function flashText(text) {
   setTimeout(() => el.remove(), 1400);
 }
 
-// 施設カードの上にフローティングテキストを表示
 function facFloat(facEl, text) {
   const r = facEl.getBoundingClientRect();
   const gr = $game.getBoundingClientRect();
@@ -366,19 +367,16 @@ function addCoins(n) {
   const el = document.getElementById('coinCount');
   el.textContent = gs.coins;
   el.classList.remove('coin-bump');
-  void el.offsetWidth; // アニメーションをリセット
+  void el.offsetWidth;
   el.classList.add('coin-bump');
-  // スコアバー更新
   const pct = Math.min(100, (gs.totalCoins / CTA_THRESHOLD) * 100);
   document.getElementById('scoreFill').style.width = `${pct}%`;
-  // CTAチェック
   if (gs.totalCoins >= CTA_THRESHOLD && !gs.ctaShown) {
     gs.ctaShown = true;
-    setTimeout(openCTA, 1200);
+    setTimeout(openCTAPopup, 1200);
   }
 }
 
-// ===== コイン飛翔アニメーション（マーケット→ヘッダー） =====
 function spawnCoinAnim(count, fromEl) {
   const fr = fromEl.getBoundingClientRect();
   const tr = document.getElementById('coinDisplay').getBoundingClientRect();
@@ -400,7 +398,7 @@ function spawnCoinAnim(count, fromEl) {
   }
 }
 
-// ===== スパークルエフェクト =====
+// ===== スパークル =====
 function spawnSparks(cx, cy) {
   const colors = ['#fbbf24', '#f97316', '#ef4444', '#7dd3fc', '#fff', '#a78bfa'];
   for (let i = 0; i < 7; i++) {
@@ -418,7 +416,6 @@ function spawnSparks(cx, cy) {
   }
 }
 
-// ===== ダメージテキスト =====
 function spawnDmg(x, y, text) {
   const d = document.createElement('div');
   d.className = 'dmg';
@@ -429,36 +426,32 @@ function spawnDmg(x, y, text) {
   setTimeout(() => d.remove(), 900);
 }
 
-// ===== ヒントボタン処理 =====
+// ===== ヒントボタン =====
 function setInstruction(text) { $instr.textContent = text; }
 function showHint(text) { $hint.textContent = text; $hint.classList.add('visible'); }
 function hideHint() { $hint.classList.remove('visible'); }
 function onHint() {
-  // フェーズに応じて自動アクションをガイド
-  if (gs.phase === 'PRODUCTION') {
-    const nextMat = gs.inventory.find(i => !i.isProduct);
-    if (nextMat) {
-      quickUseItem(nextMat.id);
-    } else {
-      skipToSelling();
-    }
-  } else if (gs.phase === 'SELLING') {
-    const nextProd = gs.inventory.find(i => i.isProduct);
-    if (nextProd) {
-      quickUseItem(nextProd.id);
-    } else {
-      startExpansion();
-    }
-  }
+  const nextMat = gs.inventory.find(i => !i.isProduct);
+  if (nextMat) { quickUseItem(nextMat.id); return; }
+  const nextProd = gs.inventory.find(i => i.isProduct);
+  if (nextProd) { quickUseItem(nextProd.id); }
 }
 
-// ===== インベントリ管理 =====
+// ===== インベントリ =====
 function addItem(type) {
   const id = nid();
   const def = ITEM_DEF[type];
   if (!def) return;
   gs.inventory.push({ id, type, isProduct: def.isProduct });
   renderInv();
+  // チュートリアル：素材初入手 → 施設ガイド
+  if (!def.isProduct && !tut.shown[1]) {
+    setTimeout(() => showTutStep(1), 500);
+  }
+  // チュートリアル：製品初入手 → マーケットガイド
+  if (def.isProduct && !tut.shown[2]) {
+    setTimeout(() => showTutStep(2), 500);
+  }
 }
 
 function removeItem(id) {
@@ -468,7 +461,6 @@ function removeItem(id) {
 }
 
 function renderInv() {
-  // ラベル要素だけ残して再描画
   $invRow.innerHTML = '<div class="inv-lbl">🎒 所持品</div>';
   gs.inventory.forEach(item => {
     const def = ITEM_DEF[item.type];
@@ -485,26 +477,18 @@ function renderInv() {
   });
 }
 
-// ===== フェーズ1: 狩猟 =====
+// ===== 狩猟 =====
 function startHunting() {
-  gs.phase = 'HUNTING';
-  $phase.textContent = '🏹 狩猟フェーズ';
-  setInstruction('動物をタップして攻撃！');
-  $market.classList.remove('visible');
-  hideHint();
-  flashText('🏹 狩猟開始！');
+  gs.respawning = false;
+  $respawnBadge.style.display = 'none';
+  if (gs.huntCycle > 0) flashText('🏹 新しい動物が現れた！');
 
-  // 前の動物を削除
   $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
   gs.animals = [];
 
-  // 動物の配置位置（重ならないように分散）
   const slots = [
-    { x: 28,  y: 120 },
-    { x: 148, y: 95  },
-    { x: 268, y: 120 },
-    { x: 88,  y: 195 },
-    { x: 215, y: 200 },
+    { x: 28,  y: 120 }, { x: 148, y: 95  }, { x: 268, y: 120 },
+    { x: 88,  y: 195 }, { x: 215, y: 200 },
   ];
   const count = Math.min(gs.animalCount, slots.length);
   for (let i = 0; i < count; i++) {
@@ -512,11 +496,9 @@ function startHunting() {
     const slot = slots[i];
     spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y);
   }
-  // ヒントタイマー
+
   clearTimeout(gs.hintTimer);
-  gs.hintTimer = setTimeout(() => {
-    if (gs.phase === 'HUNTING') showHint('💡 動物をタップ！');
-  }, 8000);
+  gs.hintTimer = setTimeout(() => showHint('💡 動物をタップ！'), 8000);
 }
 
 function spawnAnimal(def, x, y) {
@@ -529,14 +511,10 @@ function spawnAnimal(def, x, y) {
   el.id = `ani-${id}`;
   el.style.left = `${x}px`;
   el.style.top  = `${y}px`;
-  el.innerHTML = `
-    <div class="hp-wrap"><div class="hp-fill" id="hp-${id}"></div></div>
-    <span class="animal-emoji">${def.e}</span>`;
+  el.innerHTML = `<div class="hp-wrap"><div class="hp-fill" id="hp-${id}"></div></div><span class="animal-emoji">${def.e}</span>`;
+  el.addEventListener('click',    e => { e.stopPropagation(); attackAnimal(id); });
+  el.addEventListener('touchend', e => { e.preventDefault(); e.stopPropagation(); attackAnimal(id); }, { passive: false });
 
-  el.addEventListener('click',      e => { e.stopPropagation(); attackAnimal(id); });
-  el.addEventListener('touchend',   e => { e.preventDefault(); e.stopPropagation(); attackAnimal(id); }, { passive: false });
-
-  // 出現アニメーション
   el.style.opacity = '0';
   el.style.transform = 'scale(0.4)';
   el.style.transition = 'opacity .35s, transform .35s';
@@ -545,21 +523,21 @@ function spawnAnimal(def, x, y) {
 }
 
 function attackAnimal(id) {
-  if (gs.phase !== 'HUNTING') return;
   const ani = gs.animals.find(a => a.id === id);
   if (!ani || !ani.alive) return;
+
+  // チュートリアル：初タップで狩猟ガイドを閉じる
+  if (tut.step === 0 && tut.shown[0]) hideTutStep();
 
   ani.hp--;
   const el = document.getElementById(`ani-${id}`);
   if (!el) return;
 
-  // ヒットシェイク
   el.classList.remove('shake');
   void el.offsetWidth;
   el.classList.add('shake');
   setTimeout(() => el.classList.remove('shake'), 250);
 
-  // ダメージ表示・スパークル
   const r  = el.getBoundingClientRect();
   const gr = $game.getBoundingClientRect();
   const cx = r.left - gr.left + r.width  / 2;
@@ -567,7 +545,6 @@ function attackAnimal(id) {
   spawnDmg(cx - 10 + Math.random() * 20, r.top - gr.top + 4, '-1');
   spawnSparks(cx, cy);
 
-  // HPバー更新
   const hp  = document.getElementById(`hp-${id}`);
   const pct = (ani.hp / ani.maxHp) * 100;
   if (hp) {
@@ -575,70 +552,43 @@ function attackAnimal(id) {
     if (pct <= 35) hp.classList.add('danger');
   }
 
-  if (ani.hp <= 0) {
-    ani.alive = false;
-    killAnimal(ani, el);
-  }
+  if (ani.hp <= 0) { ani.alive = false; killAnimal(ani, el); }
 }
 
 function killAnimal(ani, el) {
   el.style.transition = 'all .45s ease-out';
   el.style.transform  = 'scale(0) rotate(45deg)';
   el.style.opacity    = '0';
-
-  // 素材を遅延ドロップ
-  ani.drops.forEach((mat, i) => {
-    setTimeout(() => addItem(mat), 500 + i * 130);
-  });
-
-  setTimeout(() => {
-    el.remove();
-    checkHuntingComplete();
-  }, 480);
+  // 素材は狩猟終了を待たず即ドロップ（同時操作可能）
+  ani.drops.forEach((mat, i) => setTimeout(() => addItem(mat), 500 + i * 130));
+  setTimeout(() => { el.remove(); checkHuntingComplete(); }, 480);
 }
 
 function checkHuntingComplete() {
-  const allDead = gs.animals.every(a => !a.alive);
-  if (allDead) {
-    clearTimeout(gs.hintTimer);
-    setTimeout(() => startProduction(), 700);
+  if (!gs.animals.every(a => !a.alive) || gs.respawning) return;
+  gs.respawning = true;
+  gs.huntCycle++;
+  // 一定サイクルごとにショップ
+  if (gs.huntCycle % SHOP_CYCLE_INTERVAL === 0) {
+    setTimeout(openShop, 1500);
+  } else {
+    scheduleRespawn();
   }
 }
 
-// ===== フェーズ2: 生産 =====
-function startProduction() {
-  gs.phase = 'PRODUCTION';
-  $phase.textContent = '⚙️ 生産フェーズ';
-  setInstruction('素材をタップ、または施設にドラッグ！');
-  flashText('⚙️ 生産開始！');
-  renderInv();
-
-  // 素材がなければ即座に売却へ
-  if (gs.inventory.length === 0) {
-    setTimeout(skipToSelling, 800);
-    return;
-  }
-
-  // ヒントタイマー
+function scheduleRespawn() {
+  $respawnBadge.style.display = 'block';
   clearTimeout(gs.hintTimer);
-  gs.hintTimer = setTimeout(() => {
-    if (gs.phase === 'PRODUCTION') showHint('💡 素材はタップでも投入できる！');
-  }, 8000);
+  setTimeout(startHunting, 2200);
 }
 
-// 素材を施設に投入してレシピ処理開始
+// ===== 施設処理 =====
 function processMaterial(facType, itemId) {
   const item = gs.inventory.find(i => i.id === itemId);
   if (!item || item.isProduct) return false;
-
-  const fac     = gs.facilities[facType];
-  const recipes = RECIPES[facType];
-  if (!recipes) return false;
-
-  // 対応レシピを検索
-  const recipe = recipes.find(r => r.input === item.type);
+  const fac = gs.facilities[facType];
+  const recipe = (RECIPES[facType] || []).find(r => r.input === item.type);
   if (!recipe) {
-    // 対応素材でない場合
     const facEl = document.getElementById(`fc-${facType}`);
     if (facEl) facFloat(facEl, '❌ 対応外の素材');
     return false;
@@ -649,128 +599,52 @@ function processMaterial(facType, itemId) {
     return false;
   }
 
-  // 素材を消費してタイマー開始
   removeItem(itemId);
   fac.busy = true;
   document.getElementById(`fc-${facType}`).classList.add('busy');
 
-  const dur  = recipe.duration / fac.speedMult;
+  const dur = recipe.duration / fac.speedMult;
   const prog = document.getElementById(`prog-${facType}`);
-  let   elapsed = 0;
+  let elapsed = 0;
   const interval = 60;
-
   const timer = setInterval(() => {
     elapsed += interval;
-    const pct = Math.min(100, (elapsed / dur) * 100);
-    if (prog) prog.style.width = `${pct}%`;
-
+    if (prog) prog.style.width = `${Math.min(100, (elapsed / dur) * 100)}%`;
     if (elapsed >= dur) {
       clearInterval(timer);
       fac.busy = false;
       if (prog) prog.style.width = '0%';
       document.getElementById(`fc-${facType}`).classList.remove('busy');
-
-      // 製品をインベントリに追加
       addItem(recipe.output);
       const facEl = document.getElementById(`fc-${facType}`);
       if (facEl) facFloat(facEl, `✅ ${ITEM_DEF[recipe.output].name}完成！`);
-
-      checkProductionDone();
     }
   }, interval);
-
   return true;
 }
 
-function checkProductionDone() {
-  // 未処理素材がなく、施設も空いていて、製品があれば売却フェーズへ
-  const hasMats  = gs.inventory.some(i => !i.isProduct);
-  const bothFree = !gs.facilities.cooking.busy && !gs.facilities.workshop.busy;
-  const hasProds = gs.inventory.some(i => i.isProduct);
-
-  if (!hasMats && bothFree) {
-    if (hasProds) {
-      setTimeout(skipToSelling, 900);
-    } else {
-      // 素材も製品もない場合は拡張フェーズへ
-      setTimeout(startExpansion, 900);
-    }
-  }
-}
-
-function skipToSelling() {
-  if (gs.phase !== 'PRODUCTION') return;
-  startSelling();
-}
-
-// ===== フェーズ3: 売却 =====
-function startSelling() {
-  gs.phase = 'SELLING';
-  $phase.textContent = '💰 売却フェーズ';
-  setInstruction('製品をタップ、または🏪へドラッグ！');
-  $market.classList.add('visible');
-  hideHint();
-  flashText('💰 売却開始！');
-  renderInv();
-
-  const hasProds = gs.inventory.some(i => i.isProduct);
-  if (!hasProds) {
-    setTimeout(startExpansion, 800);
-    return;
-  }
-
-  // ヒントタイマー
-  clearTimeout(gs.hintTimer);
-  gs.hintTimer = setTimeout(() => {
-    if (gs.phase === 'SELLING') showHint('💡 製品はタップで即売却！');
-  }, 8000);
-}
-
+// ===== 売却 =====
 function sellItem(itemId) {
   const item = gs.inventory.find(i => i.id === itemId && i.isProduct);
   if (!item) return;
-
-  const def   = ITEM_DEF[item.type];
-  const coins = def ? def.coins : 5;
-
+  const coins = (ITEM_DEF[item.type] || {}).coins || 5;
   removeItem(itemId);
-
-  // コインアニメーション
   spawnCoinAnim(Math.ceil(coins / 5), $market);
   setTimeout(() => addCoins(coins), 320);
-
-  // 残り製品チェック
-  setTimeout(() => {
-    const stillHasProds = gs.inventory.some(i => i.isProduct);
-    if (!stillHasProds && gs.phase === 'SELLING' && !gs.ctaShown) {
-      setTimeout(startExpansion, 1200);
-    }
-  }, 500);
 }
 
-// ===== フェーズ4: 拡張 =====
-function startExpansion() {
-  if (gs.ctaShown) return;
-  gs.phase = 'EXPANSION';
-  $phase.textContent = '🏗️ 拡張フェーズ';
-  $market.classList.remove('visible');
-  hideHint();
-  flashText('🏗️ 拡張フェーズ');
-  setTimeout(openShop, 600);
-}
-
+// ===== ショップ =====
 function openShop() {
-  // ボタン状態を更新
   ['cooking', 'workshop', 'hunting'].forEach(k => {
-    const btn    = document.getElementById(`btn-${k}`);
+    const btn = document.getElementById(`btn-${k}`);
     const bought = document.getElementById(`bought-${k}`);
-    const price  = k === 'hunting' ? 50 : 30;
+    const price = k === 'hunting' ? 50 : 30;
     if (gs.upgrades[k]) {
-      if (btn)    { btn.style.display = 'none'; }
-      if (bought) { bought.style.display = 'inline'; }
+      if (btn)    btn.style.display = 'none';
+      if (bought) bought.style.display = 'inline';
     } else {
       if (btn)    { btn.disabled = gs.coins < price; btn.style.display = ''; }
-      if (bought) { bought.style.display = 'none'; }
+      if (bought) bought.style.display = 'none';
     }
   });
   $shop.classList.add('open');
@@ -779,11 +653,9 @@ function openShop() {
 function buyUpgrade(type) {
   const price = type === 'hunting' ? 50 : 30;
   if (gs.coins < price || gs.upgrades[type]) return;
-
   gs.coins -= price;
   document.getElementById('coinCount').textContent = gs.coins;
   gs.upgrades[type] = true;
-
   switch (type) {
     case 'cooking':
       gs.facilities.cooking.speedMult = 2;
@@ -801,48 +673,107 @@ function buyUpgrade(type) {
       gs.animalCount = Math.min(5, gs.animalCount + 1);
       break;
   }
-  // ボタン再描画
   openShop();
 }
 
 function skipShop() {
   $shop.classList.remove('open');
-  setTimeout(startHunting, 400);
+  setTimeout(scheduleRespawn, 200);
 }
 
-// ===== CTA =====
-function openCTA() {
-  $shop.classList.remove('open');
-  document.getElementById('ctaScore').textContent = gs.totalCoins;
-  $cta.classList.add('open');
+// ===== CTAポップアップ =====
+function openCTAPopup() {
+  document.getElementById('ctaPopup').classList.add('visible');
 }
-
+function closeCTAPopup() {
+  document.getElementById('ctaPopup').classList.remove('visible');
+}
 function ctaPressed() {
   alert('🎮 アプリをダウンロードしてフルゲームを体験しよう！\n実際の広告ではここからアプリストアへ移動します。');
 }
 
-// ===== ドラッグ＆ドロップ =====
-const INITIAL_DRAG_STATE = {
-  active: false,
-  itemId: null,
-  offsetX: 0,
-  offsetY: 0,
-  startX: 0,
-  startY: 0,
-  moved: false,
-};
-const drag = { ...INITIAL_DRAG_STATE };
+// ===== チュートリアル =====
+const TUT_STEPS = [
+  {
+    targetId: 'gameArea',
+    arrowText: '👆', arrowBelow: false,
+    title: '🏹 動物をタップ！',
+    sub: 'タップして攻撃しよう\n倒すと素材が手に入る',
+  },
+  {
+    targetId: 'facilityRow',
+    arrowText: '👇', arrowBelow: true,
+    title: '⚙️ 素材を施設へ！',
+    sub: '肉→調理場 / 毛皮→加工場\nタップorドラッグで投入OK',
+  },
+  {
+    targetId: 'marketCard',
+    arrowText: '👇', arrowBelow: true,
+    title: '💰 製品を売ろう！',
+    sub: 'マーケットへドラッグ\nまたはタップで即売却',
+  },
+];
 
-function resetDragState() {
-  Object.assign(drag, INITIAL_DRAG_STATE);
+function showTutStep(step) {
+  if (step >= TUT_STEPS.length || tut.shown[step]) return;
+  tut.step = step;
+  tut.shown[step] = true;
+
+  const s = TUT_STEPS[step];
+  const target = document.getElementById(s.targetId);
+  if (!target) return;
+
+  $tutOverlay.innerHTML = '';
+
+  const tr = target.getBoundingClientRect();
+  const gr = $game.getBoundingClientRect();
+  const tx = tr.left - gr.left;
+  const ty = tr.top  - gr.top;
+
+  // ハイライトリング
+  const ring = document.createElement('div');
+  ring.className = 'tut-ring';
+  ring.style.cssText = `left:${tx-5}px;top:${ty-5}px;width:${tr.width+10}px;height:${tr.height+10}px;`;
+  $tutOverlay.appendChild(ring);
+
+  // 矢印
+  const arrow = document.createElement('div');
+  arrow.className = 'tut-arrow';
+  arrow.textContent = s.arrowText;
+  if (!s.arrowBelow) {
+    arrow.style.cssText = `left:${tx + tr.width/2 - 15}px;top:${ty - 46}px;`;
+  } else {
+    arrow.style.cssText = `left:${tx + tr.width/2 - 15}px;top:${ty + tr.height + 6}px;`;
+  }
+  $tutOverlay.appendChild(arrow);
+
+  // バブル
+  const bubble = document.createElement('div');
+  bubble.className = 'tut-bubble';
+  const bubbleTop = s.arrowBelow ? ty + tr.height + 48 : Math.max(4, ty - 118);
+  const bubbleLeft = Math.max(6, Math.min(tx + tr.width/2 - 90, GW - 210));
+  bubble.style.cssText = `left:${bubbleLeft}px;top:${bubbleTop}px;`;
+  bubble.innerHTML = `
+    <div class="tut-bubble-text">${s.title}</div>
+    <div class="tut-bubble-sub">${s.sub.replace(/\n/g,'<br>')}</div>
+    <button class="tut-bubble-btn" onclick="hideTutStep()">✅ わかった！</button>
+  `;
+  $tutOverlay.appendChild(bubble);
 }
+
+function hideTutStep() {
+  $tutOverlay.innerHTML = '';
+}
+
+// ===== ドラッグ＆ドロップ =====
+const INITIAL_DRAG_STATE = { active:false, itemId:null, offsetX:0, offsetY:0, startX:0, startY:0, moved:false };
+const drag = { ...INITIAL_DRAG_STATE };
+function resetDragState() { Object.assign(drag, INITIAL_DRAG_STATE); }
 
 function quickUseItem(itemId) {
   const item = gs.inventory.find(i => i.id === itemId);
   if (!item) return false;
-
-  if (gs.phase === 'PRODUCTION') {
-    if (item.isProduct) return false;
+  if (!item.isProduct) {
     const facType = MATERIAL_TO_FACILITY_MAP[item.type];
     if (!facType) return false;
     const facEl = document.getElementById(`fc-${facType}`);
@@ -851,42 +782,24 @@ function quickUseItem(itemId) {
       return false;
     }
     return processMaterial(facType, itemId);
-  }
-
-  if (gs.phase === 'SELLING') {
-    if (!item.isProduct) return false;
+  } else {
     sellItem(itemId);
     return true;
   }
-
-  return false;
 }
 
 function startDrag(e, itemId, mode) {
-  if (gs.phase !== 'PRODUCTION' && gs.phase !== 'SELLING') return;
+  // フェーズ制限なし：いつでもドラッグ可能
   e.preventDefault();
-
   const srcEl = document.getElementById(`itm-${itemId}`);
   if (!srcEl) return;
-
   const item = gs.inventory.find(i => i.id === itemId);
   if (!item) return;
 
-  // 売却フェーズでは製品のみドラッグ可能
-  if (gs.phase === 'SELLING' && !item.isProduct) return;
-  // 生産フェーズでは素材のみドラッグ可能
-  if (gs.phase === 'PRODUCTION' && item.isProduct) return;
-
   const def  = ITEM_DEF[item.type];
   const rect = srcEl.getBoundingClientRect();
-  let cx, cy;
-  if (mode === 'touch') {
-    cx = e.touches[0].clientX;
-    cy = e.touches[0].clientY;
-  } else {
-    cx = e.clientX;
-    cy = e.clientY;
-  }
+  const cx = mode === 'touch' ? e.touches[0].clientX : e.clientX;
+  const cy = mode === 'touch' ? e.touches[0].clientY : e.clientY;
 
   drag.active  = true;
   drag.itemId  = itemId;
@@ -896,7 +809,6 @@ function startDrag(e, itemId, mode) {
   drag.startY  = cy;
   drag.moved   = false;
 
-  // ゴーストを設定
   $ghost.textContent = def ? def.e : '';
   $ghost.className   = `inv-item ${item.type} show`;
   $ghost.style.left  = `${cx - drag.offsetX - 26}px`;
@@ -917,13 +829,9 @@ function onDragMove(e) {
   e.preventDefault();
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
-  if (Math.abs(cx - drag.startX) > DRAG_MOVEMENT_THRESHOLD || Math.abs(cy - drag.startY) > DRAG_MOVEMENT_THRESHOLD) {
-    drag.moved = true;
-  }
+  if (Math.abs(cx - drag.startX) > DRAG_MOVEMENT_THRESHOLD || Math.abs(cy - drag.startY) > DRAG_MOVEMENT_THRESHOLD) drag.moved = true;
   $ghost.style.left = `${cx - drag.offsetX - 26}px`;
   $ghost.style.top  = `${cy - drag.offsetY - 26}px`;
-
-  // ドロップターゲットをハイライト
   highlightDropTargets(cx, cy);
 }
 
@@ -938,63 +846,60 @@ function onDragEnd(e) {
   const cy = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
   let dropped = false;
 
+  const item = gs.inventory.find(i => i.id === drag.itemId);
+
   if (!drag.moved) {
     dropped = quickUseItem(drag.itemId);
-    FACILITY_TYPES.forEach(facType => {
-      const facEl = document.getElementById(`fc-${facType}`);
-      if (facEl) facEl.classList.remove('drop-active');
-    });
+    FACILITY_TYPES.forEach(ft => { const el = document.getElementById(`fc-${ft}`); if (el) el.classList.remove('drop-active'); });
     $market.classList.remove('drop-active');
-  } else if (gs.phase === 'PRODUCTION') {
-    // 施設へのドロップ判定
-    FACILITY_TYPES.forEach(facType => {
-      const facEl = document.getElementById(`fc-${facType}`);
-      if (!facEl) return;
-      const r = facEl.getBoundingClientRect();
-      if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
-        dropped = processMaterial(facType, drag.itemId);
-      }
-      facEl.classList.remove('drop-active');
-    });
-  } else if (gs.phase === 'SELLING') {
-    // マーケットへのドロップ判定
-    const mr = $market.getBoundingClientRect();
-    if (cx >= mr.left && cx <= mr.right && cy >= mr.top && cy <= mr.bottom) {
-      sellItem(drag.itemId);
-      dropped = true;
+  } else if (item) {
+    if (!item.isProduct) {
+      // 素材 → 施設
+      FACILITY_TYPES.forEach(facType => {
+        const facEl = document.getElementById(`fc-${facType}`);
+        if (!facEl) return;
+        const r = facEl.getBoundingClientRect();
+        if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) dropped = processMaterial(facType, drag.itemId);
+        facEl.classList.remove('drop-active');
+      });
+    } else {
+      // 製品 → マーケット
+      const mr = $market.getBoundingClientRect();
+      if (cx >= mr.left && cx <= mr.right && cy >= mr.top && cy <= mr.bottom) { sellItem(drag.itemId); dropped = true; }
+      $market.classList.remove('drop-active');
+      FACILITY_TYPES.forEach(ft => { const el = document.getElementById(`fc-${ft}`); if (el) el.classList.remove('drop-active'); });
     }
-    $market.classList.remove('drop-active');
   }
 
-  // ドロップ失敗時は元の透明度に戻す
   if (!dropped) {
     const srcEl = document.getElementById(`itm-${drag.itemId}`);
     if (srcEl) srcEl.style.opacity = '1';
   }
-
-  // ゴーストを非表示（全クラスをクリア）
   $ghost.className = '';
   resetDragState();
 }
 
 function highlightDropTargets(cx, cy) {
-  if (gs.phase === 'PRODUCTION') {
+  const item = gs.inventory.find(i => i.id === drag.itemId);
+  if (!item) return;
+  if (!item.isProduct) {
     FACILITY_TYPES.forEach(ft => {
       const el = document.getElementById(`fc-${ft}`);
       if (!el) return;
       const r = el.getBoundingClientRect();
-      const inside = cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom;
-      el.classList.toggle('drop-active', inside);
+      el.classList.toggle('drop-active', cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom);
     });
-  } else if (gs.phase === 'SELLING') {
+    $market.classList.remove('drop-active');
+  } else {
     const mr = $market.getBoundingClientRect();
-    const inside = cx >= mr.left && cx <= mr.right && cy >= mr.top && cy <= mr.bottom;
-    $market.classList.toggle('drop-active', inside);
+    $market.classList.toggle('drop-active', cx >= mr.left && cx <= mr.right && cy >= mr.top && cy <= mr.bottom);
+    FACILITY_TYPES.forEach(ft => { const el = document.getElementById(`fc-${ft}`); if (el) el.classList.remove('drop-active'); });
   }
 }
 
 // ===== ゲーム開始 =====
 startHunting();
+setTimeout(() => showTutStep(0), 600);
 </script>
 </body>
 </html>

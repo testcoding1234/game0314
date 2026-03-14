@@ -42,7 +42,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 @keyframes sparkFly{from{opacity:1;transform:scale(1) translate(0,0)}to{opacity:0;transform:scale(0) translate(var(--dx),var(--dy))}}
 
 /* ===== 施設行 ===== */
-#facilityRow{position:relative;z-index:8;height:98px;display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,8,28,.65);border-top:1px solid rgba(125,211,252,.15);border-bottom:1px solid rgba(125,211,252,.1);}
+#facilityRow{position:relative;z-index:8;height:98px;display:flex;align-items:center;gap:8px;padding:6px 10px;background:rgba(0,8,28,.65);border-top:1px solid rgba(125,211,252,.15);}
 .fc{flex:1;height:86px;background:rgba(10,18,40,.9);border:2px solid rgba(56,189,248,.3);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px;position:relative;transition:border-color .2s,background .2s,transform .15s;}
 .fc.drop-active{border-color:#7dd3fc;background:rgba(125,211,252,.15);transform:scale(1.04);}
 .fc.busy{border-color:rgba(34,197,94,.55);}
@@ -164,10 +164,11 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 @keyframes tutRing{0%,100%{box-shadow:0 0 0 4px rgba(251,191,36,.25),0 0 20px rgba(251,191,36,.45)}50%{box-shadow:0 0 0 10px rgba(251,191,36,.4),0 0 32px rgba(251,191,36,.7)}}
 .tut-arrow{position:absolute;font-size:30px;pointer-events:none;animation:tutBounce .65s ease-in-out infinite alternate;}
 @keyframes tutBounce{from{transform:translateY(0)}to{transform:translateY(-9px)}}
-.tut-bubble{position:absolute;background:rgba(251,191,36,.97);border-radius:12px;padding:8px 13px;pointer-events:all;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.45);min-width:130px;max-width:200px;}
+.tut-bubble{position:absolute;background:rgba(251,191,36,.97);border-radius:12px;padding:8px 32px 8px 13px;pointer-events:all;cursor:default;box-shadow:0 4px 14px rgba(0,0,0,.45);min-width:130px;max-width:200px;}
 .tut-bubble-text{font-size:13px;font-weight:800;color:#1c1008;line-height:1.3;}
 .tut-bubble-sub{font-size:10px;color:#4a2800;margin-top:2px;line-height:1.4;}
-.tut-bubble-btn{margin-top:6px;width:100%;padding:5px 0;background:#f97316;border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;}
+.tut-close{position:absolute;top:5px;right:6px;background:rgba(0,0,0,.18);border:none;color:#1c1008;font-size:13px;font-weight:900;cursor:pointer;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+.tut-close:active{background:rgba(0,0,0,.35);}
 
 /* ===== モード選択画面 ===== */
 #modeSelect{position:absolute;inset:0;z-index:600;background:linear-gradient(180deg,#06111e 0%,#0a1829 55%,#101f30 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:28px 22px;}
@@ -665,11 +666,11 @@ function addItem(type) {
     setTimeout(() => { const el = document.getElementById(`itm-${id}`); if (el) showRareDrop(el); }, 120);
   }
   // チュートリアル：素材初入手 → 施設ガイド
-  if (!def.isProduct && !tut.shown[1]) {
+  if (!def.isProduct && !tut.shown[1] && gs.phase !== 'ENDED') {
     setTimeout(() => showTutStep(1), 500);
   }
   // チュートリアル：製品初入手 → マーケットガイド
-  if (def.isProduct && !tut.shown[2]) {
+  if (def.isProduct && !tut.shown[2] && gs.phase !== 'ENDED') {
     setTimeout(() => showTutStep(2), 500);
   }
 }
@@ -753,8 +754,8 @@ function attackAnimal(id) {
   const ani = gs.animals.find(a => a.id === id);
   if (!ani || !ani.alive) return;
 
-  // チュートリアル：初タップで狩猟ガイドを閉じる
-  if (tut.step === 0 && tut.shown[0]) hideTutStep();
+  // チュートリアルStep0：動物タップで狩猟ガイドを閉じる
+  if (tut.step === 0 && $tutOverlay.innerHTML) hideTutStep();
 
   ani.hp--;
   const el = document.getElementById(`ani-${id}`);
@@ -837,6 +838,8 @@ function processMaterial(facType, itemId) {
     if (facEl) facFloat(facEl, anyRecipe ? `❌ LV.${anyRecipe.minLevel}以上が必要` : '❌ 対応外の素材');
     return false;
   }
+  // チュートリアルStep1：素材投入で施設ガイドを閉じる
+  if (tut.step === 1 && $tutOverlay.innerHTML) hideTutStep();
   removeItem(itemId);
   if (fac.busy) {
     fac.queue.push(recipe);
@@ -889,6 +892,8 @@ function updateQueueBadge(facType) {
 function sellItem(itemId) {
   const item = gs.inventory.find(i => i.id === itemId && i.isProduct);
   if (!item) return;
+  // チュートリアルStep2：売却で販売ガイドを閉じる
+  if (tut.step === 2 && $tutOverlay.innerHTML) hideTutStep();
   const coins = (ITEM_DEF[item.type] || {}).coins || 5;
   removeItem(itemId);
   spawnCoinAnim(Math.ceil(coins / 5), $market);
@@ -974,20 +979,17 @@ function ctaPressed() {
 // ===== チュートリアル =====
 const TUT_STEPS = [
   {
-    targetId: 'gameArea',
-    arrowText: '👆', arrowBelow: false,
+    arrowText: '👆', arrowBelow: true,
     title: '🏹 動物をタップ！',
     sub: 'タップして攻撃しよう\n倒すと素材が手に入る',
   },
   {
-    targetId: 'facilityRow',
-    arrowText: '👇', arrowBelow: true,
+    arrowText: '👇', arrowBelow: false,
     title: '⚙️ 素材を施設へ！',
     sub: '肉→調理場 / 毛皮→加工場\nタップorドラッグで投入OK',
   },
   {
-    targetId: 'marketCard',
-    arrowText: '👇', arrowBelow: true,
+    arrowText: '👇', arrowBelow: false,
     title: '💰 製品を売ろう！',
     sub: 'マーケットへドラッグ\nまたはタップで即売却',
   },
@@ -995,12 +997,24 @@ const TUT_STEPS = [
 
 function showTutStep(step) {
   if (step >= TUT_STEPS.length || tut.shown[step]) return;
+
+  // 動的ターゲット解決
+  let target = null;
+  if (step === 0) {
+    target = $gameArea.querySelector('.animal');
+  } else if (step === 1) {
+    const firstMat = gs.inventory.find(i => !i.isProduct);
+    if (firstMat) target = document.getElementById(`itm-${firstMat.id}`);
+  } else if (step === 2) {
+    const firstProd = gs.inventory.find(i => i.isProduct);
+    if (firstProd) target = document.getElementById(`itm-${firstProd.id}`);
+  }
+  if (!target) return;
+
   tut.step = step;
   tut.shown[step] = true;
 
   const s = TUT_STEPS[step];
-  const target = document.getElementById(s.targetId);
-  if (!target) return;
 
   $tutOverlay.innerHTML = '';
 
@@ -1009,7 +1023,7 @@ function showTutStep(step) {
   const tx = tr.left - gr.left;
   const ty = tr.top  - gr.top;
 
-  // ハイライトリング
+  // ハイライトリング（ターゲット1つを光らせる）
   const ring = document.createElement('div');
   ring.className = 'tut-ring';
   ring.style.cssText = `left:${tx-5}px;top:${ty-5}px;width:${tr.width+10}px;height:${tr.height+10}px;`;
@@ -1026,16 +1040,16 @@ function showTutStep(step) {
   }
   $tutOverlay.appendChild(arrow);
 
-  // バブル
+  // バブル（✕ボタンで閉じる）
   const bubble = document.createElement('div');
   bubble.className = 'tut-bubble';
-  const bubbleTop = s.arrowBelow ? ty + tr.height + 48 : Math.max(4, ty - 118);
+  const bubbleTop = s.arrowBelow ? ty + tr.height + 48 : Math.max(4, ty - 110);
   const bubbleLeft = Math.max(6, Math.min(tx + tr.width/2 - 90, GW - 210));
   bubble.style.cssText = `left:${bubbleLeft}px;top:${bubbleTop}px;`;
   bubble.innerHTML = `
+    <button class="tut-close" onclick="hideTutStep()">✕</button>
     <div class="tut-bubble-text">${s.title}</div>
     <div class="tut-bubble-sub">${s.sub.replace(/\n/g,'<br>')}</div>
-    <button class="tut-bubble-btn" onclick="hideTutStep()">✅ わかった！</button>
   `;
   $tutOverlay.appendChild(bubble);
 }
@@ -1378,6 +1392,12 @@ function startGameMode(mode) {
   $gameArea.classList.remove('hot');
   $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
   $invRow.innerHTML = '<div class="inv-lbl">🎒 所持品</div>';
+  $invRow.style.pointerEvents = '';
+  FACILITY_TYPES.forEach(ft => {
+    const el = document.getElementById(`fc-${ft}`);
+    if (el) el.style.pointerEvents = '';
+  });
+  $market.style.pointerEvents = '';
   $tutOverlay.innerHTML = '';
   $respawnBadge.style.display = 'none';
   $shop.classList.remove('open');
@@ -1437,17 +1457,30 @@ function endSpeedMode() {
   if (gs.phase === 'ENDED') return;
   gs.phase = 'ENDED';
   removeEndCountdown();
+
+  // 狩猟・採集・売却をすべて無効化
   $gameArea.querySelectorAll('.animal').forEach(el => {
     el.style.pointerEvents = 'none';
     el.style.opacity = '0.4';
   });
+  $invRow.style.pointerEvents = 'none';
+  FACILITY_TYPES.forEach(ft => {
+    const el = document.getElementById(`fc-${ft}`);
+    if (el) el.style.pointerEvents = 'none';
+  });
+  $market.style.pointerEvents = 'none';
+  document.querySelectorAll('.fc-lvup-btn').forEach(btn => { btn.disabled = true; });
+  $shop.classList.remove('open');
+  $tutOverlay.innerHTML = '';
+
+  const scoreSnapshot = gs.totalCoins;
   const fl = document.createElement('div');
   fl.className = 'timeup-flash';
   fl.textContent = '⏰ TIME UP!';
   $game.appendChild(fl);
   setTimeout(() => {
     if (fl.parentNode) fl.remove();
-    setTimeout(() => showRanking(gs.totalCoins), RANKING_DISPLAY_DELAY);
+    setTimeout(() => showRanking(scoreSnapshot), RANKING_DISPLAY_DELAY);
   }, 1600);
 }
 

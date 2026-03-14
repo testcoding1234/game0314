@@ -65,6 +65,10 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .inv-item.food{background:linear-gradient(135deg,#052e16,#166534);border-color:rgba(34,197,94,.4);}
 .inv-item.coat{background:linear-gradient(135deg,#2e1065,#4c1d95);border-color:rgba(124,58,237,.4);}
 .inv-item.broth{background:linear-gradient(135deg,#1c1008,#78350f);border-color:rgba(217,119,6,.4);}
+.inv-item.crystal{background:linear-gradient(135deg,#0c4a6e,#0369a1);border-color:rgba(56,189,248,.4);}
+.inv-item.herb{background:linear-gradient(135deg,#14532d,#064e3b);border-color:rgba(52,211,153,.4);}
+.inv-item.jewel{background:linear-gradient(135deg,#4c1d95,#5b21b6);border-color:rgba(167,139,250,.4);}
+.inv-item.potion{background:linear-gradient(135deg,#0f172a,#155e75);border-color:rgba(34,211,238,.4);}
 @keyframes itemPop{from{transform:scale(0) rotate(-90deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
 .item-new{animation:itemPop .4s cubic-bezier(.34,1.56,.64,1) both;}
 
@@ -232,6 +236,7 @@ const GW = 375, GH = 667;
 const CTA_THRESHOLD = 100;
 const SHOP_CYCLE_INTERVAL = 3;
 const REPLACEMENT_SPAWN_DELAY = 800;
+const RARE_ANIMALS_UNLOCK_CYCLE = 3;
 
 // ===== ゲーム状態 =====
 const gs = {
@@ -244,7 +249,7 @@ const gs = {
     cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
     workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
   },
-  upgrades: { cooking: false, workshop: false, hunting: false },
+  upgrades: { hunting: false },
   animalCount: 3,
   nextId: 1,
   ctaShown: false,
@@ -259,30 +264,38 @@ const tut = { step: 0, shown: [false, false, false] };
 
 // ===== 動物の定義 =====
 const ANIMAL_DEFS = [
-  { type: 'bear', e: '🐻', hp: 3, drops: ['meat', 'meat', 'skin'] },
-  { type: 'deer', e: '🦌', hp: 2, drops: ['meat', 'skin'] },
-  { type: 'wolf', e: '🐺', hp: 2, drops: ['meat', 'skin', 'bone'] },
-  { type: 'fox',  e: '🦊', hp: 1, drops: ['skin', 'bone'] },
+  { type: 'bear',    e: '🐻', hp: 3, drops: ['meat', 'meat', 'skin'],          minCycle: 0 },
+  { type: 'deer',    e: '🦌', hp: 2, drops: ['meat', 'skin'],                  minCycle: 0 },
+  { type: 'wolf',    e: '🐺', hp: 2, drops: ['meat', 'skin', 'bone'],          minCycle: 0 },
+  { type: 'fox',     e: '🦊', hp: 1, drops: ['skin', 'bone'],                  minCycle: 0 },
+  { type: 'mammoth', e: '🦣', hp: 5, drops: ['crystal', 'bone', 'skin'],       minCycle: RARE_ANIMALS_UNLOCK_CYCLE },
+  { type: 'owl',     e: '🦉', hp: 1, drops: ['herb', 'herb'],                  minCycle: RARE_ANIMALS_UNLOCK_CYCLE },
 ];
 
 // ===== アイテム定義 =====
 const ITEM_DEF = {
-  meat:  { e: '🥩', name: '肉',         isProduct: false },
-  skin:  { e: '🪶', name: '毛皮',       isProduct: false },
-  bone:  { e: '🦴', name: '骨',         isProduct: false },
-  food:  { e: '🍖', name: '食料',       isProduct: true, coins: 15 },
-  coat:  { e: '🧥', name: '毛皮コート', isProduct: true, coins: 25 },
-  broth: { e: '🍵', name: '骨スープ',   isProduct: true, coins: 8  },
+  meat:    { e: '🥩', name: '肉',         isProduct: false },
+  skin:    { e: '🪶', name: '毛皮',       isProduct: false },
+  bone:    { e: '🦴', name: '骨',         isProduct: false },
+  crystal: { e: '💎', name: '氷晶',       isProduct: false },
+  herb:    { e: '🌿', name: '薬草',       isProduct: false },
+  food:    { e: '🍖', name: '食料',       isProduct: true, coins: 15 },
+  coat:    { e: '🧥', name: '毛皮コート', isProduct: true, coins: 25 },
+  broth:   { e: '🍵', name: '骨スープ',  isProduct: true, coins: 8  },
+  jewel:   { e: '💍', name: '宝飾品',    isProduct: true, coins: 35 },
+  potion:  { e: '🧪', name: '薬',        isProduct: true, coins: 12 },
 };
 
 // ===== 施設レシピ =====
 const RECIPES = {
   cooking:  [
-    { input: 'meat', output: 'food',  duration: 4000 },
-    { input: 'bone', output: 'broth', duration: 2500 },
+    { input: 'meat', output: 'food',   duration: 4000, minLevel: 1 },
+    { input: 'bone', output: 'broth',  duration: 2500, minLevel: 1 },
+    { input: 'herb', output: 'potion', duration: 2000, minLevel: 3 },
   ],
   workshop: [
-    { input: 'skin', output: 'coat', duration: 5000 },
+    { input: 'skin',    output: 'coat',  duration: 5000, minLevel: 1 },
+    { input: 'crystal', output: 'jewel', duration: 4000, minLevel: 3 },
   ],
 };
 const FACILITY_TYPES = Object.keys(RECIPES);
@@ -292,6 +305,20 @@ const MATERIAL_TO_FACILITY_MAP = FACILITY_TYPES.reduce((map, facType) => {
   });
   return map;
 }, {});
+
+// ===== 施設アップグレード設定 =====
+const UPGRADE_CONFIG = {
+  cooking:  [
+    { cost: 30,  speedMult: 2 },
+    { cost: 80,  speedMult: 3 },
+    { cost: 150, speedMult: 4 },
+  ],
+  workshop: [
+    { cost: 30,  speedMult: 2 },
+    { cost: 80,  speedMult: 3 },
+    { cost: 150, speedMult: 4 },
+  ],
+};
 const DRAG_MOVEMENT_THRESHOLD = 10;
 
 // ===== DOM参照 =====
@@ -478,7 +505,8 @@ function startHunting() {
   gs.respawning = false;
   gs.waveKills = 0;
   $respawnBadge.style.display = 'none';
-  if (gs.huntCycle > 0) flashText('🏹 新しい動物が現れた！');
+  if (gs.huntCycle === RARE_ANIMALS_UNLOCK_CYCLE) flashText('🦣 新種の動物が現れた！');
+  else if (gs.huntCycle > 0) flashText('🏹 新しい動物が現れた！');
 
   $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
   gs.animals = [];
@@ -488,17 +516,18 @@ function startHunting() {
     { x: 88,  y: 195 }, { x: 215, y: 200 },
   ];
   const count = Math.min(gs.animalCount, slots.length);
+  const availDefs = ANIMAL_DEFS.filter(d => gs.huntCycle >= (d.minCycle || 0));
   for (let i = 0; i < count; i++) {
-    const def = ANIMAL_DEFS[i % ANIMAL_DEFS.length];
+    const def = availDefs[i % availDefs.length];
     const slot = slots[i];
-    spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y);
+    spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y, i);
   }
 
   clearTimeout(gs.hintTimer);
   gs.hintTimer = setTimeout(() => showHint('💡 動物をタップ！'), 8000);
 }
 
-function spawnAnimal(def, x, y) {
+function spawnAnimal(def, x, y, staggerIndex = 0) {
   const id = nid();
   const animal = { id, type: def.type, e: def.e, hp: def.hp, maxHp: def.hp, drops: def.drops, alive: true };
   gs.animals.push(animal);
@@ -516,7 +545,7 @@ function spawnAnimal(def, x, y) {
   el.style.transform = 'scale(0.4)';
   el.style.transition = 'opacity .35s, transform .35s';
   $gameArea.appendChild(el);
-  setTimeout(() => { el.style.opacity = '1'; el.style.transform = 'scale(1)'; }, 50 + id * 90);
+  setTimeout(() => { el.style.opacity = '1'; el.style.transform = 'scale(1)'; }, 50 + staggerIndex * 90);
 }
 
 function attackAnimal(id) {
@@ -573,8 +602,9 @@ function checkHuntingComplete() {
     setTimeout(() => {
       if (!gs.respawning) {
         const slot = slots[Math.floor(Math.random() * slots.length)];
-        const def = ANIMAL_DEFS[Math.floor(Math.random() * ANIMAL_DEFS.length)];
-        spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y);
+        const availDefs = ANIMAL_DEFS.filter(d => gs.huntCycle >= (d.minCycle || 0));
+        const def = availDefs[Math.floor(Math.random() * availDefs.length)];
+        spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y, 0);
       }
     }, REPLACEMENT_SPAWN_DELAY);
     return;
@@ -600,10 +630,11 @@ function processMaterial(facType, itemId) {
   const item = gs.inventory.find(i => i.id === itemId);
   if (!item || item.isProduct) return false;
   const fac = gs.facilities[facType];
-  const recipe = (RECIPES[facType] || []).find(r => r.input === item.type);
+  const anyRecipe = (RECIPES[facType] || []).find(r => r.input === item.type);
+  const recipe = anyRecipe && (anyRecipe.minLevel || 1) <= fac.level ? anyRecipe : null;
   if (!recipe) {
     const facEl = document.getElementById(`fc-${facType}`);
-    if (facEl) facFloat(facEl, '❌ 対応外の素材');
+    if (facEl) facFloat(facEl, anyRecipe ? `❌ LV.${anyRecipe.minLevel}以上が必要` : '❌ 対応外の素材');
     return false;
   }
   removeItem(itemId);
@@ -679,27 +710,31 @@ function openShop() {
 }
 
 function buyUpgrade(type) {
-  const price = type === 'hunting' ? 50 : 30;
-  if (gs.coins < price || gs.upgrades[type]) return;
-  gs.coins -= price;
+  if (type === 'hunting') {
+    const price = 50;
+    if (gs.coins < price || gs.upgrades.hunting) return;
+    gs.coins -= price;
+    document.getElementById('coinCount').textContent = gs.coins;
+    gs.upgrades.hunting = true;
+    gs.animalCount = Math.min(5, gs.animalCount + 1);
+    updateLvUpButtons();
+    if ($shop.classList.contains('open')) openShop();
+    return;
+  }
+  const fac = gs.facilities[type];
+  if (!fac) return;
+  const cfg = (UPGRADE_CONFIG[type] || [])[fac.level - 1];
+  if (!cfg || gs.coins < cfg.cost) return;
+  gs.coins -= cfg.cost;
   document.getElementById('coinCount').textContent = gs.coins;
-  gs.upgrades[type] = true;
-  switch (type) {
-    case 'cooking':
-      gs.facilities.cooking.speedMult = 2;
-      document.getElementById('lv-cooking').textContent = 'LV.2';
-      document.getElementById('fc-cooking').style.borderColor = '#fbbf24';
-      facFloat(document.getElementById('fc-cooking'), '⬆️ LV.2 UP!');
-      break;
-    case 'workshop':
-      gs.facilities.workshop.speedMult = 2;
-      document.getElementById('lv-workshop').textContent = 'LV.2';
-      document.getElementById('fc-workshop').style.borderColor = '#fbbf24';
-      facFloat(document.getElementById('fc-workshop'), '⬆️ LV.2 UP!');
-      break;
-    case 'hunting':
-      gs.animalCount = Math.min(5, gs.animalCount + 1);
-      break;
+  fac.level++;
+  fac.speedMult = cfg.speedMult;
+  const lvLabel = document.getElementById(`lv-${type}`);
+  if (lvLabel) lvLabel.textContent = `LV.${fac.level}`;
+  const facEl = document.getElementById(`fc-${type}`);
+  if (facEl) {
+    facEl.style.borderColor = '#fbbf24';
+    facFloat(facEl, `⬆️ LV.${fac.level} UP!`);
   }
   updateLvUpButtons();
   if ($shop.classList.contains('open')) openShop();
@@ -926,11 +961,14 @@ function updateLvUpButtons() {
   ['cooking', 'workshop'].forEach(facType => {
     const btn = document.getElementById(`lvup-${facType}`);
     if (!btn) return;
-    if (!gs.upgrades[facType]) {
-      btn.classList.add('show');
-      btn.disabled = gs.coins < 30;
-    } else {
+    const fac = gs.facilities[facType];
+    const cfg = (UPGRADE_CONFIG[facType] || [])[fac.level - 1];
+    if (!cfg) {
       btn.classList.remove('show');
+    } else {
+      btn.classList.add('show');
+      btn.innerHTML = `⬆️LV${fac.level + 1}<br>🪙${cfg.cost}`;
+      btn.disabled = gs.coins < cfg.cost;
     }
   });
 }

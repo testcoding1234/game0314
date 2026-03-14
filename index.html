@@ -426,11 +426,19 @@ function hideHint() { $hint.classList.remove('visible'); }
 function onHint() {
   // フェーズに応じて自動アクションをガイド
   if (gs.phase === 'PRODUCTION') {
-    const hasItems = gs.inventory.some(i => !i.isProduct);
-    if (!hasItems) { skipToSelling(); }
+    const nextMat = gs.inventory.find(i => !i.isProduct);
+    if (nextMat) {
+      quickUseItem(nextMat.id);
+    } else {
+      skipToSelling();
+    }
   } else if (gs.phase === 'SELLING') {
-    const hasProds = gs.inventory.some(i => i.isProduct);
-    if (!hasProds) { startExpansion(); }
+    const nextProd = gs.inventory.find(i => i.isProduct);
+    if (nextProd) {
+      quickUseItem(nextProd.id);
+    } else {
+      startExpansion();
+    }
   }
 }
 
@@ -591,7 +599,7 @@ function checkHuntingComplete() {
 function startProduction() {
   gs.phase = 'PRODUCTION';
   $phase.textContent = '⚙️ 生産フェーズ';
-  setInstruction('素材を施設にドラッグしよう！');
+  setInstruction('素材をタップ or 施設にドラッグ！');
   flashText('⚙️ 生産開始！');
   renderInv();
 
@@ -604,7 +612,7 @@ function startProduction() {
   // ヒントタイマー
   clearTimeout(gs.hintTimer);
   gs.hintTimer = setTimeout(() => {
-    if (gs.phase === 'PRODUCTION') showHint('💡 素材を施設にドラッグ！');
+    if (gs.phase === 'PRODUCTION') showHint('💡 素材はタップでも投入できる！');
   }, 8000);
 }
 
@@ -689,7 +697,7 @@ function skipToSelling() {
 function startSelling() {
   gs.phase = 'SELLING';
   $phase.textContent = '💰 売却フェーズ';
-  setInstruction('製品を🏪マーケットにドラッグ！');
+  setInstruction('製品をタップ or 🏪へドラッグ！');
   $market.classList.add('visible');
   hideHint();
   flashText('💰 売却開始！');
@@ -704,7 +712,7 @@ function startSelling() {
   // ヒントタイマー
   clearTimeout(gs.hintTimer);
   gs.hintTimer = setTimeout(() => {
-    if (gs.phase === 'SELLING') showHint('💡 製品をマーケットにドラッグ！');
+    if (gs.phase === 'SELLING') showHint('💡 製品はタップで即売却！');
   }, 8000);
 }
 
@@ -809,7 +817,35 @@ const drag = {
   itemId: null,
   offsetX: 0,
   offsetY: 0,
+  startX: 0,
+  startY: 0,
+  moved: false,
 };
+
+function quickUseItem(itemId) {
+  const item = gs.inventory.find(i => i.id === itemId);
+  if (!item) return false;
+
+  if (gs.phase === 'PRODUCTION') {
+    if (item.isProduct) return false;
+    const facType = Object.keys(RECIPES).find(type => RECIPES[type].some(recipe => recipe.input === item.type));
+    if (!facType) return false;
+    const facEl = document.getElementById(`fc-${facType}`);
+    if (gs.facilities[facType].busy) {
+      if (facEl) facFloat(facEl, '⏳ 空くまで待とう');
+      return false;
+    }
+    return processMaterial(facType, itemId);
+  }
+
+  if (gs.phase === 'SELLING') {
+    if (!item.isProduct) return false;
+    sellItem(itemId);
+    return true;
+  }
+
+  return false;
+}
 
 function startDrag(e, itemId, mode) {
   if (gs.phase !== 'PRODUCTION' && gs.phase !== 'SELLING') return;
@@ -841,6 +877,9 @@ function startDrag(e, itemId, mode) {
   drag.itemId  = itemId;
   drag.offsetX = cx - (rect.left + rect.width  / 2);
   drag.offsetY = cy - (rect.top  + rect.height / 2);
+  drag.startX  = cx;
+  drag.startY  = cy;
+  drag.moved   = false;
 
   // ゴーストを設定
   $ghost.textContent = def ? def.e : '';
@@ -863,6 +902,9 @@ function onDragMove(e) {
   e.preventDefault();
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
+  if (Math.abs(cx - drag.startX) > 10 || Math.abs(cy - drag.startY) > 10) {
+    drag.moved = true;
+  }
   $ghost.style.left = `${cx - drag.offsetX - 26}px`;
   $ghost.style.top  = `${cy - drag.offsetY - 26}px`;
 
@@ -881,7 +923,14 @@ function onDragEnd(e) {
   const cy = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
   let dropped = false;
 
-  if (gs.phase === 'PRODUCTION') {
+  if (!drag.moved) {
+    dropped = quickUseItem(drag.itemId);
+    ['cooking', 'workshop'].forEach(facType => {
+      const facEl = document.getElementById(`fc-${facType}`);
+      if (facEl) facEl.classList.remove('drop-active');
+    });
+    $market.classList.remove('drop-active');
+  } else if (gs.phase === 'PRODUCTION') {
     // 施設へのドロップ判定
     ['cooking', 'workshop'].forEach(facType => {
       const facEl = document.getElementById(`fc-${facType}`);
@@ -911,6 +960,7 @@ function onDragEnd(e) {
   // ゴーストを非表示（全クラスをクリア）
   $ghost.className = '';
   drag.active = false;
+  drag.itemId = null;
 }
 
 function highlightDropTargets(cx, cy) {

@@ -73,12 +73,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .item-new{animation:itemPop .4s cubic-bezier(.34,1.56,.64,1) both;}
 
 /* ===== フッター ===== */
-#footer{position:relative;z-index:10;height:125px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:10px 14px 16px;background:rgba(0,4,18,.75);border-top:1px solid rgba(125,211,252,.1);}
-#instruction{font-size:13px;color:#64748b;text-align:center;line-height:1.5;}
-#hintBtn{display:none;padding:8px 24px;background:rgba(125,211,252,.08);border:1px solid rgba(125,211,252,.3);border-radius:20px;color:#7dd3fc;font-size:12px;cursor:pointer;}
-#hintBtn.visible{display:block;}
-@keyframes hintPulse{0%,100%{opacity:.7}50%{opacity:1}}
-#hintBtn.visible{animation:hintPulse 2s ease infinite;}
+#footer{display:none;}
 
 /* ===== スコアバー ===== */
 #scoreBar{height:4px;background:rgba(0,0,0,.3);}
@@ -264,16 +259,6 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .end-count-pop{animation:endCountPop .3s cubic-bezier(.34,1.56,.64,1);}
 .end-countdown-animals{font-size:22px;letter-spacing:3px;opacity:.45;margin-top:4px;}
 
-/* ===== スピードモード初回チュートリアル ===== */
-#speedTutOverlay{position:absolute;inset:0;z-index:470;background:rgba(0,4,20,.84);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px 18px;}
-#speedTutOverlay.hidden{display:none;}
-.sptut-title{font-size:20px;font-weight:900;color:#fbbf24;text-shadow:0 0 14px rgba(251,191,36,.6);text-align:center;line-height:1.3;}
-.sptut-steps{width:100%;background:rgba(8,18,44,.9);border:1px solid rgba(125,211,252,.22);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;}
-.sptut-step{display:flex;align-items:flex-start;gap:10px;font-size:12px;color:#e2e8f0;line-height:1.45;}
-.sptut-step-icon{font-size:18px;flex-shrink:0;width:24px;text-align:center;}
-.sptut-ok-btn{width:100%;padding:13px 0;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(249,115,22,.4);letter-spacing:.02em;}
-.sptut-ok-btn:active{transform:scale(.97);}
-.sptut-hint{font-size:10px;color:#475569;text-align:center;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -358,19 +343,6 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
   <!-- チュートリアルオーバーレイ -->
   <div id="tutOverlay"></div>
 
-  <!-- スピードモード初回チュートリアル -->
-  <div id="speedTutOverlay" class="hidden">
-    <div class="sptut-title">⚡ スピードモードの遊び方</div>
-    <div class="sptut-steps">
-      <div class="sptut-step"><span class="sptut-step-icon">🏹</span><span>動物をタップして倒そう！素材がドロップするよ</span></div>
-      <div class="sptut-step"><span class="sptut-step-icon">⚙️</span><span>素材を施設（調理場・加工場）に入れて製品を作ろう</span></div>
-      <div class="sptut-step"><span class="sptut-step-icon">🏪</span><span>製品をマーケットへ！コインをゲット！</span></div>
-      <div class="sptut-step"><span class="sptut-step-icon">⏱</span><span>60秒でできるだけたくさんコインを稼ごう！</span></div>
-    </div>
-    <button class="sptut-ok-btn" onclick="onSpeedTutOk()">✅ わかった！スタート！</button>
-    <div class="sptut-hint">実際に操作（狩猟→製品→マーケット売却）しても<br>カウントダウンが始まります</div>
-  </div>
-
   <div id="dragGhost"></div>
 
   <!-- モードツールバータブ -->
@@ -454,7 +426,6 @@ const gs = {
   comboTimer: null,
   speedTimeLeft: 60,
   speedTimerInterval: null,
-  speedTutActive: false,
   speedTutLocked: false,
 };
 
@@ -923,17 +894,6 @@ function sellItem(itemId) {
   spawnCoinAnim(Math.ceil(coins / 5), $market);
   if (coins >= 25) setTimeout(() => showJackpot(coins, item.type), 150);
   setTimeout(() => addCoins(coins), 320);
-  // スピードモード初回チュートリアル：最初の売却でカウントダウン開始
-  if (gs.speedTutActive) {
-    gs.speedTutActive = false;
-    gs.speedTutLocked = true;
-    markSpeedTutDone();
-    hideSpeedTutOverlay();
-    setTimeout(() => showPreStartCountdown(() => {
-      gs.speedTutLocked = false;
-      startSpeedTimer();
-    }), 400);
-  }
 }
 
 // ===== ショップ =====
@@ -951,7 +911,7 @@ function openShop() {
 }
 
 function buyUpgrade(type) {
-  if (gs.speedTutLocked) return;
+  if (gs.speedTutLocked || gs.phase === 'ENDED') return;
   if (type === 'hunting') {
     const price = 50;
     if (gs.coins < price || gs.upgrades.hunting) return;
@@ -1034,7 +994,6 @@ const TUT_STEPS = [
 ];
 
 function showTutStep(step) {
-  if (gs.gameMode === 'speed') return;  // スピードモードは専用チュートリアルを使用
   if (step >= TUT_STEPS.length || tut.shown[step]) return;
   tut.step = step;
   tut.shown[step] = true;
@@ -1104,8 +1063,7 @@ function quickUseItem(itemId) {
 }
 
 function startDrag(e, itemId, mode) {
-  // フェーズ制限なし：いつでもドラッグ可能
-  if (gs.speedTutLocked) return;
+  if (gs.speedTutLocked || gs.phase === 'ENDED') return;
   e.preventDefault();
   const srcEl = document.getElementById(`itm-${itemId}`);
   if (!srcEl) return;
@@ -1319,29 +1277,6 @@ function showJackpot(coins, type) {
 }
 
 // ===== モード選択・管理 =====
-const SPEED_TUT_DONE_KEY = 'snwSrvSpeedTutDone';
-function isSpeedFirstTime() { try { return !localStorage.getItem(SPEED_TUT_DONE_KEY); } catch(e) { return true; } }  // localStorage不可時は初回扱い
-function markSpeedTutDone() { try { localStorage.setItem(SPEED_TUT_DONE_KEY, '1'); } catch(e) {} }
-
-// ===== スピードモード初回チュートリアル =====
-function showSpeedTutOverlay() {
-  const el = document.getElementById('speedTutOverlay');
-  if (el) el.classList.remove('hidden');
-}
-function hideSpeedTutOverlay() {
-  const el = document.getElementById('speedTutOverlay');
-  if (el) el.classList.add('hidden');
-}
-function onSpeedTutOk() {
-  gs.speedTutActive = false;
-  gs.speedTutLocked = true;
-  markSpeedTutDone();
-  hideSpeedTutOverlay();
-  showPreStartCountdown(() => {
-    gs.speedTutLocked = false;
-    startSpeedTimer();
-  });
-}
 
 // ===== スピードモード 3-2-1-START! カウントダウン =====
 function showPreStartCountdown(cb) {
@@ -1425,7 +1360,6 @@ function startGameMode(mode) {
   gs.respawning = false;
   gs.combo = 0;
   gs.speedTimeLeft = 60;
-  gs.speedTutActive = false;
   gs.speedTutLocked = false;
 
   document.getElementById('coinCount').textContent = '0';
@@ -1448,24 +1382,26 @@ function startGameMode(mode) {
   $respawnBadge.style.display = 'none';
   $shop.classList.remove('open');
   document.getElementById('rankingOverlay').classList.remove('open');
-  hideSpeedTutOverlay();
   removeEndCountdown();
   updateLvUpButtons();
   updateModeToolbarUI();
+
+  // チュートリアル状態リセット（プレイアブル広告のため毎プレイ表示）
+  tut.step = 0;
+  tut.shown.fill(false);
 
   if (mode === 'speed') {
     document.getElementById('phaseLabel').textContent = '⚡ スピードモード';
     document.getElementById('speedTimer').classList.add('show');
     document.getElementById('timerVal').textContent = '60';
     document.getElementById('speedTimer').classList.remove('urgent');
+    gs.speedTutLocked = true;  // カウントダウン中は操作を無効化
     startHunting();
-    if (isSpeedFirstTime()) {
-      gs.speedTutActive = true;
-      setTimeout(() => showSpeedTutOverlay(), 400);
-      // タイマーは tutorial 完了後に開始する
-    } else {
-      showPreStartCountdown(() => startSpeedTimer());
-    }
+    showPreStartCountdown(() => {
+      gs.speedTutLocked = false;
+      startSpeedTimer();
+      setTimeout(() => showTutStep(0), 600);  // START表示後にチュートリアルを表示（アニメーション終了後）
+    });
   } else {
     document.getElementById('phaseLabel').textContent = '🎮 スノーサバイバル';
     document.getElementById('speedTimer').classList.remove('show');
@@ -1483,7 +1419,7 @@ function startSpeedTimer() {
     const valEl   = document.getElementById('timerVal');
     valEl.textContent = gs.speedTimeLeft;
     if (gs.speedTimeLeft <= 10) timerEl.classList.add('urgent');
-    if (gs.speedTimeLeft <= 10 && gs.speedTimeLeft > 0) {
+    if (gs.speedTimeLeft <= 5 && gs.speedTimeLeft > 0) {
       showEndCountdownNumber(gs.speedTimeLeft);
     }
     if (gs.speedTimeLeft <= 0) {
@@ -1511,7 +1447,7 @@ function endSpeedMode() {
   $game.appendChild(fl);
   setTimeout(() => {
     if (fl.parentNode) fl.remove();
-    setTimeout(() => showRanking(gs.coins), RANKING_DISPLAY_DELAY);
+    setTimeout(() => showRanking(gs.totalCoins), RANKING_DISPLAY_DELAY);
   }, 1600);
 }
 
@@ -1593,7 +1529,7 @@ function showRanking(score) {
     <div class="rk-you-box">
       <div class="rk-you-label">YOUR SCORE</div>
       <div class="rk-you-score">${score}</div>
-      <div class="rk-you-unit">🪙 コイン</div>
+      <div class="rk-you-unit">🪙 累計獲得コイン</div>
       <div class="rk-near">${gapMsg}</div>
     </div>
     <table class="rk-table">

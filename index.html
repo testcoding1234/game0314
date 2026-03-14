@@ -173,6 +173,80 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .tut-bubble-text{font-size:13px;font-weight:800;color:#1c1008;line-height:1.3;}
 .tut-bubble-sub{font-size:10px;color:#4a2800;margin-top:2px;line-height:1.4;}
 .tut-bubble-btn{margin-top:6px;width:100%;padding:5px 0;background:#f97316;border:none;border-radius:7px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;}
+
+/* ===== モード選択画面 ===== */
+#modeSelect{position:absolute;inset:0;z-index:600;background:linear-gradient(180deg,#06111e 0%,#0a1829 55%,#101f30 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:28px 22px;}
+#modeSelect.hidden{display:none;}
+.ms-logo{font-size:52px;line-height:1;text-align:center;filter:drop-shadow(0 0 14px rgba(125,211,252,.6));}
+.ms-title{font-size:26px;font-weight:900;color:#7dd3fc;text-shadow:0 0 22px rgba(125,211,252,.7);letter-spacing:.06em;text-align:center;}
+.ms-sub{font-size:12px;color:#94a3b8;text-align:center;line-height:1.55;}
+.ms-btn{width:100%;padding:15px 14px;border-radius:18px;border:2px solid;display:flex;align-items:center;gap:13px;cursor:pointer;transition:transform .12s,box-shadow .2s;-webkit-tap-highlight-color:transparent;}
+.ms-btn:active{transform:scale(.96);}
+.ms-btn-speed{background:linear-gradient(135deg,rgba(249,115,22,.22),rgba(234,88,12,.3));border-color:rgba(249,115,22,.65);box-shadow:0 4px 18px rgba(249,115,22,.2);}
+.ms-btn-infinite{background:linear-gradient(135deg,rgba(56,189,248,.12),rgba(14,165,233,.2));border-color:rgba(56,189,248,.5);box-shadow:0 4px 18px rgba(56,189,248,.14);}
+.ms-btn-icon{font-size:34px;width:42px;text-align:center;flex-shrink:0;}
+.ms-btn-body{display:flex;flex-direction:column;gap:2px;}
+.ms-btn-name{font-size:16px;font-weight:900;color:#fff;text-align:left;}
+.ms-btn-desc{font-size:11px;color:rgba(255,255,255,.65);text-align:left;line-height:1.4;}
+
+/* ===== スピードタイマー ===== */
+#speedTimer{display:none;align-items:center;gap:4px;background:rgba(239,68,68,.18);border:1px solid rgba(239,68,68,.5);border-radius:16px;padding:4px 10px;}
+#speedTimer.show{display:flex;}
+#speedTimer.urgent{background:rgba(239,68,68,.45);border-color:#ef4444;animation:timerUrgent .45s ease-in-out infinite alternate;}
+@keyframes timerUrgent{from{transform:scale(1)}to{transform:scale(1.08);box-shadow:0 0 10px rgba(239,68,68,.55)}}
+#timerVal{font-size:17px;font-weight:900;color:#fca5a5;min-width:28px;text-align:center;}
+#speedTimer.urgent #timerVal{color:#fff;}
+
+/* ===== ランキング画面 ===== */
+#rankingOverlay{position:absolute;inset:0;z-index:600;background:linear-gradient(180deg,#020610 0%,#05101e 100%);display:none;flex-direction:column;align-items:center;padding:18px 16px 14px;gap:9px;overflow-y:auto;}
+#rankingOverlay.open{display:flex;}
+.rk-badge{font-size:10px;font-weight:700;color:#f97316;letter-spacing:.12em;background:rgba(249,115,22,.12);border:1px solid rgba(249,115,22,.35);border-radius:20px;padding:3px 12px;}
+.rk-title{font-size:23px;font-weight:900;color:#fbbf24;text-shadow:0 0 18px rgba(251,191,36,.55);text-align:center;line-height:1.25;}
+.rk-you-box{width:100%;background:linear-gradient(135deg,rgba(249,115,22,.2),rgba(234,88,12,.14));border:2px solid rgba(249,115,22,.6);border-radius:14px;padding:12px;text-align:center;}
+.rk-you-label{font-size:10px;font-weight:700;color:#fed7aa;letter-spacing:.06em;}
+.rk-you-score{font-size:44px;font-weight:900;color:#fbbf24;text-shadow:0 0 16px rgba(251,191,36,.5);line-height:1.1;}
+.rk-you-unit{font-size:12px;color:#fb923c;font-weight:700;}
+.rk-near{font-size:11px;color:#94a3b8;margin-top:3px;}
+.rk-near span{color:#fbbf24;font-weight:700;}
+.rk-table{width:100%;border-collapse:collapse;}
+.rk-table th{font-size:10px;font-weight:700;color:#475569;padding:3px 6px;text-align:left;border-bottom:1px solid rgba(125,211,252,.12);}
+.rk-row{border-bottom:1px solid rgba(125,211,252,.05);}
+.rk-row td{padding:6px 6px;font-size:13px;}
+.rk-rank{font-weight:900;color:#7dd3fc;width:32px;font-size:14px;}
+.rk-name{color:#cbd5e1;}
+.rk-score{font-weight:700;color:#e2e8f0;text-align:right;}
+.rk-you-row .rk-rank{color:#fbbf24;}
+.rk-you-row .rk-name{color:#fbbf24;font-weight:800;}
+.rk-you-row .rk-score{color:#fbbf24;}
+.rk-you-row td{background:rgba(251,191,36,.07);}
+.rk-dots{font-size:11px;color:#334155;text-align:center;padding:2px 0;letter-spacing:.1em;}
+.rk-tag{display:inline-block;font-size:8px;background:rgba(249,115,22,.22);color:#fb923c;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;vertical-align:middle;}
+.rk-crown{font-size:13px;margin-right:1px;}
+.rk-actions{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:6px;}
+.rk-again{padding:14px;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:900;cursor:pointer;letter-spacing:.02em;width:100%;box-shadow:0 4px 16px rgba(249,115,22,.4);}
+.rk-again:active{transform:scale(.97);}
+.rk-switch{padding:10px;background:rgba(56,189,248,.1);border:1.5px solid rgba(56,189,248,.35);border-radius:12px;color:#7dd3fc;font-size:13px;font-weight:600;cursor:pointer;width:100%;}
+.rk-switch:active{background:rgba(56,189,248,.2);}
+
+/* ===== モードツールバー ===== */
+#modeTab{position:absolute;left:0;top:50%;transform:translateY(-50%);z-index:450;background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.35);border-left:none;border-radius:0 10px 10px 0;padding:9px 6px 9px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;transition:background .15s;-webkit-tap-highlight-color:transparent;}
+#modeTab:active{background:rgba(56,189,248,.3);}
+.mt-arrow{font-size:12px;color:#7dd3fc;transition:transform .25s;display:block;line-height:1;}
+.mt-label{font-size:7px;font-weight:700;color:#7dd3fc;writing-mode:vertical-rl;letter-spacing:.06em;margin-top:1px;}
+#modeToolbar{position:absolute;left:-170px;top:50%;transform:translateY(-50%);z-index:445;width:158px;background:rgba(3,9,26,.96);border:1px solid rgba(56,189,248,.28);border-left:none;border-radius:0 14px 14px 0;padding:11px 10px 11px 14px;display:flex;flex-direction:column;gap:8px;transition:left .28s cubic-bezier(.34,1.2,.64,1);box-shadow:4px 0 20px rgba(0,0,0,.5);}
+#modeToolbar.open{left:0;}
+.mtb-title{font-size:9px;font-weight:700;color:#475569;letter-spacing:.08em;text-align:center;padding-bottom:4px;border-bottom:1px solid rgba(125,211,252,.08);}
+.mtb-btn{padding:8px 8px;border-radius:9px;border:1.5px solid;display:flex;align-items:center;gap:7px;cursor:pointer;transition:transform .1s;-webkit-tap-highlight-color:transparent;}
+.mtb-btn:active{transform:scale(.95);}
+.mtb-speed{border-color:rgba(249,115,22,.45);background:rgba(249,115,22,.06);}
+.mtb-speed.mtb-active{border-color:#f97316;background:rgba(249,115,22,.18);}
+.mtb-infinite{border-color:rgba(56,189,248,.38);background:rgba(56,189,248,.04);}
+.mtb-infinite.mtb-active{border-color:#38bdf8;background:rgba(56,189,248,.16);}
+.mtb-icon{font-size:17px;width:20px;text-align:center;}
+.mtb-info{flex:1;}
+.mtb-name{font-size:11px;font-weight:700;color:#e2e8f0;}
+.mtb-desc{font-size:9px;color:#64748b;}
+.mtb-cur{font-size:8px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,.1);border-radius:4px;padding:1px 5px;display:inline-block;margin-top:2px;}
 </style>
 </head>
 <body>
@@ -181,6 +255,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 
   <div id="header">
     <div id="phaseLabel">🎮 スノーサバイバル</div>
+    <div id="speedTimer"><span style="font-size:14px">⏱</span><span id="timerVal">60</span><span style="font-size:11px;color:#fca5a5">s</span></div>
     <div id="coinDisplay">
       <span style="font-size:16px">🪙</span>
       <span id="coinCount">0</span>
@@ -257,6 +332,55 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
   <div id="tutOverlay"></div>
 
   <div id="dragGhost"></div>
+
+  <!-- モードツールバータブ -->
+  <div id="modeTab" onclick="toggleModeToolbar()">
+    <span class="mt-arrow" id="modeTabArrow">▶</span>
+    <span class="mt-label">モード</span>
+  </div>
+  <!-- モードツールバーパネル -->
+  <div id="modeToolbar">
+    <div class="mtb-title">⚙️ モード選択</div>
+    <div class="mtb-btn mtb-speed" id="mtb-speed" onclick="switchMode('speed')">
+      <span class="mtb-icon">⚡</span>
+      <div class="mtb-info">
+        <div class="mtb-name">スピード</div>
+        <div class="mtb-desc">1分で稼げ！</div>
+      </div>
+    </div>
+    <div class="mtb-btn mtb-infinite" id="mtb-infinite" onclick="switchMode('infinite')">
+      <span class="mtb-icon">♾️</span>
+      <div class="mtb-info">
+        <div class="mtb-name">無限モード</div>
+        <div class="mtb-desc">のんびり無限</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- モード選択画面 -->
+  <div id="modeSelect">
+    <div class="ms-logo">🏔️</div>
+    <div class="ms-title">スノーサバイバル</div>
+    <div class="ms-sub">モードを選んでスタート！</div>
+    <div class="ms-btn ms-btn-speed" onclick="selectMode('speed')">
+      <div class="ms-btn-icon">⚡</div>
+      <div class="ms-btn-body">
+        <div class="ms-btn-name">🏆 スピードモード</div>
+        <div class="ms-btn-desc">1分間でどれだけ稼げる？<br>ライバルとスコアを競おう！</div>
+      </div>
+    </div>
+    <div class="ms-btn ms-btn-infinite" onclick="selectMode('infinite')">
+      <div class="ms-btn-icon">♾️</div>
+      <div class="ms-btn-body">
+        <div class="ms-btn-name">🌙 無限モード</div>
+        <div class="ms-btn-desc">自分のペースで<br>じっくり施設を育てよう</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ランキングオーバーレイ -->
+  <div id="rankingOverlay">
+  </div>
 </div>
 
 <script>
@@ -269,6 +393,7 @@ const REPLACEMENT_SPAWN_DELAY = 800;
 // ===== ゲーム状態 =====
 const gs = {
   phase: 'PLAYING',
+  gameMode: null,
   coins: 0,
   totalCoins: 0,
   animals: [],
@@ -287,6 +412,8 @@ const gs = {
   hintTimer: null,
   combo: 0,
   comboTimer: null,
+  speedTimeLeft: 60,
+  speedTimerInterval: null,
 };
 
 // ===== チュートリアル状態 =====
@@ -376,6 +503,8 @@ const FACILITY_UPGRADE_LEVELS = Array.from({length: 49}, (_, i) => ({
 const UPGRADE_CONFIG = { cooking: FACILITY_UPGRADE_LEVELS, workshop: FACILITY_UPGRADE_LEVELS };
 const DRAG_MOVEMENT_THRESHOLD = 10;
 
+const RANKING_DISPLAY_DELAY = 1200; // ゲーム終了からランキング表示までのms
+
 // ===== DOM参照 =====
 const $game       = document.getElementById('game');
 const $canvas     = document.getElementById('bgCanvas');
@@ -448,10 +577,6 @@ function addCoins(n) {
   el.classList.add('coin-bump');
   const pct = Math.min(100, (gs.totalCoins / CTA_THRESHOLD) * 100);
   document.getElementById('scoreFill').style.width = `${pct}%`;
-  if (gs.totalCoins >= CTA_THRESHOLD && !gs.ctaShown) {
-    gs.ctaShown = true;
-    setTimeout(openCTAPopup, 1200);
-  }
   updateLvUpButtons();
 }
 
@@ -561,6 +686,7 @@ function renderInv() {
 
 // ===== 狩猟 =====
 function startHunting() {
+  if (gs.phase === 'ENDED') return;
   gs.respawning = false;
   gs.waveKills = 0;
   $respawnBadge.style.display = 'none';
@@ -609,6 +735,7 @@ function spawnAnimal(def, x, y, staggerIndex = 0) {
 }
 
 function attackAnimal(id) {
+  if (gs.phase === 'ENDED') return;
   const ani = gs.animals.find(a => a.id === id);
   if (!ani || !ani.alive) return;
 
@@ -653,6 +780,7 @@ function killAnimal(ani, el) {
 
 function checkHuntingComplete() {
   if (gs.respawning) return;
+  if (gs.phase === 'ENDED') return;
   gs.waveKills++;
   if (gs.waveKills < gs.animalCount) {
     // Spawn a replacement animal while others still live
@@ -661,7 +789,7 @@ function checkHuntingComplete() {
       { x: 88,  y: 195 }, { x: 215, y: 200 },
     ];
     setTimeout(() => {
-      if (!gs.respawning) {
+      if (!gs.respawning && gs.phase !== 'ENDED') {
         const slot = slots[Math.floor(Math.random() * slots.length)];
         const maxFacLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
         const availDefs = ANIMAL_DEFS.filter(d => maxFacLevel >= d.minFacLevel);
@@ -673,15 +801,11 @@ function checkHuntingComplete() {
   }
   gs.respawning = true;
   gs.huntCycle++;
-  // 一定サイクルごとにショップ
-  if (gs.huntCycle % SHOP_CYCLE_INTERVAL === 0) {
-    setTimeout(openShop, 1500);
-  } else {
-    scheduleRespawn();
-  }
+  scheduleRespawn();
 }
 
 function scheduleRespawn() {
+  if (gs.phase === 'ENDED') return;
   $respawnBadge.style.display = 'block';
   clearTimeout(gs.hintTimer);
   setTimeout(startHunting, 2200);
@@ -1137,9 +1261,234 @@ function showJackpot(coins, type) {
   setTimeout(() => el.remove(), 1650);
 }
 
+// ===== モード選択・管理 =====
+function selectMode(mode) {
+  document.getElementById('modeSelect').classList.add('hidden');
+  startGameMode(mode);
+}
+
+function switchMode(mode) {
+  if (gs.gameMode === mode) { toggleModeToolbar(); return; }
+  toggleModeToolbar();
+  setTimeout(() => startGameMode(mode), 100);
+}
+
+function startGameMode(mode) {
+  // ゲーム状態リセット
+  clearInterval(gs.speedTimerInterval);
+  gs.speedTimerInterval = null;
+  clearTimeout(gs.hintTimer);
+  clearTimeout(gs.comboTimer);
+
+  gs.phase = 'PLAYING';
+  gs.gameMode = mode;
+  gs.coins = 0;
+  gs.totalCoins = 0;
+  gs.animals = [];
+  gs.inventory = [];
+  gs.facilities = {
+    cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
+    workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
+  };
+  gs.upgrades = { hunting: false };
+  gs.animalCount = 3;
+  gs.nextId = 1;
+  gs.ctaShown = false;
+  gs.huntCycle = 0;
+  gs.waveKills = 0;
+  gs.respawning = false;
+  gs.combo = 0;
+  gs.speedTimeLeft = 60;
+
+  document.getElementById('coinCount').textContent = '0';
+  document.getElementById('scoreFill').style.width = '0%';
+  document.getElementById('lv-cooking').textContent = 'LV.1';
+  document.getElementById('lv-workshop').textContent = 'LV.1';
+  document.getElementById('lvup-cooking').innerHTML = '⬆️LV2<br>🪙30';
+  document.getElementById('lvup-workshop').innerHTML = '⬆️LV2<br>🪙30';
+  document.getElementById('prog-cooking').style.width = '0%';
+  document.getElementById('prog-workshop').style.width = '0%';
+  document.getElementById('queue-cooking').textContent = '';
+  document.getElementById('queue-workshop').textContent = '';
+  document.getElementById('fc-cooking').classList.remove('busy');
+  document.getElementById('fc-workshop').classList.remove('busy');
+  document.getElementById('comboDisplay').classList.remove('show');
+  $gameArea.classList.remove('hot');
+  $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
+  $invRow.innerHTML = '<div class="inv-lbl">🎒 所持品</div>';
+  $tutOverlay.innerHTML = '';
+  $respawnBadge.style.display = 'none';
+  $shop.classList.remove('open');
+  document.getElementById('rankingOverlay').classList.remove('open');
+  updateLvUpButtons();
+  updateModeToolbarUI();
+
+  if (mode === 'speed') {
+    document.getElementById('phaseLabel').textContent = '⚡ スピードモード';
+    document.getElementById('speedTimer').classList.add('show');
+    document.getElementById('timerVal').textContent = '60';
+    document.getElementById('speedTimer').classList.remove('urgent');
+    startHunting();
+    setTimeout(() => showTutStep(0), 600);
+    startSpeedTimer();
+  } else {
+    document.getElementById('phaseLabel').textContent = '🎮 スノーサバイバル';
+    document.getElementById('speedTimer').classList.remove('show');
+    startHunting();
+    setTimeout(() => showTutStep(0), 600);
+  }
+}
+
+// ===== スピードモードタイマー =====
+function startSpeedTimer() {
+  clearInterval(gs.speedTimerInterval);
+  gs.speedTimerInterval = setInterval(() => {
+    gs.speedTimeLeft--;
+    const timerEl = document.getElementById('speedTimer');
+    const valEl   = document.getElementById('timerVal');
+    valEl.textContent = gs.speedTimeLeft;
+    if (gs.speedTimeLeft <= 10) timerEl.classList.add('urgent');
+    if (gs.speedTimeLeft <= 0) {
+      clearInterval(gs.speedTimerInterval);
+      gs.speedTimerInterval = null;
+      endSpeedMode();
+    }
+  }, 1000);
+}
+
+function endSpeedMode() {
+  clearInterval(gs.speedTimerInterval);
+  gs.speedTimerInterval = null;
+  if (gs.phase === 'ENDED') return;
+  // ゲーム操作を停止
+  gs.phase = 'ENDED';
+  $gameArea.querySelectorAll('.animal').forEach(el => {
+    el.style.pointerEvents = 'none';
+    el.style.opacity = '0.4';
+  });
+  flashText('⏰ 終了！');
+  setTimeout(() => showRanking(gs.coins), RANKING_DISPLAY_DELAY);
+}
+
+// ===== ランキング画面 =====
+function showRanking(score) {
+  const overlay = document.getElementById('rankingOverlay');
+
+  // ランキング設定定数
+  const RANK_TOTAL_ENTRIES      = 12;   // 表示プレイヤー総数
+  const RANK_PLAYER_MIN         = 3;    // プレイヤー最高順位
+  const RANK_PLAYER_MAX         = 7;    // プレイヤー最低順位
+  const RANK_UPPER_SCORE_RATIO  = 0.08; // 上位スコアの基本ギャップ率
+  const RANK_UPPER_SCORE_RAND   = 15;   // 上位スコアのランダム幅
+  const RANK_UPPER_SCORE_BASE   = 8;    // 上位スコアの最小ギャップ
+  const RANK_LOWER_SCORE_RATIO  = 0.07; // 下位スコアの基本ギャップ率
+  const RANK_LOWER_SCORE_RAND   = 12;   // 下位スコアのランダム幅
+  const RANK_LOWER_SCORE_BASE   = 5;    // 下位スコアの最小ギャップ
+
+  // フェイクプレイヤー生成（射幸心をあおる構成）
+  const fakeNames = [
+    'アイスハンター', 'スノーウルフ', 'タイガーキング',
+    'ポーラーベア', 'ブリザード', 'フロストクイーン',
+    'ノーザンライト', 'アークティック', 'ドラゴンハンター',
+    'シルバーウィング', 'ダークファルコン', 'ストームライダー',
+  ];
+
+  // プレイヤーの順位をランダムで設定（「あと少し！」感を演出）
+  const playerRank  = Math.floor(Math.random() * (RANK_PLAYER_MAX - RANK_PLAYER_MIN + 1)) + RANK_PLAYER_MIN;
+  const totalEntries = RANK_TOTAL_ENTRIES;
+
+  // スコアテーブルを生成
+  const entries = [];
+  for (let i = 1; i <= totalEntries; i++) {
+    if (i === playerRank) {
+      entries.push({ rank: i, name: 'あなた', score: score, isYou: true });
+    } else {
+      let fakeScore;
+      if (i < playerRank) {
+        // 上位プレイヤー：プレイヤーより少し高め（悔しさを演出）
+        const gap = (playerRank - i) * (Math.floor(score * RANK_UPPER_SCORE_RATIO) + Math.floor(Math.random() * RANK_UPPER_SCORE_RAND) + RANK_UPPER_SCORE_BASE);
+        fakeScore = score + gap;
+      } else {
+        // 下位プレイヤー：プレイヤーより低め
+        const gap = (i - playerRank) * (Math.floor(score * RANK_LOWER_SCORE_RATIO) + Math.floor(Math.random() * RANK_LOWER_SCORE_RAND) + RANK_LOWER_SCORE_BASE);
+        fakeScore = Math.max(0, score - gap);
+      }
+      const nameIdx = (i <= playerRank ? i - 1 : i - 2) % fakeNames.length;
+      entries.push({ rank: i, name: fakeNames[nameIdx], score: fakeScore, isYou: false });
+    }
+  }
+
+  const rankMedals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+  // 表示する行: 1〜playerRank+2位まで（前後2行）
+  const showFrom = 1;
+  const showTo   = Math.min(totalEntries, playerRank + 2);
+
+  let rowsHTML = '';
+  entries.slice(showFrom - 1, showTo).forEach((e, idx) => {
+    const medal = rankMedals[e.rank] ? `<span class="rk-crown">${rankMedals[e.rank]}</span>` : '';
+    const youClass = e.isYou ? ' rk-you-row' : '';
+    const tag = e.isYou ? '' : (e.rank <= 2 ? '<span class="rk-tag">最強</span>' : '');
+    rowsHTML += `<tr class="rk-row${youClass}">
+      <td class="rk-rank">${medal}${e.rank}</td>
+      <td class="rk-name">${e.name}${tag}</td>
+      <td class="rk-score">${e.score}🪙</td>
+    </tr>`;
+  });
+
+  // 「あと何コインで上位に入れたか」メッセージ
+  const aboveEntry = entries.find(e => e.rank === playerRank - 1);
+  const gapMsg = aboveEntry && score > 0
+    ? `あと <span>${aboveEntry.score - score}🪙</span> で ${playerRank - 1}位だった！`
+    : (score === 0 ? 'まずはコインを稼いでみよう！' : 'ランクイン達成！');
+
+  overlay.innerHTML = `
+    <div class="rk-badge">🏆 スピードランキング</div>
+    <div class="rk-title">あなたの順位<br>${playerRank}位 / ${totalEntries}人中</div>
+    <div class="rk-you-box">
+      <div class="rk-you-label">YOUR SCORE</div>
+      <div class="rk-you-score">${score}</div>
+      <div class="rk-you-unit">🪙 コイン</div>
+      <div class="rk-near">${gapMsg}</div>
+    </div>
+    <table class="rk-table">
+      <thead><tr>
+        <th>順位</th><th>プレイヤー</th><th style="text-align:right">スコア</th>
+      </tr></thead>
+      <tbody>${rowsHTML}</tbody>
+    </table>
+    <div class="rk-dots">・・・</div>
+    <div class="rk-actions">
+      <button class="rk-again" onclick="retrySpeedMode()">🔥 もう1回挑戦！</button>
+      <button class="rk-switch" onclick="selectMode('infinite')">♾️ 無限モードでプレイ</button>
+    </div>
+  `;
+  overlay.classList.add('open');
+}
+
+function retrySpeedMode() {
+  document.getElementById('rankingOverlay').classList.remove('open');
+  gs.phase = 'PLAYING';
+  startGameMode('speed');
+}
+
+// ===== モードツールバー =====
+function toggleModeToolbar() {
+  const toolbar = document.getElementById('modeToolbar');
+  const arrow   = document.getElementById('modeTabArrow');
+  const isOpen  = toolbar.classList.toggle('open');
+  arrow.textContent = isOpen ? '◀' : '▶';
+}
+
+function updateModeToolbarUI() {
+  const speedBtn    = document.getElementById('mtb-speed');
+  const infiniteBtn = document.getElementById('mtb-infinite');
+  if (speedBtn)    speedBtn.classList.toggle('mtb-active',    gs.gameMode === 'speed');
+  if (infiniteBtn) infiniteBtn.classList.toggle('mtb-active', gs.gameMode === 'infinite');
+}
+
 // ===== ゲーム開始 =====
-startHunting();
-setTimeout(() => showTutStep(0), 600);
+// モード選択画面を表示（ゲームはまだ開始しない）
 updateLvUpButtons();
 </script>
 </body>

@@ -99,6 +99,34 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 /* ===== 施設キューバッジ ===== */
 .fc-queue{font-size:8px;color:#7dd3fc;font-weight:700;min-height:10px;}
 
+/* ===== コンボカウンター ===== */
+#comboDisplay{position:absolute;right:8px;top:8px;z-index:25;pointer-events:none;opacity:0;transition:opacity .25s;text-align:right;}
+#comboDisplay.show{opacity:1;}
+#comboNum{font-size:28px;font-weight:900;color:#fbbf24;text-shadow:0 0 12px rgba(249,115,22,.9),2px 2px 0 #92400e;line-height:1;}
+#comboLabel{font-size:9px;font-weight:700;color:#fb923c;letter-spacing:.06em;}
+@keyframes comboPop{0%,100%{transform:scale(1)}40%{transform:scale(1.45)}}
+.combo-pop{animation:comboPop .18s ease;}
+/* ===== ゲームエリア ホット演出 ===== */
+#gameArea{transition:box-shadow .4s;}
+#gameArea.hot{box-shadow:inset 0 0 40px rgba(249,115,22,.35);}
+/* ===== レベルアップバースト ===== */
+.lvup-burst{position:absolute;left:50%;top:140px;z-index:350;pointer-events:none;font-size:32px;font-weight:900;color:#fbbf24;text-shadow:0 0 20px #f97316,0 0 40px rgba(249,115,22,.6),2px 2px 0 #92400e;white-space:nowrap;text-align:center;animation:lvBurstAnim 1.8s ease forwards;}
+@keyframes lvBurstAnim{0%{opacity:0;transform:translateX(-50%) scale(.4)}15%{opacity:1;transform:translateX(-50%) scale(1.3)}65%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(1.05)}}
+.lvup-spark{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:345;animation:lvSparkFly .7s ease-out forwards;}
+@keyframes lvSparkFly{from{opacity:1;transform:scale(1) translate(0,0)}to{opacity:0;transform:scale(0) translate(var(--dx),var(--dy))}}
+/* ===== 新種解放バナー ===== */
+.unlock-banner{position:absolute;left:50%;top:220px;z-index:350;pointer-events:none;background:linear-gradient(135deg,rgba(5,150,105,.96),rgba(4,120,87,.96));border:2px solid #34d399;border-radius:14px;padding:10px 18px;text-align:center;white-space:nowrap;box-shadow:0 0 28px rgba(52,211,153,.5);animation:unlockBannerAnim 2.4s ease forwards;}
+@keyframes unlockBannerAnim{0%{opacity:0;transform:translateX(-50%) scale(.5) rotate(-5deg)}18%{opacity:1;transform:translateX(-50%) scale(1.08) rotate(0)}80%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(.9)}}
+.unlock-banner-emoji{font-size:32px;line-height:1.1;display:block;}
+.unlock-banner-title{font-size:13px;font-weight:900;color:#fff;margin-top:2px;}
+.unlock-banner-sub{font-size:10px;color:rgba(255,255,255,.8);}
+/* ===== レアドロップリング ===== */
+.rare-ring{position:fixed;border-radius:50%;border:3px solid #a78bfa;pointer-events:none;z-index:9990;animation:rareRingAnim .65s ease-out forwards;}
+@keyframes rareRingAnim{0%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(2.8)}}
+/* ===== ジャックポット ===== */
+.jackpot-text{position:absolute;left:50%;top:350px;z-index:350;pointer-events:none;font-size:24px;font-weight:900;color:#fbbf24;text-shadow:0 0 16px #f97316,2px 2px 0 #92400e;white-space:nowrap;animation:jackpotAnim 1.6s ease forwards;}
+@keyframes jackpotAnim{0%{opacity:0;transform:translateX(-50%) scale(.6)}18%{opacity:1;transform:translateX(-50%) scale(1.2)}70%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(.85)}}
+
 /* ===== コイン飛翔アニメーション ===== */
 .fly-coin{position:fixed;pointer-events:none;z-index:9999;font-size:18px;animation:fcAnim .72s cubic-bezier(.36,.07,.19,.97) forwards;}
 @keyframes fcAnim{0%{opacity:1;transform:scale(1.2) translate(0,0)}80%{opacity:1}100%{opacity:0;transform:scale(.25) translate(var(--dx),var(--dy))}}
@@ -165,6 +193,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
     <div class="mtn" style="right:-30px;border-left-width:195px;border-right-width:195px;border-bottom-width:138px;"></div>
     <div class="mtn" style="left:90px;border-left-width:110px;border-right-width:110px;border-bottom-width:85px;"></div>
     <div id="respawnBadge">⏳ 次の動物が来る...</div>
+    <div id="comboDisplay"><div id="comboNum"></div><div id="comboLabel">COMBO!</div></div>
   </div>
 
   <div id="facilityRow">
@@ -236,7 +265,6 @@ const GW = 375, GH = 667;
 const CTA_THRESHOLD = 100;
 const SHOP_CYCLE_INTERVAL = 3;
 const REPLACEMENT_SPAWN_DELAY = 800;
-const RARE_ANIMALS_UNLOCK_CYCLE = 3;
 
 // ===== ゲーム状態 =====
 const gs = {
@@ -257,6 +285,8 @@ const gs = {
   waveKills: 0,
   respawning: false,
   hintTimer: null,
+  combo: 0,
+  comboTimer: null,
 };
 
 // ===== チュートリアル状態 =====
@@ -264,12 +294,43 @@ const tut = { step: 0, shown: [false, false, false] };
 
 // ===== 動物の定義 =====
 const ANIMAL_DEFS = [
-  { type: 'bear',    e: '🐻', hp: 3, drops: ['meat', 'meat', 'skin'],          minCycle: 0 },
-  { type: 'deer',    e: '🦌', hp: 2, drops: ['meat', 'skin'],                  minCycle: 0 },
-  { type: 'wolf',    e: '🐺', hp: 2, drops: ['meat', 'skin', 'bone'],          minCycle: 0 },
-  { type: 'fox',     e: '🦊', hp: 1, drops: ['skin', 'bone'],                  minCycle: 0 },
-  { type: 'mammoth', e: '🦣', hp: 5, drops: ['crystal', 'bone', 'skin'],       minCycle: RARE_ANIMALS_UNLOCK_CYCLE },
-  { type: 'owl',     e: '🦉', hp: 1, drops: ['herb', 'herb'],                  minCycle: RARE_ANIMALS_UNLOCK_CYCLE },
+  // LV.1 ─ 基本の動物
+  { type: 'bear',     e: '🐻', hp: 3,  drops: ['meat','meat','skin'],                   minFacLevel: 1  },
+  { type: 'deer',     e: '🦌', hp: 2,  drops: ['meat','skin'],                          minFacLevel: 1  },
+  { type: 'wolf',     e: '🐺', hp: 2,  drops: ['meat','skin','bone'],                   minFacLevel: 1  },
+  { type: 'fox',      e: '🦊', hp: 1,  drops: ['skin','bone'],                          minFacLevel: 1  },
+  // LV.3 ─ 結晶・薬草解放
+  { type: 'mammoth',  e: '🦣', hp: 5,  drops: ['crystal','bone','skin'],                minFacLevel: 3  },
+  { type: 'owl',      e: '🦉', hp: 1,  drops: ['herb','herb'],                          minFacLevel: 3  },
+  // LV.5
+  { type: 'boar',     e: '🐗', hp: 3,  drops: ['meat','meat','bone','skin'],            minFacLevel: 5  },
+  { type: 'eagle',    e: '🦅', hp: 2,  drops: ['bone','skin','herb'],                   minFacLevel: 5  },
+  // LV.10
+  { type: 'tiger',    e: '🐯', hp: 4,  drops: ['skin','skin','meat','crystal'],         minFacLevel: 10 },
+  { type: 'snake',    e: '🐍', hp: 2,  drops: ['bone','herb','skin'],                   minFacLevel: 10 },
+  // LV.15
+  { type: 'bison',    e: '🦬', hp: 4,  drops: ['meat','meat','bone','skin'],            minFacLevel: 15 },
+  { type: 'gorilla',  e: '🦍', hp: 4,  drops: ['bone','crystal','herb'],                minFacLevel: 15 },
+  // LV.20
+  { type: 'lion',     e: '🦁', hp: 5,  drops: ['skin','bone','crystal','herb'],         minFacLevel: 20 },
+  { type: 'elephant', e: '🐘', hp: 6,  drops: ['bone','bone','skin','crystal'],         minFacLevel: 20 },
+  // LV.25
+  { type: 'rhino',    e: '🦏', hp: 6,  drops: ['bone','crystal','herb','skin'],         minFacLevel: 25 },
+  { type: 'croc',     e: '🐊', hp: 5,  drops: ['skin','skin','crystal','bone'],         minFacLevel: 25 },
+  // LV.30
+  { type: 'hippo',    e: '🦛', hp: 7,  drops: ['bone','bone','crystal','herb'],         minFacLevel: 30 },
+  { type: 'leopard',  e: '🐆', hp: 5,  drops: ['skin','skin','crystal','bone'],         minFacLevel: 30 },
+  // LV.35
+  { type: 'trex',     e: '🦖', hp: 8,  drops: ['bone','crystal','herb','skin'],         minFacLevel: 35 },
+  { type: 'bronto',   e: '🦕', hp: 7,  drops: ['meat','bone','crystal','herb'],         minFacLevel: 35 },
+  // LV.40
+  { type: 'bat',      e: '🦇', hp: 3,  drops: ['skin','herb','bone'],                   minFacLevel: 40 },
+  { type: 'seal',     e: '🦭', hp: 5,  drops: ['bone','crystal','herb'],                minFacLevel: 40 },
+  // LV.45
+  { type: 'unicorn',  e: '🦄', hp: 6,  drops: ['herb','herb','crystal','skin'],         minFacLevel: 45 },
+  { type: 'wyvern',   e: '🐲', hp: 8,  drops: ['crystal','crystal','herb','bone'],      minFacLevel: 45 },
+  // LV.50 ─ 伝説の生物
+  { type: 'dragon',   e: '🐉', hp: 12, drops: ['crystal','crystal','herb','herb','bone'], minFacLevel: 50 },
 ];
 
 // ===== アイテム定義 =====
@@ -306,19 +367,13 @@ const MATERIAL_TO_FACILITY_MAP = FACILITY_TYPES.reduce((map, facType) => {
   return map;
 }, {});
 
-// ===== 施設アップグレード設定 =====
-const UPGRADE_CONFIG = {
-  cooking:  [
-    { cost: 30,  speedMult: 2 },
-    { cost: 80,  speedMult: 3 },
-    { cost: 150, speedMult: 4 },
-  ],
-  workshop: [
-    { cost: 30,  speedMult: 2 },
-    { cost: 80,  speedMult: 3 },
-    { cost: 150, speedMult: 4 },
-  ],
-};
+// ===== 施設アップグレード設定 (LV1→LV50, 49エントリ) =====
+// cost: ~30*n^1.45  speedMult: n+2 (LV2=2x … LV50=50x)
+const FACILITY_UPGRADE_LEVELS = Array.from({length: 49}, (_, i) => ({
+  cost:      Math.round(30 * Math.pow(i + 1, 1.45)),
+  speedMult: i + 2,
+}));
+const UPGRADE_CONFIG = { cooking: FACILITY_UPGRADE_LEVELS, workshop: FACILITY_UPGRADE_LEVELS };
 const DRAG_MOVEMENT_THRESHOLD = 10;
 
 // ===== DOM参照 =====
@@ -467,6 +522,10 @@ function addItem(type) {
   if (!def) return;
   gs.inventory.push({ id, type, isProduct: def.isProduct });
   renderInv();
+  // レアドロップ演出
+  if (type === 'crystal' || type === 'herb') {
+    setTimeout(() => { const el = document.getElementById(`itm-${id}`); if (el) showRareDrop(el); }, 120);
+  }
   // チュートリアル：素材初入手 → 施設ガイド
   if (!def.isProduct && !tut.shown[1]) {
     setTimeout(() => showTutStep(1), 500);
@@ -505,8 +564,7 @@ function startHunting() {
   gs.respawning = false;
   gs.waveKills = 0;
   $respawnBadge.style.display = 'none';
-  if (gs.huntCycle === RARE_ANIMALS_UNLOCK_CYCLE) flashText('🦣 新種の動物が現れた！');
-  else if (gs.huntCycle > 0) flashText('🏹 新しい動物が現れた！');
+  if (gs.huntCycle > 0) flashText('🏹 新しい動物が現れた！');
 
   $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
   gs.animals = [];
@@ -515,10 +573,12 @@ function startHunting() {
     { x: 28,  y: 120 }, { x: 148, y: 95  }, { x: 268, y: 120 },
     { x: 88,  y: 195 }, { x: 215, y: 200 },
   ];
+  const maxFacLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  const availDefs = ANIMAL_DEFS.filter(d => maxFacLevel >= d.minFacLevel);
+  const shuffled = [...availDefs].sort(() => Math.random() - 0.5);
   const count = Math.min(gs.animalCount, slots.length);
-  const availDefs = ANIMAL_DEFS.filter(d => gs.huntCycle >= (d.minCycle || 0));
   for (let i = 0; i < count; i++) {
-    const def = availDefs[i % availDefs.length];
+    const def = shuffled[i % shuffled.length];
     const slot = slots[i];
     spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y, i);
   }
@@ -582,6 +642,7 @@ function attackAnimal(id) {
 }
 
 function killAnimal(ani, el) {
+  updateCombo();
   el.style.transition = 'all .45s ease-out';
   el.style.transform  = 'scale(0) rotate(45deg)';
   el.style.opacity    = '0';
@@ -602,7 +663,8 @@ function checkHuntingComplete() {
     setTimeout(() => {
       if (!gs.respawning) {
         const slot = slots[Math.floor(Math.random() * slots.length)];
-        const availDefs = ANIMAL_DEFS.filter(d => gs.huntCycle >= (d.minCycle || 0));
+        const maxFacLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+        const availDefs = ANIMAL_DEFS.filter(d => maxFacLevel >= d.minFacLevel);
         const def = availDefs[Math.floor(Math.random() * availDefs.length)];
         spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y, 0);
       }
@@ -692,6 +754,7 @@ function sellItem(itemId) {
   const coins = (ITEM_DEF[item.type] || {}).coins || 5;
   removeItem(itemId);
   spawnCoinAnim(Math.ceil(coins / 5), $market);
+  if (coins >= 25) setTimeout(() => showJackpot(coins, item.type), 150);
   setTimeout(() => addCoins(coins), 320);
 }
 
@@ -724,17 +787,30 @@ function buyUpgrade(type) {
   const fac = gs.facilities[type];
   if (!fac) return;
   const cfg = (UPGRADE_CONFIG[type] || [])[fac.level - 1];
-  if (!cfg || gs.coins < cfg.cost) return;
+  // 最大レベル到達時はフィードバックを表示
+  if (!cfg) {
+    const facEl = document.getElementById(`fc-${type}`);
+    if (facEl) facFloat(facEl, '🏆 最大LV到達！');
+    return;
+  }
+  if (gs.coins < cfg.cost) return;
   gs.coins -= cfg.cost;
   document.getElementById('coinCount').textContent = gs.coins;
+  const prevMax = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
   fac.level++;
   fac.speedMult = cfg.speedMult;
+  const newMax = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
   const lvLabel = document.getElementById(`lv-${type}`);
   if (lvLabel) lvLabel.textContent = `LV.${fac.level}`;
   const facEl = document.getElementById(`fc-${type}`);
   if (facEl) {
     facEl.style.borderColor = '#fbbf24';
     facFloat(facEl, `⬆️ LV.${fac.level} UP!`);
+    showLvUpBurst(facEl, fac.level);
+  }
+  if (newMax > prevMax) {
+    const newlyUnlocked = ANIMAL_DEFS.filter(d => d.minFacLevel === newMax);
+    if (newlyUnlocked.length > 0) setTimeout(() => showAnimalUnlockBanner(newlyUnlocked), 700);
   }
   updateLvUpButtons();
   if ($shop.classList.contains('open')) openShop();
@@ -971,6 +1047,94 @@ function updateLvUpButtons() {
       btn.disabled = gs.coins < cfg.cost;
     }
   });
+}
+
+// ===== 射幸演出ユーティリティ =====
+function updateCombo() {
+  clearTimeout(gs.comboTimer);
+  gs.combo++;
+  const cd = document.getElementById('comboDisplay');
+  const cn = document.getElementById('comboNum');
+  if (cd && cn && gs.combo >= 2) {
+    cn.textContent = `${gs.combo}×`;
+    cd.classList.add('show');
+    cn.classList.remove('combo-pop');
+    void cn.offsetWidth; // アニメーション再起動のため強制リフロー
+    cn.classList.add('combo-pop');
+    if (gs.combo >= 3) $gameArea.classList.add('hot');
+  }
+  gs.comboTimer = setTimeout(() => {
+    gs.combo = 0;
+    if (cd) cd.classList.remove('show');
+    $gameArea.classList.remove('hot');
+  }, 3000);
+}
+
+function showLvUpBurst(facEl, newLevel) {
+  const burst = document.createElement('div');
+  burst.className = 'lvup-burst';
+  burst.textContent = `⬆️ LV.${newLevel} UP!`;
+  $game.appendChild(burst);
+  setTimeout(() => burst.remove(), 1850);
+  const r  = facEl.getBoundingClientRect();
+  const gr = $game.getBoundingClientRect();
+  const cx = r.left - gr.left + r.width  / 2;
+  const cy = r.top  - gr.top  + r.height / 2;
+  const colors = ['#fbbf24','#f97316','#fb923c','#fde68a','#fff','#a78bfa'];
+  for (let i = 0; i < 16; i++) {
+    const s = document.createElement('div');
+    s.className = 'lvup-spark';
+    const a = (i / 16) * Math.PI * 2;
+    const d = 38 + Math.random() * 52;
+    s.style.background = colors[i % colors.length];
+    s.style.left = `${cx}px`;
+    s.style.top  = `${cy}px`;
+    s.style.setProperty('--dx', `${Math.cos(a) * d}px`);
+    s.style.setProperty('--dy', `${Math.sin(a) * d}px`);
+    $game.appendChild(s);
+    setTimeout(() => s.remove(), 730);
+  }
+}
+
+function showAnimalUnlockBanner(animals) {
+  const el = document.createElement('div');
+  el.className = 'unlock-banner';
+  const emojiSpan = document.createElement('span');
+  emojiSpan.className = 'unlock-banner-emoji';
+  emojiSpan.textContent = animals.map(a => a.e).join(' ');
+  const titleDiv = document.createElement('div');
+  titleDiv.className = 'unlock-banner-title';
+  titleDiv.textContent = '🆕 新種の動物が解放！';
+  const subDiv = document.createElement('div');
+  subDiv.className = 'unlock-banner-sub';
+  subDiv.textContent = `施設 LV.${animals[0].minFacLevel} 達成ボーナス`;
+  el.appendChild(emojiSpan);
+  el.appendChild(titleDiv);
+  el.appendChild(subDiv);
+  $game.appendChild(el);
+  setTimeout(() => el.remove(), 2450);
+}
+
+function showRareDrop(itemEl) {
+  const r = itemEl.getBoundingClientRect();
+  const size = 56;
+  const ring = document.createElement('div');
+  ring.className = 'rare-ring';
+  ring.style.left   = `${r.left + r.width  / 2 - size / 2}px`;
+  ring.style.top    = `${r.top  + r.height / 2 - size / 2}px`;
+  ring.style.width  = `${size}px`;
+  ring.style.height = `${size}px`;
+  document.body.appendChild(ring);
+  setTimeout(() => ring.remove(), 700);
+}
+
+function showJackpot(coins, type) {
+  const label = type === 'jewel' ? '💍 JACKPOT!!' : '✨ GREAT SELL!';
+  const el = document.createElement('div');
+  el.className = 'jackpot-text';
+  el.textContent = `${label} +${coins}c`;
+  $game.appendChild(el);
+  setTimeout(() => el.remove(), 1650);
 }
 
 // ===== ゲーム開始 =====

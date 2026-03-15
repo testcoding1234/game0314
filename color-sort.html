@@ -5,103 +5,159 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>カラーソート</title>
 <style>
+/* === RESET & BASE === */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
-html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-#app{position:relative;width:375px;height:667px;overflow:hidden;background:linear-gradient(180deg,#06111e 0%,#0a1829 55%,#101f30 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;display:flex;flex-direction:column;}
+html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+#app{position:relative;width:375px;height:667px;overflow:hidden;background:linear-gradient(180deg,#050f1c 0%,#091823 55%,#0d1f2e 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;display:flex;flex-direction:column;}
 
-/* ===== Header ===== */
-#header{height:54px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:rgba(4,10,24,0.9);border-bottom:1px solid rgba(125,211,252,0.18);flex-shrink:0;}
+/* === HEADER === */
+#header{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(2,8,18,.92);border-bottom:1px solid rgba(100,200,255,.18);flex-shrink:0;}
 #header-left{display:flex;flex-direction:column;gap:2px;}
-#level-label{font-size:18px;font-weight:900;color:#7dd3fc;letter-spacing:.04em;}
-#move-label{font-size:11px;color:#64748b;}
-#header-right{display:flex;gap:8px;}
-.hdr-btn{background:rgba(30,50,80,.8);border:1px solid rgba(125,211,252,.3);color:#7dd3fc;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;cursor:pointer;}
+#level-label{font-size:16px;font-weight:900;color:#7dd3fc;letter-spacing:.04em;}
+#move-label{font-size:10px;color:#3d6070;}
+#header-right{display:flex;gap:6px;align-items:center;}
+.hdr-btn{background:rgba(8,24,44,.85);border:1px solid rgba(100,180,255,.22);color:#7dd3fc;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;cursor:pointer;}
 .hdr-btn:active{opacity:.7;}
+#home-btn{font-size:14px;padding:4px 7px;}
 
-/* ===== Game area ===== */
-#game-area{flex:1;display:flex;align-items:center;justify-content:center;padding:8px 10px 0;}
-#tubes-wrap{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:center;gap:10px;width:100%;}
+/* === GAME AREA === */
+#game-area{flex:1;display:flex;align-items:center;justify-content:center;padding:4px 6px 0;}
+#tubes-wrap{
+  display:grid;
+  gap:9px 7px;
+  justify-content:center;
+  align-items:end;
+}
 
-/* ===== Tube ===== */
-.tube-outer{display:flex;flex-direction:column;align-items:center;cursor:pointer;gap:4px;}
-.tube-label{font-size:10px;color:#475569;height:14px;}
+/* === TUBE (glass bottle) === */
+.tube-outer{display:flex;flex-direction:column;align-items:center;cursor:pointer;}
 .tube{
-  width:44px;
-  border:3px solid rgba(148,163,184,.35);
+  width:40px;
+  border:2px solid rgba(160,220,255,.38);
   border-top:none;
-  border-radius:0 0 22px 22px;
-  background:rgba(15,25,45,.6);
+  border-radius:0 0 20px 20px;
+  /* glass-tinted interior */
+  background:linear-gradient(180deg,rgba(4,16,32,.15) 0%,rgba(4,16,32,.35) 100%);
   display:flex;
   flex-direction:column-reverse;
   align-items:stretch;
   overflow:hidden;
-  transition:border-color .15s, transform .15s, box-shadow .15s;
   position:relative;
-  box-shadow:0 2px 12px rgba(0,0,0,.4);
+  transition:border-color .15s, transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .15s;
+  box-shadow:
+    inset -3px 0 5px rgba(255,255,255,.04),
+    inset  2px 0 3px rgba(0,0,0,.22),
+    0 4px 16px rgba(0,0,0,.55);
+}
+/* Left-wall glass shine */
+.tube::before{
+  content:'';
+  position:absolute;
+  top:0;left:3px;bottom:0;width:3px;
+  background:linear-gradient(180deg,rgba(255,255,255,.2) 0%,rgba(255,255,255,.03) 100%);
+  pointer-events:none;z-index:20;
+}
+/* Right-wall subtle shadow */
+.tube::after{
+  content:'';
+  position:absolute;
+  top:0;right:3px;bottom:0;width:3px;
+  background:linear-gradient(180deg,rgba(0,0,0,.12) 0%,rgba(0,0,0,.04) 100%);
+  pointer-events:none;z-index:20;
 }
 .tube.selected{
-  border-color:#7dd3fc;
-  transform:translateY(-8px);
-  box-shadow:0 0 16px rgba(125,211,252,.55);
+  border-color:rgba(110,215,255,.95);
+  transform:translateY(-10px);
+  box-shadow:0 0 22px rgba(90,200,255,.55),inset -3px 0 5px rgba(255,255,255,.06);
 }
 .tube.can-receive{
-  border-color:#4ade80;
-  box-shadow:0 0 10px rgba(74,222,128,.4);
+  border-color:rgba(70,220,130,.95);
+  box-shadow:0 0 14px rgba(60,210,120,.45);
 }
 .tube.done{
-  border-color:rgba(251,191,36,.7);
-  box-shadow:0 0 14px rgba(251,191,36,.45);
+  border-color:rgba(255,205,50,.9);
+  box-shadow:0 0 18px rgba(255,195,40,.55);
 }
-.tube.shake{
-  animation:shake .35s ease;
-}
+.tube.shake{animation:shake .35s ease;}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
 
+/* === LIQUID CELLS === */
 .color-cell{
   width:100%;
-  transition:height .18s ease, background-color .2s;
-  border-radius:0;
+  position:relative;
+  overflow:hidden;
+  /* background gradient set via JS */
 }
-.color-cell:last-child{border-radius:0 0 18px 18px;}
-
-/* ===== Bottom bar ===== */
-#bottom-bar{height:58px;display:flex;align-items:center;justify-content:center;gap:14px;background:rgba(4,10,24,0.85);border-top:1px solid rgba(125,211,252,0.12);flex-shrink:0;padding:0 14px;}
-#hint-btn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:13px;font-weight:800;padding:9px 22px;border-radius:20px;border:none;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,.35);}
-#hint-btn:active{transform:scale(.96);}
-#hint-count{font-size:12px;color:#f59e0b;font-weight:700;}
-
-/* ===== Overlay screens ===== */
-.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:rgba(4,10,24,.82);backdrop-filter:blur(4px);z-index:50;}
-.overlay h2{font-size:28px;font-weight:900;color:#7dd3fc;text-align:center;line-height:1.3;}
-.overlay p{font-size:14px;color:#94a3b8;text-align:center;max-width:260px;}
-.big-btn{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:16px;font-weight:800;padding:14px 40px;border-radius:24px;border:none;cursor:pointer;box-shadow:0 4px 16px rgba(59,130,246,.45);}
-.big-btn:active{transform:scale(.96);}
-.big-btn.green{background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 4px 16px rgba(34,197,94,.45);}
-
-/* ===== Clear animation stars ===== */
-#star-burst{position:absolute;inset:0;pointer-events:none;z-index:48;}
-.star-particle{position:absolute;font-size:22px;animation:star-fly .8s ease-out forwards;}
-@keyframes star-fly{0%{opacity:1;transform:translate(0,0) scale(1) rotate(0deg);}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.3) rotate(720deg);}}
-
-/* ===== Level clear banner ===== */
-#clear-overlay .big-num{font-size:64px;line-height:1;}
-#clear-overlay .stars-row{font-size:28px;letter-spacing:4px;}
-
-/* ===== Floating top color preview ===== */
-#float-color{
+/* Left-side glass reflection on liquid */
+.color-cell::before{
+  content:'';
   position:absolute;
-  width:36px;height:36px;
+  top:0;left:2px;bottom:0;width:5px;
+  background:linear-gradient(90deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.04) 100%);
+  pointer-events:none;z-index:5;
+}
+/* Liquid surface shimmer — only on topmost cell */
+.color-cell.liquid-top::after{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;height:6px;
+  background:linear-gradient(180deg,rgba(255,255,255,.48) 0%,rgba(255,255,255,.12) 55%,transparent 100%);
+  pointer-events:none;z-index:6;
+  animation:surface-shimmer 3s ease-in-out infinite;
+}
+@keyframes surface-shimmer{0%,100%{opacity:.65;}55%{opacity:1;}}
+/* Bottom cell rounded corners */
+.color-cell.liquid-bottom{border-radius:0 0 16px 16px;}
+
+/* === BOTTOM BAR === */
+#bottom-bar{height:54px;display:flex;align-items:center;justify-content:center;gap:12px;background:rgba(2,8,18,.9);border-top:1px solid rgba(100,200,255,.1);flex-shrink:0;padding:0 12px;}
+#hint-btn{background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;font-size:12px;font-weight:800;padding:8px 18px;border-radius:16px;border:none;cursor:pointer;box-shadow:0 3px 10px rgba(245,158,11,.3);}
+#hint-btn:active{transform:scale(.96);}
+#hint-count{font-size:11px;color:#c07010;font-weight:700;}
+
+/* === OVERLAYS === */
+.overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:rgba(2,8,20,.86);backdrop-filter:blur(5px);z-index:50;}
+.overlay h2{font-size:25px;font-weight:900;color:#7dd3fc;text-align:center;line-height:1.3;}
+.overlay p{font-size:13px;color:#5a8298;text-align:center;max-width:260px;line-height:1.7;}
+.big-btn{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:14px;font-weight:800;padding:11px 32px;border-radius:20px;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,.4);}
+.big-btn:active{transform:scale(.96);}
+.big-btn.green{background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 4px 14px rgba(34,197,94,.4);}
+
+/* === WATER DROP (flying liquid) === */
+.water-drop{
+  position:absolute;
   border-radius:50%;
-  border:3px solid rgba(255,255,255,.6);
   pointer-events:none;
-  z-index:60;
-  display:none;
-  box-shadow:0 4px 14px rgba(0,0,0,.5);
-  transition:none;
+  z-index:200;
+  /* background set via JS */
+  box-shadow:
+    inset  3px  3px 6px rgba(255,255,255,.38),
+    inset -2px -2px 4px rgba(0,0,0,.28),
+    0 3px 12px rgba(0,0,0,.45);
+}
+/* === WATER SPLASH RING === */
+.water-splash{
+  position:absolute;
+  pointer-events:none;
+  z-index:199;
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0);
+  opacity:.7;
+  animation:splash-ring .42s ease-out forwards;
+}
+@keyframes splash-ring{
+  0%  {transform:translate(-50%,-50%) scale(.15);opacity:.85;}
+  55% {transform:translate(-50%,-50%) scale(1.7); opacity:.3;}
+  100%{transform:translate(-50%,-50%) scale(2.3); opacity:0;}
 }
 
-/* ===== Undo flash ===== */
-@keyframes flash-border{0%,100%{border-color:rgba(148,163,184,.35);}50%{border-color:#facc15;}}
+/* === CLEAR PARTICLES === */
+#star-burst{position:absolute;inset:0;pointer-events:none;z-index:48;}
+.star-particle{position:absolute;font-size:20px;animation:star-fly .9s ease-out forwards;}
+@keyframes star-fly{0%{opacity:1;transform:translate(0,0) scale(1);}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(.15);}}
+
+/* === HINT FLASH === */
+@keyframes flash-border{0%,100%{border-color:rgba(160,220,255,.38);}50%{border-color:#facc15;}}
 </style>
 </head>
 <body>
@@ -116,6 +172,7 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
     <div id="header-right">
       <div class="hdr-btn" id="undo-btn">↩ 戻す</div>
       <div class="hdr-btn" id="restart-btn">↺ リセット</div>
+      <div class="hdr-btn" id="home-btn" onclick="location.href='index.html'">🏠</div>
     </div>
   </div>
 
@@ -130,17 +187,14 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
     <div id="hint-count">残り <span id="hint-left">3</span> 回</div>
   </div>
 
-  <!-- Floating dragged color dot -->
-  <div id="float-color"></div>
-
-  <!-- Star burst layer -->
+  <!-- Clear particles -->
   <div id="star-burst"></div>
 
   <!-- Start overlay -->
   <div class="overlay" id="start-overlay">
-    <div style="font-size:52px">🧪</div>
+    <div style="font-size:50px">🧪</div>
     <h2>カラーソート</h2>
-    <p>試験管の色を揃えよう！<br>試験管をタップして<br>色を移動させてね。</p>
+    <p>試験管の液体を揃えよう！<br>試験管をタップして<br>液体を移動させてね。</p>
     <button class="big-btn green" onclick="startGame()">▶ スタート</button>
   </div>
 
@@ -150,61 +204,92 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
   </div>
 
 </div>
-
 <script>
 'use strict';
 
 /* ============================================================
-   COLORS  (明確でハッキリした色を選ぶ)
+   COLORS — 10 water-like entries (light / hex / dark)
    ============================================================ */
 const COLORS = [
-  { id:'R', hex:'#e74c3c', name:'赤'   },
-  { id:'B', hex:'#3498db', name:'青'   },
-  { id:'G', hex:'#2ecc71', name:'緑'   },
-  { id:'Y', hex:'#f1c40f', name:'黄'   },
-  { id:'P', hex:'#9b59b6', name:'紫'   },
-  { id:'O', hex:'#e67e22', name:'橙'   },
-  { id:'K', hex:'#e91e63', name:'ピンク'},
-  { id:'C', hex:'#00bcd4', name:'水色' },
+  { id:'R', hex:'#ef4444', light:'#fca5a5', dark:'#991b1b', name:'赤'    },
+  { id:'B', hex:'#3b82f6', light:'#93c5fd', dark:'#1e3a8a', name:'青'    },
+  { id:'G', hex:'#22c55e', light:'#86efac', dark:'#14532d', name:'緑'    },
+  { id:'Y', hex:'#eab308', light:'#fde047', dark:'#713f12', name:'黄'    },
+  { id:'P', hex:'#a855f7', light:'#d8b4fe', dark:'#581c87', name:'紫'    },
+  { id:'O', hex:'#f97316', light:'#fdba74', dark:'#7c2d12', name:'橙'    },
+  { id:'K', hex:'#ec4899', light:'#f9a8d4', dark:'#831843', name:'ピンク'},
+  { id:'C', hex:'#06b6d4', light:'#67e8f9', dark:'#164e63', name:'水色'  },
+  { id:'L', hex:'#84cc16', light:'#bef264', dark:'#365314', name:'黄緑'  },
+  { id:'N', hex:'#6366f1', light:'#a5b4fc', dark:'#312e81', name:'藍'    },
 ];
-const COLOR_MAP = {};
-COLORS.forEach(c => { COLOR_MAP[c.id] = c.hex; });
+
+const COLOR_BY_ID = {};
+COLORS.forEach(c => { COLOR_BY_ID[c.id] = c; });
+
+/* hex (#rrggbb) + alpha (0–1) → rgba string */
+function hexToRgba(hex, a) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/* Water-like gradient for a liquid layer */
+function liquidGrad(c) {
+  return `linear-gradient(180deg,
+    ${hexToRgba(c.light, .80)} 0%,
+    ${hexToRgba(c.hex,   .88)} 42%,
+    ${hexToRgba(c.dark,  .94)} 100%)`;
+}
+
+/* Radial gradient for the flying water drop */
+function dropGrad(c) {
+  return `radial-gradient(circle at 34% 28%,
+    ${hexToRgba(c.light, .96)},
+    ${hexToRgba(c.hex,   .90)},
+    ${hexToRgba(c.dark,  .84)})`;
+}
+
+/* ============================================================
+   CONSTANTS
+   ============================================================ */
+const TUBE_CAP          = 4;   // cells per tube
+const CELL_H            = 30;  // px per liquid cell
+const NUM_COLORS        = 10;  // always use all 10 colors
+const EXTRA_TUBES       = 2;   // empty tubes → 12 total
+const SHUFFLE_FACTOR    = 10;  // shuffle iterations multiplier
+const MAX_UNDO          = 30;
+const STAR3_MULT        = 2;
+const STAR2_MULT        = 4;
+// Tube has +4 px of empty space at top (above the liquid area) due to tubeVisH rounding
+const TUBE_TOP_OFFSET   = 4;
+// Water-drop animation thresholds
+const DROP_SPLASH_START = 0.82; // t value when pulsation switches to splash expansion
+const DROP_PULSE_AMP    = 0.07; // amplitude of in-flight pulsation
+const DROP_PULSE_FREQ   = 3.5;  // frequency (in π units) of in-flight pulsation
+const DROP_SPLASH_SCALE = 2.8;  // scale growth rate during splash
 
 /* ============================================================
    LEVEL CONFIG
    ============================================================ */
-// Each level: { colors: number of distinct colors, extras: number of empty tubes }
-// Tube capacity is always TUBE_CAP
-const TUBE_CAP = 4;
-// Start with 2 colors; add 1 color every 2 levels
-const COLORS_BASE = 2;
-const COLORS_LEVEL_STEP = 2;
-// Shuffle iterations = numColors * TUBE_CAP * SHUFFLE_FACTOR (ensures thorough mixing)
-const SHUFFLE_FACTOR = 8;
-// Maximum undo history entries
-const MAX_UNDO_HISTORY = 30;
-// Star rating: ≤ threshold * minMoves → 3 stars, ≤ threshold2 → 2 stars, else 1 star
-const STAR3_MULTIPLIER = 2;
-const STAR2_MULTIPLIER = 4;
-
 function getLevelConfig(lv) {
-  // lv starts at 1; 2 colors at lv1, +1 color every COLORS_LEVEL_STEP levels
-  const colors = Math.min(COLORS_BASE + Math.floor((lv - 1) / COLORS_LEVEL_STEP), COLORS.length);
-  const extras  = lv <= 3 ? 2 : 1;
-  return { numColors: colors, extras };
+  // Always 10 colors + 2 empty = 12 tubes.
+  // Difficulty increases via more shuffle iterations.
+  return { numColors: NUM_COLORS, extras: EXTRA_TUBES };
 }
 
 /* ============================================================
    GAME STATE
    ============================================================ */
 let gs = {
-  level:    1,
-  tubes:    [],   // array of arrays (bottom=index 0)
-  selected: -1,   // index of selected tube (-1 = none)
-  moves:    0,
-  hints:    3,
-  history:  [],   // for undo, each entry is snapshot of tubes
-  initialTubes: [], // for restart
+  level:       1,
+  tubes:       [],
+  selected:    -1,
+  moves:       0,
+  hints:       3,
+  history:     [],
+  initialTubes:[],
+  animating:   false,
 };
 
 /* ============================================================
@@ -212,75 +297,59 @@ let gs = {
    ============================================================ */
 function generateLevel(lv) {
   const { numColors, extras } = getLevelConfig(lv);
-  const colorIds = COLORS.slice(0, numColors).map(c => c.id);
-
-  // Build solved state: TUBE_CAP units of each color
-  const solved = colorIds.map(c => Array(TUBE_CAP).fill(c));
-
-  // Shuffle by doing many random valid reverse-moves
-  const tubes = solved.map(t => [...t]);
-  const allTubes = [...tubes, ...Array.from({length: extras}, () => [])];
-
-  // Do many random shuffles (SHUFFLE_FACTOR iterations per color*cell unit)
-  const SHUFFLE_MOVES = numColors * TUBE_CAP * SHUFFLE_FACTOR;
-  for (let iter = 0; iter < SHUFFLE_MOVES; iter++) {
-    // pick random non-empty tube as src
-    const srcs = allTubes.map((t,i) => t.length > 0 ? i : -1).filter(i => i >= 0);
+  const ids = COLORS.slice(0, numColors).map(c => c.id);
+  const all = [
+    ...ids.map(id => Array(TUBE_CAP).fill(id)),
+    ...Array.from({length: extras}, () => []),
+  ];
+  // More iterations for higher levels
+  const iters = numColors * TUBE_CAP * (SHUFFLE_FACTOR + Math.floor(lv / 2));
+  for (let i = 0; i < iters; i++) {
+    const srcs = all.map((t,i) => t.length > 0 ? i : -1).filter(x => x >= 0);
     if (!srcs.length) break;
     const si = srcs[Math.floor(Math.random() * srcs.length)];
-    // pick random destination (not same, not full)
-    const dsts = allTubes.map((t,i) => (i !== si && t.length < TUBE_CAP) ? i : -1).filter(i => i >= 0);
+    const dsts = all.map((t,j) => (j !== si && t.length < TUBE_CAP) ? j : -1).filter(x => x >= 0);
     if (!dsts.length) continue;
     const di = dsts[Math.floor(Math.random() * dsts.length)];
-    allTubes[di].push(allTubes[si].pop());
+    all[di].push(all[si].pop());
   }
-
-  // Avoid accidentally-solved state right after generation
-  // (unlikely but just do a quick check)
-  return allTubes;
+  return all;
 }
 
 /* ============================================================
-   CHECK WIN
+   WIN CHECK
    ============================================================ */
 function isTubeDone(tube) {
-  if (tube.length === 0) return true;
-  if (tube.length !== TUBE_CAP) return false;
+  if (tube.length === 0)          return true;
+  if (tube.length !== TUBE_CAP)   return false;
   return tube.every(c => c === tube[0]);
 }
-
-function isWon() {
-  return gs.tubes.every(isTubeDone);
-}
+function isWon() { return gs.tubes.every(isTubeDone); }
 
 /* ============================================================
-   MOVE
+   MOVE LOGIC
    ============================================================ */
-function canMoveTo(fromIdx, toIdx) {
-  const from = gs.tubes[fromIdx];
-  const to   = gs.tubes[toIdx];
-  if (!from.length)       return false; // src empty
-  if (to.length >= TUBE_CAP) return false; // dest full
-  if (to.length === 0)    return true;  // dest empty
-  return to[to.length - 1] === from[from.length - 1]; // top colors match
+function canMoveTo(from, to) {
+  const f = gs.tubes[from], t = gs.tubes[to];
+  if (!f.length)          return false; // src empty
+  if (t.length >= TUBE_CAP) return false; // dst full
+  if (t.length === 0)     return true;  // dst empty
+  return t[t.length-1] === f[f.length-1]; // top colors match
 }
 
-function doMove(fromIdx, toIdx) {
-  if (!canMoveTo(fromIdx, toIdx)) return false;
-  // Save history
+function doMove(from, to) {
+  if (!canMoveTo(from, to)) return false;
   gs.history.push(gs.tubes.map(t => [...t]));
-  if (gs.history.length > MAX_UNDO_HISTORY) gs.history.shift();
-
-  const color = gs.tubes[fromIdx].pop();
-  gs.tubes[toIdx].push(color);
+  if (gs.history.length > MAX_UNDO) gs.history.shift();
+  gs.tubes[to].push(gs.tubes[from].pop());
   gs.moves++;
   return true;
 }
 
 function undoMove() {
-  if (!gs.history.length) return;
-  gs.tubes = gs.history.pop();
-  gs.moves = Math.max(0, gs.moves - 1);
+  if (!gs.history.length || gs.animating) return;
+  gs.tubes    = gs.history.pop();
+  gs.moves    = Math.max(0, gs.moves - 1);
   gs.selected = -1;
   renderTubes();
   updateHeader();
@@ -289,42 +358,40 @@ function undoMove() {
 /* ============================================================
    RENDER
    ============================================================ */
-function tubeHeight(n) {
-  // Total visual height for n of TUBE_CAP cells
-  return n * cellHeight() + 4;
-}
-function cellHeight() { return 34; }
-function tubeVisualHeight() { return TUBE_CAP * cellHeight() + 4; }
+function tubeVisH() { return TUBE_CAP * CELL_H + 4; }
 
 function renderTubes() {
   const wrap = document.getElementById('tubes-wrap');
   wrap.innerHTML = '';
 
-  const n = gs.tubes.length;
-  // Layout: if many tubes, split into 2 rows
-  const perRow = n <= 5 ? n : Math.ceil(n / 2);
+  const n    = gs.tubes.length;
+  const cols = n <= 6 ? n : Math.ceil(n / 2);
+  wrap.style.gridTemplateColumns = `repeat(${cols}, 40px)`;
 
   for (let i = 0; i < n; i++) {
-    const tube = gs.tubes[i];
+    const tube  = gs.tubes[i];
     const outer = document.createElement('div');
-    outer.className = 'tube-outer';
+    outer.className   = 'tube-outer';
     outer.dataset.idx = i;
 
     const tubeEl = document.createElement('div');
-    tubeEl.className = 'tube';
+    tubeEl.className   = 'tube';
     tubeEl.dataset.idx = i;
-    tubeEl.style.height = tubeVisualHeight() + 'px';
+    tubeEl.style.height = tubeVisH() + 'px';
 
-    if (i === gs.selected) tubeEl.classList.add('selected');
-    if (gs.selected >= 0 && i !== gs.selected && canMoveTo(gs.selected, i)) tubeEl.classList.add('can-receive');
-    if (isTubeDone(tube) && tube.length > 0) tubeEl.classList.add('done');
+    if (i === gs.selected)                                    tubeEl.classList.add('selected');
+    if (gs.selected >= 0 && i !== gs.selected && canMoveTo(gs.selected, i))
+                                                              tubeEl.classList.add('can-receive');
+    if (isTubeDone(tube) && tube.length > 0)                 tubeEl.classList.add('done');
 
-    // cells (bottom to top order — flex-direction:column-reverse renders top at visual-top)
     for (let j = 0; j < tube.length; j++) {
+      const c    = COLOR_BY_ID[tube[j]];
       const cell = document.createElement('div');
-      cell.className = 'color-cell';
-      cell.style.height = cellHeight() + 'px';
-      cell.style.backgroundColor = COLOR_MAP[tube[j]];
+      cell.className  = 'color-cell';
+      cell.style.height     = CELL_H + 'px';
+      cell.style.background = liquidGrad(c);
+      if (j === tube.length - 1) cell.classList.add('liquid-top');
+      if (j === 0)               cell.classList.add('liquid-bottom');
       tubeEl.appendChild(cell);
     }
 
@@ -335,56 +402,145 @@ function renderTubes() {
 }
 
 function updateHeader() {
-  document.getElementById('lv-num').textContent   = gs.level;
-  document.getElementById('move-num').textContent = gs.moves;
+  document.getElementById('lv-num').textContent    = gs.level;
+  document.getElementById('move-num').textContent  = gs.moves;
   document.getElementById('hint-left').textContent = gs.hints;
+}
+
+/* ============================================================
+   WATER DROP ANIMATION
+   ============================================================ */
+function playWaterDrop(colorId, sx, sy, ex, ey, onDone) {
+  const c    = COLOR_BY_ID[colorId];
+  const drop = document.createElement('div');
+  drop.className    = 'water-drop';
+  drop.style.width  = '26px';
+  drop.style.height = '26px';
+  drop.style.background = dropGrad(c);
+  drop.style.left = sx + 'px';
+  drop.style.top  = sy + 'px';
+  drop.style.transform = 'translate(-50%,-50%)';
+  document.getElementById('app').appendChild(drop);
+
+  const DURATION = 400; // ms
+  const t0 = performance.now();
+
+  // Bezier control point: arc peak above both end-points
+  const cpX = (sx + ex) / 2;
+  const cpY = Math.min(sy, ey) - 68;
+
+  function easeInOut(t) { return t < .5 ? 2*t*t : -1+(4-2*t)*t; }
+
+  function frame(now) {
+    const t = Math.min((now - t0) / DURATION, 1);
+    const e = easeInOut(t);
+
+    // Quadratic Bézier position
+    const x = (1-e)*(1-e)*sx + 2*(1-e)*e*cpX + e*e*ex;
+    const y = (1-e)*(1-e)*sy + 2*(1-e)*e*cpY + e*e*ey;
+
+    // Pulsate in-flight → splash expansion at end
+    const scale   = t < DROP_SPLASH_START
+                    ? (1 + DROP_PULSE_AMP * Math.sin(t * Math.PI * DROP_PULSE_FREQ))
+                    : 1 + (t - DROP_SPLASH_START) * DROP_SPLASH_SCALE;
+    const opacity = t > .86 ? 1 - (t - .86) / .14 : 1;
+
+    drop.style.left    = x + 'px';
+    drop.style.top     = y + 'px';
+    drop.style.transform = `translate(-50%,-50%) scale(${scale.toFixed(3)})`;
+    drop.style.opacity   = opacity.toFixed(3);
+
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      drop.remove();
+      spawnSplash(ex, ey, c);
+      onDone();
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+function spawnSplash(x, y, c) {
+  const el = document.createElement('div');
+  el.className = 'water-splash';
+  el.style.left       = x + 'px';
+  el.style.top        = y + 'px';
+  el.style.width      = '30px';
+  el.style.height     = '30px';
+  el.style.background = hexToRgba(c.hex, .55);
+  document.getElementById('app').appendChild(el);
+  setTimeout(() => el.remove(), 500);
 }
 
 /* ============================================================
    TAP HANDLER
    ============================================================ */
 function onTubeTap(idx) {
+  if (gs.animating) return;
+
+  // ── Phase 1: nothing selected ─────────────────────────────
   if (gs.selected === -1) {
-    // select if non-empty
     if (!gs.tubes[idx].length) return;
     gs.selected = idx;
     renderTubes();
     return;
   }
 
+  // ── Phase 2: tapped same tube → deselect ─────────────────
   if (gs.selected === idx) {
-    // deselect
     gs.selected = -1;
     renderTubes();
     return;
   }
 
-  // Try to move
+  // ── Phase 3: valid move ───────────────────────────────────
   if (canMoveTo(gs.selected, idx)) {
-    const moved = doMove(gs.selected, idx);
-    if (moved) {
-      gs.selected = -1;
-      renderTubes();
-      updateHeader();
-      if (isWon()) {
-        setTimeout(showClear, 300);
-      }
-    }
+    const fromIdx = gs.selected;
+    const toIdx   = idx;
+
+    // Capture DOM rects BEFORE state change (transform included in rect)
+    const appEl   = document.getElementById('app');
+    const appRect = appEl.getBoundingClientRect();
+    const srcEl   = document.querySelector(`.tube[data-idx="${fromIdx}"]`);
+    const dstEl   = document.querySelector(`.tube[data-idx="${toIdx}"]`);
+    const srcRect = srcEl.getBoundingClientRect();
+    const dstRect = dstEl.getBoundingClientRect();
+
+    const colorId = gs.tubes[fromIdx][gs.tubes[fromIdx].length - 1];
+    const srcLen  = gs.tubes[fromIdx].length;
+    const dstLen  = gs.tubes[toIdx].length;
+
+    // Liquid surface positions relative to #app
+    // Top of liquid = tube.top + (TUBE_CAP - n) * CELL_H + TUBE_TOP_OFFSET
+    // (column-reverse packs cells from bottom; TUBE_TOP_OFFSET is extra space above liquid)
+    const sx = srcRect.left - appRect.left + srcRect.width / 2;
+    const sy = srcRect.top  - appRect.top  + (TUBE_CAP - srcLen)     * CELL_H + TUBE_TOP_OFFSET;
+    const ex = dstRect.left - appRect.left + dstRect.width / 2;
+    const ey = dstRect.top  - appRect.top  + (TUBE_CAP - dstLen - 1) * CELL_H + TUBE_TOP_OFFSET;
+
+    // Update state immediately so tubes re-render to final state
+    doMove(fromIdx, toIdx);
+    gs.selected = -1;
+    renderTubes();
+    updateHeader();
+
+    // Play water animation on top of already-updated UI
+    gs.animating = true;
+    playWaterDrop(colorId, sx, sy, ex, ey, () => {
+      gs.animating = false;
+      if (isWon()) setTimeout(showClear, 150);
+    });
+
+  // ── Phase 4: invalid move ─────────────────────────────────
   } else {
-    // shake the target if can't receive
     const tubeEl = document.querySelector(`.tube[data-idx="${idx}"]`);
     if (tubeEl) {
       tubeEl.classList.add('shake');
       setTimeout(() => tubeEl.classList.remove('shake'), 400);
     }
-    // re-select the tapped tube if it has content
-    if (gs.tubes[idx].length > 0) {
-      gs.selected = idx;
-      renderTubes();
-    } else {
-      gs.selected = -1;
-      renderTubes();
-    }
+    gs.selected = gs.tubes[idx].length > 0 ? idx : -1;
+    renderTubes();
   }
 }
 
@@ -392,8 +548,7 @@ function onTubeTap(idx) {
    HINT
    ============================================================ */
 function giveHint() {
-  if (gs.hints <= 0) return;
-  // Find a valid move
+  if (gs.hints <= 0 || gs.animating) return;
   for (let i = 0; i < gs.tubes.length; i++) {
     for (let j = 0; j < gs.tubes.length; j++) {
       if (i !== j && canMoveTo(i, j)) {
@@ -401,11 +556,10 @@ function giveHint() {
         gs.selected = i;
         renderTubes();
         updateHeader();
-        // Flash the destination
         const destEl = document.querySelector(`.tube[data-idx="${j}"]`);
         if (destEl) {
           destEl.style.animation = 'flash-border .6s ease 2';
-          setTimeout(() => { destEl.style.animation = ''; }, 1300);
+          setTimeout(() => { destEl.style.animation = ''; }, 1400);
         }
         return;
       }
@@ -417,18 +571,18 @@ function giveHint() {
    CLEAR
    ============================================================ */
 function showClear() {
-  spawnStars();
+  spawnWaterParticles();
   const overlay = document.getElementById('clear-overlay');
   const inner   = document.getElementById('clear-overlay-inner');
-  const minMoves = getLevelConfig(gs.level).numColors * TUBE_CAP;
-  const stars = gs.moves <= minMoves * STAR3_MULTIPLIER ? '⭐⭐⭐' :
-                gs.moves <= minMoves * STAR2_MULTIPLIER ? '⭐⭐' : '⭐';
+  const min     = getLevelConfig(gs.level).numColors * TUBE_CAP;
+  const stars   = gs.moves <= min * STAR3_MULT ? '⭐⭐⭐' :
+                  gs.moves <= min * STAR2_MULT ? '⭐⭐' : '⭐';
   inner.innerHTML = `
-    <div style="font-size:52px;text-align:center">🎉</div>
-    <div style="font-size:26px;font-weight:900;color:#7dd3fc;text-align:center;margin:8px 0">レベル ${gs.level} クリア！</div>
-    <div style="font-size:28px;text-align:center;margin-bottom:4px">${stars}</div>
-    <div style="font-size:13px;color:#94a3b8;text-align:center;margin-bottom:18px">手数: ${gs.moves}</div>
-    <div style="display:flex;gap:12px;justify-content:center">
+    <div style="font-size:50px;text-align:center">🎉</div>
+    <div style="font-size:22px;font-weight:900;color:#7dd3fc;text-align:center;margin:8px 0">レベル ${gs.level} クリア！</div>
+    <div style="font-size:26px;text-align:center;margin-bottom:4px">${stars}</div>
+    <div style="font-size:11px;color:#5a8298;text-align:center;margin-bottom:16px">手数: ${gs.moves}</div>
+    <div style="display:flex;gap:10px;justify-content:center">
       <button class="big-btn" onclick="restartLevel()">↺ もう一度</button>
       <button class="big-btn green" onclick="nextLevel()">次へ ▶</button>
     </div>
@@ -436,24 +590,23 @@ function showClear() {
   overlay.style.display = 'flex';
 }
 
-function spawnStars() {
-  const burst = document.getElementById('star-burst');
+function spawnWaterParticles() {
+  const burst  = document.getElementById('star-burst');
   burst.innerHTML = '';
-  const cx = 187, cy = 333;
-  const icons = ['⭐','✨','🌟','💛','💙','❤️','💚','💜'];
-  for (let i = 0; i < 20; i++) {
+  const icons = ['💧','🔵','🟢','🟡','🟣','🟠','💜','💙','💚','💛'];
+  for (let i = 0; i < 24; i++) {
     const s = document.createElement('div');
     s.className = 'star-particle';
     const angle = Math.random() * Math.PI * 2;
-    const dist  = 80 + Math.random() * 160;
+    const dist  = 70 + Math.random() * 170;
     s.style.setProperty('--dx', Math.cos(angle)*dist + 'px');
     s.style.setProperty('--dy', Math.sin(angle)*dist + 'px');
-    s.style.left = cx + 'px';
-    s.style.top  = cy + 'px';
-    s.style.animationDelay = (Math.random() * .3) + 's';
+    s.style.left = '187px';
+    s.style.top  = '300px';
+    s.style.animationDelay = (Math.random() * .45) + 's';
     s.textContent = icons[Math.floor(Math.random() * icons.length)];
     burst.appendChild(s);
-    setTimeout(() => s.remove(), 1200);
+    setTimeout(() => s.remove(), 1600);
   }
 }
 
@@ -461,11 +614,13 @@ function spawnStars() {
    LEVEL CONTROL
    ============================================================ */
 function startLevel(lv) {
-  gs.level    = lv;
-  gs.moves    = 0;
-  gs.selected = -1;
-  gs.history  = [];
-  gs.tubes    = generateLevel(lv);
+  gs.level        = lv;
+  gs.moves        = 0;
+  gs.selected     = -1;
+  gs.history      = [];
+  gs.animating    = false;
+  gs.hints        = 3;
+  gs.tubes        = generateLevel(lv);
   gs.initialTubes = gs.tubes.map(t => [...t]);
   document.getElementById('clear-overlay').style.display = 'none';
   renderTubes();
@@ -473,6 +628,7 @@ function startLevel(lv) {
 }
 
 function restartLevel() {
+  if (gs.animating) return;
   gs.tubes    = gs.initialTubes.map(t => [...t]);
   gs.moves    = 0;
   gs.selected = -1;
@@ -482,9 +638,7 @@ function restartLevel() {
   updateHeader();
 }
 
-function nextLevel() {
-  startLevel(gs.level + 1);
-}
+function nextLevel() { startLevel(gs.level + 1); }
 
 function startGame() {
   document.getElementById('start-overlay').style.display = 'none';
@@ -497,9 +651,6 @@ function startGame() {
 document.getElementById('undo-btn').addEventListener('click', undoMove);
 document.getElementById('restart-btn').addEventListener('click', restartLevel);
 document.getElementById('hint-btn').addEventListener('click', giveHint);
-
-// Back to home (long press on header title area — optional)
-// or just via header back button handled elsewhere
 </script>
 </body>
 </html>

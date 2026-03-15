@@ -1611,9 +1611,11 @@ function startGameMode(mode) {
   // modeTab: モード選択済みのときのみ表示
   document.getElementById('modeTab').style.display = _modeChosen ? 'flex' : 'none';
 
-  // チュートリアル状態リセット（プレイアブル広告のため毎プレイ表示）
+  // チュートリアル状態リセット（モード選択前のみ毎プレイ表示、選択後は非表示）
   tut.step = 0;
-  tut.shown.fill(false);
+  if (!_modeChosen) {
+    tut.shown.fill(false);
+  }
 
   if (mode === 'speed') {
     document.getElementById('phaseLabel').textContent = '⚡ スピードモード';
@@ -1625,13 +1627,15 @@ function startGameMode(mode) {
     showPreStartCountdown(() => {
       gs.speedTutLocked = false;
       startSpeedTimer();
-      setTimeout(() => showTutStep(0), 600);  // START表示後にチュートリアルを表示（アニメーション終了後）
+      // スピードモードはチュートリアル不要・モード選択後も非表示
+      if (!_modeChosen) setTimeout(() => showTutStep(0), 600);
     });
   } else {
     document.getElementById('phaseLabel').textContent = '🎮 スノーサバイバル';
     document.getElementById('speedTimer').classList.remove('show');
     startHunting();
-    setTimeout(() => showTutStep(0), 600);
+    // モード選択後はチュートリアルを表示しない
+    if (!_modeChosen) setTimeout(() => showTutStep(0), 600);
   }
 }
 

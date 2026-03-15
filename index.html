@@ -54,11 +54,19 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 #marketCard.drop-active{border-color:#fb923c;background:rgba(249,115,22,.2);transform:scale(1.04);}
 .mkt-icon{font-size:28px;}.mkt-name{font-size:9px;font-weight:700;color:#fb923c;}.mkt-hint{font-size:8px;color:#78716c;}
 
-/* ===== インベントリ行 ===== */
-#invRow{position:relative;z-index:8;min-height:68px;max-height:80px;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:8px 10px;background:rgba(0,4,18,.55);}
-.inv-lbl{width:100%;font-size:9px;font-weight:700;color:#475569;letter-spacing:.07em;text-transform:uppercase;line-height:1;margin-bottom:-4px;}
+/* ===== インベントリ行（3セクション） ===== */
+#invRow{position:relative;z-index:8;display:flex;flex-direction:column;gap:2px;padding:6px 10px 4px;background:rgba(0,4,18,.55);}
+.inv-lbl{font-size:9px;font-weight:700;color:#475569;letter-spacing:.07em;text-transform:uppercase;line-height:1;margin-bottom:1px;}
+.inv-section{display:flex;flex-direction:column;gap:1px;}
+.inv-section-lbl{font-size:8px;font-weight:700;color:#475569;letter-spacing:.05em;line-height:1.2;display:flex;align-items:center;gap:3px;}
+.inv-section-count{font-size:7px;color:#38bdf8;background:rgba(56,189,248,.12);border-radius:6px;padding:0 4px;font-weight:700;}
+.inv-section-items{position:relative;height:36px;overflow:visible;}
+.inv-section-items .inv-item{position:absolute !important;top:0;width:36px;height:36px;font-size:18px;border-radius:10px;transition:transform .1s;}
 .inv-item{width:46px;height:46px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,.15);cursor:grab;transition:transform .1s;position:relative;}
 .inv-item:active{transform:scale(.9);}
+.inv-item.proc-item{opacity:0.6;cursor:default;}
+@keyframes procPulse{0%,100%{opacity:.55}50%{opacity:.8}}
+.inv-item.proc-item{animation:procPulse 1.5s ease-in-out infinite;}
 .inv-item.meat{background:linear-gradient(135deg,#7f1d1d,#450a0a);border-color:rgba(220,38,38,.4);}
 .inv-item.skin{background:linear-gradient(135deg,#4d2600,#2c1601);border-color:rgba(146,64,14,.4);}
 .inv-item.bone{background:linear-gradient(135deg,#374151,#1f2937);border-color:rgba(107,114,128,.4);}
@@ -218,7 +226,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .rk-dots{font-size:11px;color:#334155;text-align:center;padding:2px 0;letter-spacing:.1em;}
 .rk-tag{display:inline-block;font-size:8px;background:rgba(249,115,22,.22);color:#fb923c;border-radius:4px;padding:1px 5px;margin-left:4px;font-weight:700;vertical-align:middle;}
 .rk-crown{font-size:13px;margin-right:1px;}
-.rk-actions{display:flex;flex-direction:column;gap:8px;width:100%;margin-top:6px;}
+.rk-actions{display:flex;flex-direction:column;gap:8px;width:100%;margin-bottom:6px;}
 .rk-again{padding:14px;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:14px;color:#fff;font-size:16px;font-weight:900;cursor:pointer;letter-spacing:.02em;width:100%;box-shadow:0 4px 16px rgba(249,115,22,.4);}
 .rk-again:active{transform:scale(.97);}
 .rk-switch{padding:10px;background:rgba(56,189,248,.1);border:1.5px solid rgba(56,189,248,.35);border-radius:12px;color:#7dd3fc;font-size:13px;font-weight:600;cursor:pointer;width:100%;}
@@ -411,6 +419,7 @@ const gs = {
   totalCoins: 0,
   animals: [],
   inventory: [],
+  facilityItems: [],   // items currently being processed / queued in facilities
   facilities: {
     cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
     workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
@@ -516,6 +525,16 @@ const FACILITY_UPGRADE_LEVELS = Array.from({length: 49}, (_, i) => ({
 }));
 const UPGRADE_CONFIG = { cooking: FACILITY_UPGRADE_LEVELS, workshop: FACILITY_UPGRADE_LEVELS };
 const DRAG_MOVEMENT_THRESHOLD = 10;
+const LONG_PRESS_DELAY        = 600;  // ms to hold before continuous send activates
+const LONG_PRESS_SEND_INTERVAL = 350; // ms between each auto-send during long-press
+
+// ===== インベントリ行レイアウト定数 =====
+const INV_ROW_W       = 353;  // available px inside #invRow (375 - 10*2 padding - 2 buffer)
+const INV_ITEM_W      = 36;
+const INV_NORMAL_STEP = 42;   // INV_ITEM_W + 6px gap
+const INV_GAP         = 6;    // gap between items at normal spacing
+const INV_STACK_STEP  = 14;   // step when stacking overflowed items
+const INV_MAX_POS     = INV_ROW_W - INV_ITEM_W;  // 317px
 
 const RANKING_DISPLAY_DELAY = 1200; // ゲーム終了からランキング表示までのms
 
@@ -682,20 +701,64 @@ function removeItem(id) {
 }
 
 function renderInv() {
-  $invRow.innerHTML = '<div class="inv-lbl">🎒 所持品</div>';
-  gs.inventory.forEach(item => {
+  $invRow.innerHTML = '';
+  const rawItems  = gs.inventory.filter(i => !i.isProduct);
+  const facItems  = gs.facilityItems || [];
+  const products  = gs.inventory.filter(i => i.isProduct);
+  buildInvSection($invRow, '🏹 狩猟素材', rawItems,  'raw');
+  buildInvSection($invRow, '⚙️ 加工中',   facItems.map(fi => ({ id: null, type: fi.type, isProduct: false })), 'processing');
+  buildInvSection($invRow, '🏪 売却前',   products, 'product');
+}
+
+function buildInvSection(parent, label, items, sectionType) {
+  const section = document.createElement('div');
+  section.className = 'inv-section';
+
+  const lbl = document.createElement('div');
+  lbl.className = 'inv-section-lbl';
+  lbl.innerHTML = `${label}${items.length > 0 ? ` <span class="inv-section-count">${items.length}</span>` : ''}`;
+  section.appendChild(lbl);
+
+  const container = document.createElement('div');
+  container.className = 'inv-section-items';
+
+  // Layout constants (defined globally above)
+  const maxNormal = Math.floor((INV_ROW_W - INV_ITEM_W + INV_GAP) / INV_NORMAL_STEP); // items at normal spacing
+
+  items.forEach((item, idx) => {
     const def = ITEM_DEF[item.type];
     if (!def) return;
+
     const el = document.createElement('div');
     el.className = `inv-item ${item.type} item-new`;
-    el.id = `itm-${item.id}`;
-    el.dataset.iid = item.id;
+    if (sectionType === 'processing') el.className += ' proc-item';
+
+    if (item.id) {
+      el.id = `itm-${item.id}`;
+      el.dataset.iid = item.id;
+    }
     el.textContent = def.e;
     el.title = def.name;
-    el.addEventListener('mousedown',  e => startDrag(e, item.id, 'mouse'));
-    el.addEventListener('touchstart', e => startDrag(e, item.id, 'touch'), { passive: false });
-    $invRow.appendChild(el);
+
+    // Calculate stacking position
+    let leftPos;
+    if (idx < maxNormal) {
+      leftPos = idx * INV_NORMAL_STEP;
+    } else {
+      leftPos = Math.min(INV_MAX_POS, (maxNormal - 1) * INV_NORMAL_STEP + (idx - maxNormal + 1) * INV_STACK_STEP);
+    }
+    el.style.left   = `${leftPos}px`;
+    el.style.zIndex = idx + 1;
+
+    if (item.id && sectionType !== 'processing') {
+      el.addEventListener('mousedown',  e => startDrag(e, item.id, 'mouse'));
+      el.addEventListener('touchstart', e => startDrag(e, item.id, 'touch'), { passive: false });
+    }
+    container.appendChild(el);
   });
+
+  section.appendChild(container);
+  parent.appendChild(section);
 }
 
 // ===== 狩猟 =====
@@ -828,6 +891,7 @@ function scheduleRespawn() {
 
 // ===== 施設処理 =====
 function processMaterial(facType, itemId) {
+  if (gs.phase === 'ENDED') return false;
   const item = gs.inventory.find(i => i.id === itemId);
   if (!item || item.isProduct) return false;
   const fac = gs.facilities[facType];
@@ -841,6 +905,9 @@ function processMaterial(facType, itemId) {
   // チュートリアルStep1：素材投入で施設ガイドを閉じる
   if (tut.step === 1 && $tutOverlay.innerHTML) hideTutStep();
   removeItem(itemId);
+  // Track the item as being processed in a facility
+  gs.facilityItems.push({ type: item.type, facType });
+  renderInv();
   if (fac.busy) {
     fac.queue.push(recipe);
     updateQueueBadge(facType);
@@ -862,6 +929,8 @@ function startFacilityProcessing(facType, recipe) {
   let elapsed = 0;
   const interval = 60;
   const timer = setInterval(() => {
+    // If game was reset, the closed-over facility object is no longer current — abort silently
+    if (gs.facilities[facType] !== fac) { clearInterval(timer); return; }
     elapsed += interval;
     if (prog) prog.style.width = `${Math.min(100, (elapsed / dur) * 100)}%`;
     if (elapsed >= dur) {
@@ -869,6 +938,9 @@ function startFacilityProcessing(facType, recipe) {
       fac.busy = false;
       if (prog) prog.style.width = '0%';
       if (facEl) facEl.classList.remove('busy');
+      // Remove one matching facilityItem entry
+      const fiIdx = gs.facilityItems.findIndex(fi => fi.facType === facType && fi.type === recipe.input);
+      if (fiIdx !== -1) gs.facilityItems.splice(fiIdx, 1);
       addItem(recipe.output);
       if (facEl) facFloat(facEl, `✅ ${ITEM_DEF[recipe.output].name}完成！`);
       // Process next queued item
@@ -890,6 +962,7 @@ function updateQueueBadge(facType) {
 
 // ===== 売却 =====
 function sellItem(itemId) {
+  if (gs.phase === 'ENDED') return;
   const item = gs.inventory.find(i => i.id === itemId && i.isProduct);
   if (!item) return;
   // チュートリアルStep2：売却で販売ガイドを閉じる
@@ -1059,9 +1132,13 @@ function hideTutStep() {
 }
 
 // ===== ドラッグ＆ドロップ =====
-const INITIAL_DRAG_STATE = { active:false, itemId:null, offsetX:0, offsetY:0, startX:0, startY:0, moved:false };
+const INITIAL_DRAG_STATE = { active:false, itemId:null, offsetX:0, offsetY:0, startX:0, startY:0, moved:false, lpTimer:null, lpInterval:null, lpFired:false };
 const drag = { ...INITIAL_DRAG_STATE };
-function resetDragState() { Object.assign(drag, INITIAL_DRAG_STATE); }
+function resetDragState() {
+  clearTimeout(drag.lpTimer);
+  clearInterval(drag.lpInterval);
+  Object.assign(drag, INITIAL_DRAG_STATE);
+}
 
 function quickUseItem(itemId) {
   const item = gs.inventory.find(i => i.id === itemId);
@@ -1096,12 +1173,39 @@ function startDrag(e, itemId, mode) {
   drag.startX  = cx;
   drag.startY  = cy;
   drag.moved   = false;
+  drag.lpFired = false;
 
   $ghost.textContent = def ? def.e : '';
   $ghost.className   = `inv-item ${item.type} show`;
   $ghost.style.left  = `${cx - drag.offsetX - 26}px`;
   $ghost.style.top   = `${cy - drag.offsetY - 26}px`;
   srcEl.style.opacity = '0.3';
+
+  // Long-press: after 600ms hold without significant movement, start continuous send
+  drag.lpTimer = setTimeout(() => {
+    if (gs.phase === 'ENDED') { resetDragState(); return; }
+    drag.lpFired = true;
+    $ghost.className = '';  // hide ghost during long-press
+    const srcEl2 = document.getElementById(`itm-${itemId}`);
+    if (srcEl2) srcEl2.style.opacity = '1';
+
+    const doSend = () => {
+      if (gs.phase === 'ENDED') { clearInterval(drag.lpInterval); return; }
+      if (!item.isProduct) {
+        const sendable = gs.inventory.filter(i => !i.isProduct);
+        if (sendable.length === 0) { clearInterval(drag.lpInterval); return; }
+        const first = sendable[0];
+        const facType = MATERIAL_TO_FACILITY_MAP[first.type];
+        if (facType) processMaterial(facType, first.id);
+      } else {
+        const sendable = gs.inventory.filter(i => i.isProduct);
+        if (sendable.length === 0) { clearInterval(drag.lpInterval); return; }
+        sellItem(sendable[0].id);
+      }
+    };
+    doSend();
+    drag.lpInterval = setInterval(doSend, LONG_PRESS_SEND_INTERVAL);
+  }, LONG_PRESS_DELAY);
 
   if (mode === 'touch') {
     document.addEventListener('touchmove', onDragMove, { passive: false });
@@ -1117,7 +1221,14 @@ function onDragMove(e) {
   e.preventDefault();
   const cx = e.touches ? e.touches[0].clientX : e.clientX;
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
-  if (Math.abs(cx - drag.startX) > DRAG_MOVEMENT_THRESHOLD || Math.abs(cy - drag.startY) > DRAG_MOVEMENT_THRESHOLD) drag.moved = true;
+  if (Math.abs(cx - drag.startX) > DRAG_MOVEMENT_THRESHOLD || Math.abs(cy - drag.startY) > DRAG_MOVEMENT_THRESHOLD) {
+    drag.moved = true;
+    // Cancel long-press if user starts dragging
+    if (drag.lpTimer && !drag.lpFired) {
+      clearTimeout(drag.lpTimer);
+      drag.lpTimer = null;
+    }
+  }
   $ghost.style.left = `${cx - drag.offsetX - 26}px`;
   $ghost.style.top  = `${cy - drag.offsetY - 26}px`;
   highlightDropTargets(cx, cy);
@@ -1129,6 +1240,26 @@ function onDragEnd(e) {
   document.removeEventListener('touchend',  onDragEnd);
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup',   onDragEnd);
+
+  // Always cancel long-press timers on drag end
+  clearTimeout(drag.lpTimer);
+  clearInterval(drag.lpInterval);
+
+  // If long-press was active, it already handled sending — just clean up
+  if (drag.lpFired) {
+    $ghost.className = '';
+    resetDragState();
+    return;
+  }
+
+  // Phase guard: if game ended during drag, cancel without action
+  if (gs.phase === 'ENDED') {
+    const srcEl = document.getElementById(`itm-${drag.itemId}`);
+    if (srcEl) srcEl.style.opacity = '1';
+    $ghost.className = '';
+    resetDragState();
+    return;
+  }
 
   const cx = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
   const cy = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
@@ -1361,6 +1492,7 @@ function startGameMode(mode) {
   gs.totalCoins = 0;
   gs.animals = [];
   gs.inventory = [];
+  gs.facilityItems = [];
   gs.facilities = {
     cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
     workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
@@ -1391,7 +1523,8 @@ function startGameMode(mode) {
   document.getElementById('comboDisplay').classList.remove('show');
   $gameArea.classList.remove('hot');
   $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
-  $invRow.innerHTML = '<div class="inv-lbl">🎒 所持品</div>';
+  $invRow.innerHTML = '';
+  renderInv();
   $invRow.style.pointerEvents = '';
   FACILITY_TYPES.forEach(ft => {
     const el = document.getElementById(`fc-${ft}`);
@@ -1557,6 +1690,10 @@ function showRanking(score) {
     : (score === 0 ? 'まずはコインを稼いでみよう！' : 'ランクイン達成！');
 
   overlay.innerHTML = `
+    <div class="rk-actions">
+      <button class="rk-again" onclick="retrySpeedMode()">🔥 もう1回挑戦！</button>
+      <button class="rk-switch" onclick="selectMode('infinite')">♾️ 無限モードでプレイ</button>
+    </div>
     <div class="rk-badge">🏆 スピードランキング</div>
     <div class="rk-title">あなたの順位<br>${playerRank}位 / ${totalEntries}人中</div>
     <div class="rk-you-box">
@@ -1572,10 +1709,6 @@ function showRanking(score) {
       <tbody>${rowsHTML}</tbody>
     </table>
     <div class="rk-dots">・・・</div>
-    <div class="rk-actions">
-      <button class="rk-again" onclick="retrySpeedMode()">🔥 もう1回挑戦！</button>
-      <button class="rk-switch" onclick="selectMode('infinite')">♾️ 無限モードでプレイ</button>
-    </div>
   `;
   overlay.classList.add('open');
 }

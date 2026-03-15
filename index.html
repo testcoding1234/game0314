@@ -16,12 +16,6 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
 #home-title{font-size:18px;font-weight:900;color:#7dd3fc;letter-spacing:.06em;}
 #home-subtitle{font-size:11px;color:#64748b;}
 
-/* ===== カテゴリタブ ===== */
-#cat-tabs{height:40px;display:flex;align-items:center;gap:6px;padding:0 14px;background:rgba(0,8,28,.7);border-bottom:1px solid rgba(125,211,252,.1);flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
-#cat-tabs::-webkit-scrollbar{display:none;}
-.cat-tab{font-size:11px;font-weight:700;color:#64748b;padding:4px 12px;border-radius:20px;border:1px solid rgba(100,116,139,.3);cursor:pointer;white-space:nowrap;transition:all .2s;}
-.cat-tab.active,.cat-tab:active{color:#7dd3fc;border-color:rgba(125,211,252,.5);background:rgba(125,211,252,.1);}
-
 /* ===== スクロールリスト ===== */
 #game-list{flex:1;overflow-y:auto;padding:14px 14px 20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none;}
 #game-list::-webkit-scrollbar{display:none;}
@@ -61,11 +55,7 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
 .coming-name{font-size:14px;font-weight:800;color:#94a3b8;}
 .coming-label{font-size:10px;color:#475569;font-weight:600;letter-spacing:.08em;}
 
-/* ===== フッター ===== */
-#home-footer{height:52px;display:flex;align-items:center;justify-content:space-around;background:rgba(4,10,24,.95);border-top:1px solid rgba(125,211,252,.1);flex-shrink:0;}
-.footer-btn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#475569;cursor:pointer;transition:color .2s;}
-.footer-btn.active,.footer-btn:active{color:#7dd3fc;}
-.footer-btn-icon{font-size:20px;}
+
 </style>
 </head>
 <body>
@@ -77,15 +67,6 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
       <div id="home-title">🎮 ゲームセンター</div>
     </div>
     <div id="home-subtitle">ゲームを選んでプレイ！</div>
-  </div>
-
-  <!-- カテゴリタブ -->
-  <div id="cat-tabs">
-    <div class="cat-tab active">すべて</div>
-    <div class="cat-tab">アクション</div>
-    <div class="cat-tab">サバイバル</div>
-    <div class="cat-tab">パズル</div>
-    <div class="cat-tab">RPG</div>
   </div>
 
   <!-- ゲームリスト -->
@@ -154,24 +135,6 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
         </div>
       </div>
     </div>
-
-  </div>
-
-  <!-- フッターナビ -->
-  <div id="home-footer">
-    <div class="footer-btn active">
-      <span class="footer-btn-icon">🏠</span>ホーム
-    </div>
-    <div class="footer-btn">
-      <span class="footer-btn-icon">🔍</span>さがす
-    </div>
-    <div class="footer-btn">
-      <span class="footer-btn-icon">🏆</span>ランキング
-    </div>
-    <div class="footer-btn">
-      <span class="footer-btn-icon">👤</span>マイページ
-    </div>
-  </div>
 
 </div>
 

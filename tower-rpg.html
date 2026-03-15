@@ -16,10 +16,10 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 @keyframes twinkle{0%,100%{opacity:.2}50%{opacity:1}}
 .title-logo{font-size:64px;margin-bottom:8px;animation:floatY 2.5s ease-in-out infinite;}
 @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
-.title-main{font-size:38px;font-weight:900;background:linear-gradient(135deg,#fde68a,#f59e0b,#fde68a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.08em;text-shadow:none;filter:drop-shadow(0 0 20px rgba(245,158,11,.6));}
-.title-sub{font-size:13px;color:#a78bfa;letter-spacing:.12em;margin-top:4px;margin-bottom:32px;}
-.title-hero{font-size:80px;margin:8px 0;animation:heroIdle 1.2s ease-in-out infinite alternate;}
-@keyframes heroIdle{from{transform:translateY(0) scaleX(1)}to{transform:translateY(-6px) scaleX(-1)}}
+.title-main{font-size:38px;font-weight:900;background:linear-gradient(135deg,#fde68a,#f59e0b,#fde68a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.08em;filter:drop-shadow(0 0 20px rgba(245,158,11,.6));}
+.title-sub{font-size:13px;color:#a78bfa;letter-spacing:.12em;margin-top:4px;margin-bottom:24px;}
+.title-hero{font-size:80px;margin:6px 0;animation:titleHeroFloat 1.4s ease-in-out infinite alternate;}
+@keyframes titleHeroFloat{from{transform:translateY(0)}to{transform:translateY(-10px)}}
 .title-desc{font-size:12px;color:#94a3b8;text-align:center;line-height:1.8;margin-bottom:28px;padding:0 24px;}
 .title-start-btn{background:linear-gradient(135deg,#7c3aed,#9333ea,#c026d3);color:#fff;font-size:20px;font-weight:900;padding:16px 48px;border-radius:50px;border:none;cursor:pointer;box-shadow:0 0 30px rgba(147,51,234,.7),0 4px 16px rgba(0,0,0,.5);letter-spacing:.1em;animation:pulseShadow 1.5s ease-in-out infinite;}
 @keyframes pulseShadow{0%,100%{box-shadow:0 0 20px rgba(147,51,234,.5),0 4px 16px rgba(0,0,0,.5)}50%{box-shadow:0 0 40px rgba(147,51,234,.9),0 4px 20px rgba(0,0,0,.6)}}
@@ -28,56 +28,264 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 .back-link:active{background:rgba(255,255,255,.05);}
 
 /* ====== GAME SCREEN ====== */
-#gameScreen{position:absolute;inset:0;background:linear-gradient(180deg,#0a0020 0%,#150030 50%,#0a0015 100%);display:none;flex-direction:column;}
-
-/* header */
-#gameHeader{height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:rgba(0,0,20,.85);border-bottom:1px solid rgba(139,92,246,.3);}
-#powerDisplay{display:flex;align-items:center;gap:7px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.5);border-radius:20px;padding:5px 13px;}
-#powerIcon{font-size:18px;}
-#powerValue{font-size:22px;font-weight:900;color:#fbbf24;min-width:56px;text-align:right;transition:color .2s;}
+#gameScreen{position:absolute;inset:0;background:linear-gradient(180deg,#05001a 0%,#0d0030 50%,#080015 100%);display:none;flex-direction:column;}
+#gameHeader{height:50px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(0,0,18,.88);border-bottom:1px solid rgba(139,92,246,.3);}
+#powerDisplay{display:flex;align-items:center;gap:6px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.5);border-radius:20px;padding:4px 12px;}
+#powerIcon{font-size:17px;}
+#powerValue{font-size:21px;font-weight:900;color:#fbbf24;min-width:52px;text-align:right;}
 .power-up{animation:powerBump .4s ease;}
 @keyframes powerBump{0%,100%{transform:scale(1);color:#fbbf24}40%{transform:scale(1.5);color:#fde68a}}
-#progressLabel{font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:.05em;}
+#progressLabel{font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:.04em;}
 
-/* towers overview */
-#towersOverview{height:120px;flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:8px 12px 0;position:relative;}
-.tower-silhouette{display:flex;flex-direction:column;align-items:center;gap:3px;transition:transform .3s;}
-.tower-label{font-size:9px;color:#64748b;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
-.tower-block{border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .3s;}
-.tower-silhouette.done .tower-block{background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);filter:grayscale(.4);}
-.tower-silhouette.done .tower-label{color:#4ade80;}
-.tower-silhouette.active .tower-block{background:rgba(139,92,246,.25);border:2px solid #7c3aed;box-shadow:0 0 12px rgba(139,92,246,.5);}
-.tower-silhouette.active .tower-label{color:#a78bfa;}
-.tower-silhouette.locked .tower-block{background:rgba(30,10,60,.5);border:1px solid rgba(100,80,140,.2);filter:grayscale(.8) brightness(.6);}
-.tower-silhouette.locked .tower-label{color:#374151;}
-.tower-arrow{position:absolute;bottom:4px;font-size:18px;color:#7c3aed;animation:arrowPulse .8s ease-in-out infinite alternate;}
-@keyframes arrowPulse{from{opacity:.4;transform:translateX(-2px)}to{opacity:1;transform:translateX(2px)}}
+/* ====== TOWER ROW (game area) ====== */
+#gameArea{
+  flex:1;
+  display:flex;
+  flex-direction:row;
+  align-items:flex-end;
+  justify-content:center;
+  gap:8px;
+  padding:8px 8px 0 8px;
+  position:relative;
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse at 50% 0%,rgba(80,0,160,.15) 0%,transparent 70%),
+    linear-gradient(180deg,#06001e 0%,#0c0028 40%,#100030 75%,#090018 100%);
+}
 
-/* current tower panel */
-#towerPanel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px 12px 0;}
-#towerTitle{font-size:15px;font-weight:900;color:#c4b5fd;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
-#towerTitle span{font-size:11px;color:#6b7280;font-weight:500;}
-#floorList{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scrollbar-width:none;padding-bottom:4px;}
-#floorList::-webkit-scrollbar{display:none;}
+/* ground line */
+#gameArea::after{
+  content:"";
+  position:absolute;
+  bottom:0;left:0;right:0;
+  height:3px;
+  background:linear-gradient(90deg,transparent 2%,rgba(139,92,246,.6) 10%,rgba(139,92,246,.6) 90%,transparent 98%);
+  pointer-events:none;
+}
 
-.floor-item{border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .12s,opacity .3s,background .2s;border:2px solid transparent;position:relative;overflow:hidden;}
-.floor-item.enemy{background:rgba(60,10,20,.8);border-color:rgba(239,68,68,.3);}
-.floor-item.item-floor{background:rgba(10,30,60,.8);border-color:rgba(96,165,250,.3);}
-.floor-item.enemy:active,.floor-item.item-floor:active{transform:scale(.97);}
-.floor-item.done{opacity:.35;pointer-events:none;}
-.floor-item.boss{background:rgba(80,0,0,.9);border-color:rgba(239,68,68,.7);box-shadow:0 0 16px rgba(239,68,68,.4);}
-.floor-item.boss .fi-name{color:#fca5a5;}
-.floor-emoji{font-size:34px;flex-shrink:0;}
-.fi-info{flex:1;}
-.fi-name{font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:2px;}
-.fi-value{font-size:11px;color:#94a3b8;}
-.fi-num{font-size:28px;font-weight:900;color:#fbbf24;flex-shrink:0;}
-.fi-num.item-num{color:#60a5fa;}
-.fi-num.boss-num{color:#f87171;}
-.fi-hint{position:absolute;top:4px;right:8px;font-size:9px;color:#6b7280;}
+/* ====== TOWER COLUMN ====== */
+.t-col{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:80px;
+  flex-shrink:0;
+}
+.t-label{
+  font-size:7.5px;
+  font-weight:800;
+  color:#6d28d9;
+  text-align:center;
+  letter-spacing:.04em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:80px;
+  height:16px;
+  line-height:16px;
+  margin-bottom:3px;
+}
+.t-col.t-active .t-label{color:#a78bfa;}
+.t-col.t-locked  .t-label{color:#374151;}
 
-/* calc log */
-#calcLog{height:38px;flex-shrink:0;background:rgba(0,0,20,.8);border-top:1px solid rgba(139,92,246,.2);display:flex;align-items:center;padding:0 12px;overflow-x:auto;scrollbar-width:none;gap:4px;white-space:nowrap;}
+/* stack holds the blocks */
+.t-stack{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+  width:78px;
+}
+
+/* base / ground element */
+.t-base{
+  width:78px;
+  height:10px;
+  background:linear-gradient(90deg,rgba(139,92,246,.3),rgba(167,139,250,.5),rgba(139,92,246,.3));
+  border-radius:0 0 4px 4px;
+  box-shadow:0 3px 8px rgba(0,0,0,.5);
+  flex-shrink:0;
+}
+.t-col.t-locked .t-base{background:linear-gradient(90deg,rgba(55,65,81,.3),rgba(75,85,99,.4),rgba(55,65,81,.3));}
+
+/* active tower indicator */
+.t-active-indicator{
+  font-size:9px;
+  color:#a78bfa;
+  font-weight:900;
+  text-align:center;
+  height:14px;
+  line-height:14px;
+  animation:indicatorPulse 1s ease-in-out infinite alternate;
+  margin-top:1px;
+}
+@keyframes indicatorPulse{from{opacity:.5}to{opacity:1}}
+
+/* ====== BLOCK ====== */
+.b{
+  width:78px;
+  height:52px;
+  flex-shrink:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+  border-radius:5px 5px 3px 3px;
+  cursor:pointer;
+  position:relative;
+  overflow:hidden;
+  border:2px solid;
+  /* 3-D raised look */
+  box-shadow:0 4px 0 rgba(0,0,0,.55),0 5px 8px rgba(0,0,0,.35);
+  transition:box-shadow .1s;
+  max-height:56px; /* used by the collapse transition */
+}
+.b:active:not(.b-done):not(.b-locked):not(.b-removing){
+  transform:translateY(3px);
+  box-shadow:0 1px 0 rgba(0,0,0,.55);
+}
+/* top sheen line */
+.b::before{
+  content:"";
+  position:absolute;
+  top:0;left:0;right:0;
+  height:2px;
+  background:rgba(255,255,255,.14);
+  border-radius:3px 3px 0 0;
+}
+
+/* enemy block */
+.b.b-enemy{
+  background:linear-gradient(160deg,#3d0a14 0%,#1e0509 100%);
+  border-color:rgba(239,68,68,.55);
+}
+/* item block */
+.b.b-item{
+  background:linear-gradient(160deg,#07163a 0%,#040e28 100%);
+  border-color:rgba(96,165,250,.55);
+}
+/* boss block */
+.b.b-boss{
+  background:linear-gradient(160deg,#5a0000 0%,#320000 100%);
+  border-color:rgba(239,68,68,.95);
+  box-shadow:0 4px 0 rgba(0,0,0,.6),0 0 22px rgba(239,68,68,.45),0 5px 10px rgba(0,0,0,.4);
+  height:58px;
+  max-height:62px;
+}
+.b.b-boss::after{
+  content:"👑";
+  position:absolute;
+  top:2px;right:4px;
+  font-size:9px;
+  line-height:1;
+}
+
+/* locked (future tower) */
+.b.b-locked{
+  cursor:default;
+  filter:grayscale(.7) brightness(.5);
+  opacity:.45;
+  pointer-events:none;
+}
+/* done (removed) */
+.b.b-done{
+  display:none;
+}
+/* block internals */
+.b-emoji{font-size:22px;line-height:1;pointer-events:none;}
+.b.b-boss .b-emoji{font-size:26px;}
+.b-name{font-size:7px;color:#94a3b8;line-height:1;pointer-events:none;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
+.b-val{font-size:12px;font-weight:900;color:#fbbf24;line-height:1;pointer-events:none;}
+.b.b-item .b-val{color:#60a5fa;}
+.b.b-boss .b-val{color:#f87171;font-size:11px;}
+
+/* ====== DARUMA KNOCK-OUT ANIMATION ====== */
+/* The flying clone that slides out */
+.b-clone{
+  position:absolute;
+  z-index:80;
+  pointer-events:none;
+  border-radius:5px 5px 3px 3px;
+  border:2px solid;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1px;
+}
+@keyframes darumaFly{
+  0%  {transform:translateX(0) rotate(0deg);opacity:1;}
+  35% {transform:translateX(60px) rotate(8deg);opacity:1;}
+  100%{transform:translateX(180px) rotate(20deg);opacity:0;}
+}
+.b-clone.fly-right{animation:darumaFly .38s ease-in forwards;}
+@keyframes darumaFlyLeft{
+  0%  {transform:translateX(0) rotate(0deg);opacity:1;}
+  35% {transform:translateX(-60px) rotate(-8deg);opacity:1;}
+  100%{transform:translateX(-180px) rotate(-20deg);opacity:0;}
+}
+.b-clone.fly-left{animation:darumaFlyLeft .38s ease-in forwards;}
+
+/* height collapse — applied after clone is detached */
+.b-collapsing{
+  max-height:0 !important;
+  overflow:hidden !important;
+  padding-top:0 !important;
+  padding-bottom:0 !important;
+  border-top-width:0 !important;
+  border-bottom-width:0 !important;
+  box-shadow:none !important;
+  gap:0 !important;
+  transition:max-height .22s ease-out, padding .22s, border-width .22s, gap .22s !important;
+}
+
+/* settle/drop animation for blocks ABOVE the knocked-out one */
+@keyframes darumaSettle{
+  0%  {transform:translateY(0);}
+  20% {transform:translateY(9px);}
+  55% {transform:translateY(-3px);}
+  80% {transform:translateY(1px);}
+  100%{transform:translateY(0);}
+}
+.b-settling{animation:darumaSettle .3s ease-out forwards;}
+
+/* item absorption animation */
+@keyframes itemAbsorb{
+  0%  {transform:scale(1);box-shadow:0 4px 0 rgba(0,0,0,.55);}
+  30% {transform:scale(1.18);box-shadow:0 0 26px 10px rgba(96,165,250,.8);}
+  60% {transform:scale(.55);opacity:.7;}
+  100%{transform:scale(.04);opacity:0;}
+}
+.b-absorbing{animation:itemAbsorb .45s ease-in-out forwards;pointer-events:none;}
+
+/* enemy fail shake */
+@keyframes failShake{
+  0%,100%{transform:translateX(0);}
+  12%{transform:translateX(-8px);}
+  25%{transform:translateX(8px);}
+  37%{transform:translateX(-6px);box-shadow:0 0 20px rgba(239,68,68,.9);}
+  50%{transform:translateX(6px);}
+  62%{transform:translateX(-4px);}
+  75%{transform:translateX(4px);}
+  88%{transform:translateX(-2px);}
+}
+.b-failing{animation:failShake .52s ease-in-out forwards;pointer-events:none;}
+
+/* clash effect */
+.clash-effect{position:absolute;pointer-events:none;z-index:200;font-size:30px;animation:clashPop .5s ease-out forwards;}
+@keyframes clashPop{
+  0%  {transform:scale(0) rotate(-30deg);opacity:1;}
+  40% {transform:scale(1.5) rotate(15deg);opacity:1;}
+  70% {transform:scale(1) rotate(0deg);opacity:.8;}
+  100%{transform:scale(.1) rotate(8deg);opacity:0;}
+}
+/* floating text */
+.float-text{position:absolute;pointer-events:none;z-index:250;font-size:22px;font-weight:900;text-shadow:2px 2px 0 rgba(0,0,0,.8);animation:floatUp .9s ease-out forwards;}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}55%{opacity:1;transform:translateY(-44px) scale(1.2)}100%{opacity:0;transform:translateY(-80px) scale(.5)}}
+
+/* ====== CALC LOG ====== */
+#calcLog{height:36px;flex-shrink:0;background:rgba(0,0,18,.82);border-top:1px solid rgba(139,92,246,.2);display:flex;align-items:center;padding:0 12px;overflow-x:auto;scrollbar-width:none;gap:4px;white-space:nowrap;}
 #calcLog::-webkit-scrollbar{display:none;}
 .calc-token{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;}
 .calc-token.op{color:#a78bfa;background:rgba(139,92,246,.15);}
@@ -85,13 +293,9 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 .calc-token.result{color:#4ade80;background:rgba(74,222,128,.12);}
 .calc-token.lose{color:#f87171;background:rgba(239,68,68,.12);}
 
-/* floating dmg */
-.float-text{position:absolute;pointer-events:none;z-index:300;font-size:26px;font-weight:900;text-shadow:2px 2px 0 rgba(0,0,0,.8);animation:floatUp .9s ease-out forwards;}
-@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}60%{opacity:1;transform:translateY(-50px) scale(1.3)}100%{opacity:0;transform:translateY(-90px) scale(.6)}}
-
-/* instruction */
-#instruction{height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,20,.6);}
-#instruction p{font-size:11px;color:#6b7280;letter-spacing:.04em;}
+/* ====== INSTRUCTION ====== */
+#instruction{height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,18,.62);}
+#instruction p{font-size:10px;color:#6b7280;letter-spacing:.03em;}
 
 /* ====== RESULT SCREENS ====== */
 #clearScreen,#gameoverScreen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:14px;}
@@ -108,8 +312,6 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 .result-btn:active{transform:scale(.95);}
 .result-btn.retry{background:linear-gradient(135deg,#dc2626,#b91c1c);}
 .result-home{font-size:12px;color:#6b7280;cursor:pointer;padding:6px;border-bottom:1px solid rgba(107,114,128,.3);}
-
-/* transition overlay */
 #transOverlay{position:absolute;inset:0;background:#000;z-index:150;pointer-events:none;opacity:0;transition:opacity .3s;}
 </style>
 </head>
@@ -124,7 +326,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
     <div class="title-main">勇者の塔</div>
     <div class="title-sub">HERO'S TOWER</div>
     <div class="title-hero">⚔️</div>
-    <div class="title-desc">左から迫る塔の敵を倒せ！<br>敵やアイテムを選ぶ順番が勝敗を分ける！<br>魔王の力を超えられるか？</div>
+    <div class="title-desc">敵やアイテムを選ぶと<br>だるま落としのように消える！<br>塔を攻略して魔王を倒せ！</div>
     <button class="title-start-btn" id="startBtn">ゲームスタート</button>
   </div>
 
@@ -135,19 +337,16 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
         <span id="powerIcon">⚔️</span>
         <span id="powerValue">10</span>
       </div>
-      <div id="progressLabel">塔 1 / 4</div>
+      <div id="progressLabel">0 / 0 撃破</div>
     </div>
 
-    <div id="towersOverview" id="towersOverview"></div>
-
-    <div id="towerPanel">
-      <div id="towerTitle">⬛ 塔の名前 <span>タップして敵・アイテムを選べ！</span></div>
-      <div id="floorList"></div>
+    <!-- All 4 towers visible side-by-side, anchored to bottom -->
+    <div id="gameArea">
+      <!-- towers built by JS -->
     </div>
 
     <div id="calcLog"><span class="calc-token num">10</span></div>
-
-    <div id="instruction"><p>⬆ 敵に勝てれば数字が加算される　アイテムは計算に影響する</p></div>
+    <div id="instruction"><p>ブロックをタップ → だるま落とし！　アイテムで強化して敵を倒せ</p></div>
   </div>
 
   <!-- ===== CLEAR SCREEN ===== -->
@@ -176,215 +375,396 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 <script>
 // ======================================================
 // GAME DATA
+// Floors ordered TOP→BOTTOM (index 0 = top/hardest, last = bottom/easiest)
+// This way knocking out a bottom block makes the boss visually "fall" closer
 // ======================================================
+const BOSS_POWER = 3000;
+
 const TOWERS = [
   {
-    id: 0,
-    name: "エントランスの塔",
-    emoji: "🌲",
-    width: 54,
-    height: 70,
-    bg: "#1a3a10",
-    borderColor: "#4ade80",
-    floors: [
-      { id: 0, type: "enemy", emoji: "🐺", name: "ウルフ",       value: 8,  hint: "倒せる！" },
-      { id: 1, type: "item",  emoji: "🍄", name: "魔法のキノコ", op: "×",   value: 4, hint: "×4になる" },
+    id:0, name:"入口の塔", emoji:"🌲",
+    floors:[
+      // top → bottom
+      { id:0, type:"enemy", emoji:"🦁", name:"ライオン",     value:25 },
+      { id:1, type:"item",  emoji:"🍄", name:"魔法のキノコ", op:"×", value:3 },
+      { id:2, type:"enemy", emoji:"🐺", name:"ウルフ",       value:8 },
     ]
   },
   {
-    id: 1,
-    name: "森の砦",
-    emoji: "🏚️",
-    width: 68,
-    height: 92,
-    bg: "#1e3a10",
-    borderColor: "#86efac",
-    floors: [
-      { id: 0, type: "enemy", emoji: "👺", name: "ゴブリン兵A",  value: 50, hint: "" },
-      { id: 1, type: "enemy", emoji: "👺", name: "ゴブリン兵B",  value: 60, hint: "" },
-      { id: 2, type: "item",  emoji: "💊", name: "回復ポーション", op: "+", value: 100, hint: "+100" },
+    id:1, name:"森の砦", emoji:"🏚️",
+    floors:[
+      { id:0, type:"enemy", emoji:"🐉", name:"小ドラゴン",   value:180 },
+      { id:1, type:"item",  emoji:"🌟", name:"魔法の粉",     op:"×", value:2 },
+      { id:2, type:"enemy", emoji:"👺", name:"ゴブリンB",    value:70 },
+      { id:3, type:"item",  emoji:"��", name:"回復薬",       op:"+", value:100 },
+      { id:4, type:"enemy", emoji:"👺", name:"ゴブリンA",    value:50 },
     ]
   },
   {
-    id: 2,
-    name: "暗黒の塔",
-    emoji: "🏰",
-    width: 80,
-    height: 110,
-    bg: "#10103a",
-    borderColor: "#818cf8",
-    floors: [
-      { id: 0, type: "enemy", emoji: "🗡️", name: "闇の騎士",     value: 180, hint: "" },
-      { id: 1, type: "item",  emoji: "💎", name: "魔法の結晶",   op: "×",    value: 2,   hint: "×2になる" },
-      { id: 2, type: "enemy", emoji: "🧙", name: "大魔道士",     value: 600, hint: "強い！" },
-      { id: 3, type: "item",  emoji: "💀", name: "呪われた偶像", op: "÷",    value: 5,   hint: "÷5になる" },
+    id:2, name:"暗黒の塔", emoji:"🏰",
+    floors:[
+      { id:0, type:"enemy", emoji:"🌑", name:"暗黒竜",       value:1200 },
+      { id:1, type:"item",  emoji:"💀", name:"呪いの偶像",   op:"÷", value:3 },
+      { id:2, type:"enemy", emoji:"👿", name:"堕天使",       value:800 },
+      { id:3, type:"item",  emoji:"💊", name:"上級回復薬",   op:"+", value:300 },
+      { id:4, type:"enemy", emoji:"🧙", name:"大魔道士",     value:500 },
+      { id:5, type:"item",  emoji:"💎", name:"魔法の結晶",   op:"×", value:2 },
+      { id:6, type:"enemy", emoji:"🗡️",  name:"闇の騎士",    value:250 },
     ]
   },
   {
-    id: 3,
-    name: "魔王城",
-    emoji: "👑",
-    width: 90,
-    height: 110,
-    bg: "#3a0808",
-    borderColor: "#f87171",
-    floors: [
-      { id: 0, type: "enemy", emoji: "👹",  name: "魔王の番人",  value: 200,  hint: "" },
-      { id: 1, type: "item",  emoji: "⚡",  name: "聖剣の力",    op: "×",     value: 3,   hint: "×3になる" },
-      { id: 2, type: "enemy", emoji: "😈",  name: "魔王",        value: 1500, hint: "ラスボス！", isBoss: true },
+    id:3, name:"魔王城", emoji:"👑",
+    floors:[
+      { id:0, type:"enemy", emoji:"😈", name:"魔王",         value:BOSS_POWER, isBoss:true },
+      { id:1, type:"item",  emoji:"🌟", name:"英雄の魂",     op:"×", value:2 },
+      { id:2, type:"enemy", emoji:"🐲", name:"炎竜",         value:2000 },
+      { id:3, type:"item",  emoji:"💎", name:"神秘の結晶",   op:"×", value:2 },
+      { id:4, type:"enemy", emoji:"🦊", name:"九尾の狐",     value:1200 },
+      { id:5, type:"item",  emoji:"🔮", name:"賢者の石",     op:"+", value:500 },
+      { id:6, type:"enemy", emoji:"👹", name:"魔王の番人B",  value:600 },
+      { id:7, type:"item",  emoji:"⚡", name:"聖剣の力",     op:"×", value:3 },
+      { id:8, type:"enemy", emoji:"👹", name:"魔王の番人A",  value:400 },
     ]
   }
 ];
 
-const TOWER_COUNT = TOWERS.length;
+const TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
 
 // ======================================================
 // GAME STATE
 // ======================================================
 let gs = {
-  phase: "TITLE",   // TITLE | PLAY | OVER | CLEAR
-  power: 10,
-  towerIndex: 0,
-  floorsDone: [],   // set of "towerIdx-floorId" strings
-  calcTokens: [],   // [{label,cls}]
-  turnsTotal: 0,
-  defeatedEnemies: 0,
+  phase:"TITLE",
+  power:10,
+  towerIndex:0,
+  floorsDone:[],   // "ti-fi" strings
+  calcTokens:[],
+  turnsTotal:0,
+  defeatedEnemies:0,
 };
 
-// ======================================================
-// HELPERS
-// ======================================================
 function $(id){ return document.getElementById(id); }
 
-function applyPower(token){
-  const p = gs.power;
-  if(token.type === "enemy"){
-    if(gs.power > token.value){
-      gs.power = Math.floor(gs.power + token.value);
+// ======================================================
+// APPLY POWER
+// ======================================================
+function applyPower(floor){
+  if(floor.type==="enemy"){
+    if(gs.power > floor.value){
+      gs.power = Math.floor(gs.power + floor.value);
       gs.defeatedEnemies++;
-      return { ok: true, delta: "+" + token.value };
-    } else {
-      return { ok: false };
+      return { ok:true, delta:"+"+floor.value };
     }
-  } else {
-    // item
-    if(token.op === "×"){
-      gs.power = Math.floor(gs.power * token.value);
-      return { ok: true, delta: "×" + token.value };
-    } else if(token.op === "+"){
-      gs.power = Math.floor(gs.power + token.value);
-      return { ok: true, delta: "+" + token.value };
-    } else if(token.op === "÷"){
-      gs.power = Math.floor(gs.power / token.value);
-      return { ok: true, delta: "÷" + token.value };
-    }
-    return { ok: true, delta: token.op + token.value };
+    return { ok:false };
   }
+  if(floor.op==="×")      gs.power = Math.floor(gs.power * floor.value);
+  else if(floor.op==="+") gs.power = Math.floor(gs.power + floor.value);
+  else if(floor.op==="÷") gs.power = Math.floor(gs.power / floor.value);
+  return { ok:true, delta:floor.op+floor.value };
 }
 
 // ======================================================
-// TITLE SCREEN
+// BUILD ALL TOWERS
 // ======================================================
-function buildTitleStars(){
-  const c = $("titleStars");
-  for(let i=0;i<60;i++){
-    const s = document.createElement("div");
-    s.className = "star-p";
-    const sz = 1+Math.random()*2;
-    s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;animation-duration:${2+Math.random()*4}s;animation-delay:${-Math.random()*4}s;`;
-    c.appendChild(s);
-  }
-}
+function buildAllTowers(){
+  const area = $("gameArea");
+  area.innerHTML = "";
 
-// ======================================================
-// TOWERS OVERVIEW (silhouettes at the top of game screen)
-// ======================================================
-function buildTowersOverview(){
-  const container = $("towersOverview");
-  container.innerHTML = "";
-  let arrowLeft = 12;
-  TOWERS.forEach((tower, i) => {
-    const isDone   = i < gs.towerIndex;
-    const isActive = i === gs.towerIndex;
-    const isLocked = i > gs.towerIndex;
+  TOWERS.forEach((tower, ti) => {
+    const isActive = (ti === gs.towerIndex);
+    const isLocked = (ti > gs.towerIndex);
 
-    const wrap = document.createElement("div");
-    wrap.className = "tower-silhouette " + (isDone?"done":isActive?"active":"locked");
+    const col = document.createElement("div");
+    col.className = "t-col " + (isActive ? "t-active" : isLocked ? "t-locked" : "t-done");
+    col.id = "tcol-" + ti;
 
-    const block = document.createElement("div");
-    block.className = "tower-block";
-    block.style.width  = tower.width  + "px";
-    block.style.height = tower.height + "px";
-    block.textContent  = tower.emoji;
-
+    // Tower label
     const lbl = document.createElement("div");
-    lbl.className = "tower-label";
-    lbl.textContent = isDone ? "✓ クリア" : isActive ? "▼ 現在" : "???";
+    lbl.className = "t-label";
+    lbl.textContent = tower.emoji + " " + tower.name;
+    col.appendChild(lbl);
 
-    wrap.appendChild(block);
-    wrap.appendChild(lbl);
-    container.appendChild(wrap);
+    // Block stack
+    const stack = document.createElement("div");
+    stack.className = "t-stack";
+    stack.id = "tstack-" + ti;
 
+    tower.floors.forEach(floor => {
+      const key  = ti + "-" + floor.id;
+      const done = gs.floorsDone.includes(key);
+      const b = document.createElement("div");
+      b.id        = "b-" + ti + "-" + floor.id;
+      b.className = [
+        "b",
+        floor.type === "enemy" ? "b-enemy" : "b-item",
+        floor.isBoss ? "b-boss" : "",
+        done       ? "b-done"   : "",
+        isLocked   ? "b-locked" : "",
+      ].filter(Boolean).join(" ");
+
+      b.innerHTML =
+        "<span class='b-emoji'>" + floor.emoji + "</span>" +
+        "<span class='b-name'>"  + floor.name  + "</span>" +
+        "<span class='b-val'>"   + (floor.type === "enemy" ? "⚔️" + floor.value : floor.op + floor.value) + "</span>";
+
+      if(!done && !isLocked){
+        const f  = floor;
+        const t  = ti;
+        b.addEventListener("click",    ()    => onBlockTap(t, f.id, b, f));
+        b.addEventListener("touchend", (ev)  => { ev.preventDefault(); onBlockTap(t, f.id, b, f); });
+      }
+      stack.appendChild(b);
+    });
+
+    col.appendChild(stack);
+
+    // Base
+    const base = document.createElement("div");
+    base.className = "t-base";
+    col.appendChild(base);
+
+    // Active indicator
     if(isActive){
-      const arrow = document.createElement("div");
-      arrow.className = "tower-arrow";
-      arrow.textContent = "►";
-      arrow.style.left = (arrowLeft + tower.width/2 - 9) + "px";
-      container.appendChild(arrow);
+      const ind = document.createElement("div");
+      ind.className = "t-active-indicator";
+      ind.textContent = "▲ NOW";
+      col.appendChild(ind);
     }
-    arrowLeft += tower.width + 8;
+
+    area.appendChild(col);
   });
+
+  updateProgress();
 }
 
 // ======================================================
-// FLOOR LIST
+// BLOCK TAP
 // ======================================================
-function buildFloorList(){
-  const tower  = TOWERS[gs.towerIndex];
-  const listEl = $("floorList");
-  listEl.innerHTML = "";
+function onBlockTap(ti, fi, el, floor){
+  const key = ti + "-" + floor.id;
+  if(gs.floorsDone.includes(key)) return;
+  if(el.classList.contains("b-removing")) return;
 
-  $("towerTitle").innerHTML = tower.emoji + " " + tower.name +
-    " <span>タップして敵・アイテムを選べ！</span>";
+  gs.turnsTotal++;
+  const result = applyPower(floor);
 
-  $("progressLabel").textContent = "塔 " + (gs.towerIndex+1) + " / " + TOWER_COUNT;
+  if(!result.ok){
+    // FAIL — shake + float, then game over
+    el.classList.add("b-failing");
+    spawnFloat(el, "❌ 力不足!", "#f87171");
+    el.addEventListener("animationend", () => showGameover(floor), { once:true });
+    return;
+  }
 
-  tower.floors.forEach(floor => {
-    const key  = gs.towerIndex + "-" + floor.id;
-    const done = gs.floorsDone.includes(key);
+  // SUCCESS — record and mark as removing so double-taps are blocked
+  gs.floorsDone.push(key);
+  el.classList.add("b-removing");
 
-    const el = document.createElement("div");
-    el.className = "floor-item " +
-      (floor.type==="enemy" ? "enemy" : "item-floor") +
-      (floor.isBoss ? " boss" : "") +
-      (done ? " done" : "");
-    el.dataset.floorId = floor.id;
+  if(floor.type === "enemy"){
+    spawnClash(el);
+    spawnFloat(el, "+" + floor.value, "#4ade80");
+    darumaKnockOut(el, ti, floor.id, () => afterRemove(ti, floor));
+  } else {
+    spawnFloat(el, result.delta, "#60a5fa");
+    darumaAbsorb(el, ti, floor.id, () => afterRemove(ti, floor));
+  }
 
-    // hint text
-    let numStr = "";
-    if(floor.type === "enemy"){
-      numStr = String(floor.value);
-    } else {
-      numStr = (floor.op || "") + String(floor.value);
+  pushCalcToken(result.delta, floor.type === "item" ? "op" : "num");
+  pushCalcToken("=", "op");
+  pushCalcToken(String(gs.power), "result");
+  updatePowerDisplay();
+}
+
+// ======================================================
+// DARUMA KNOCK-OUT (enemy): clone flies out, original collapses
+// ======================================================
+function darumaKnockOut(blockEl, ti, fi, onDone){
+  const stack = $("tstack-" + ti);
+  const appEl = $("app");
+
+  // Which blocks are ABOVE this one in the DOM (DOM index < blockEl's DOM index)?
+  const stackChildren = [...stack.children];
+  const myIdx    = stackChildren.indexOf(blockEl);
+  const domAbove = stackChildren.filter((c,i) => i < myIdx && !c.classList.contains("b-done"));
+
+  // Slide direction: alternate by tower index
+  const flyClass = (ti % 2 === 0) ? "fly-right" : "fly-left";
+
+  // 1. Snapshot position for clone
+  const rect    = blockEl.getBoundingClientRect();
+  const appRect = appEl.getBoundingClientRect();
+
+  // 2. Create flying clone
+  const clone = document.createElement("div");
+  clone.className = "b-clone " + (blockEl.classList.contains("b-enemy") ? "b-enemy " : "b-item ") +
+                    (blockEl.classList.contains("b-boss") ? "b-boss " : "") + flyClass;
+  clone.style.cssText =
+    "left:"   + (rect.left - appRect.left) + "px;" +
+    "top:"    + (rect.top  - appRect.top)  + "px;" +
+    "width:"  + rect.width  + "px;" +
+    "height:" + rect.height + "px;" +
+    "border-color:" + (blockEl.classList.contains("b-enemy") ? "rgba(239,68,68,.55)" : "rgba(96,165,250,.55)") + ";";
+  clone.innerHTML = blockEl.innerHTML;
+  appEl.appendChild(clone);
+  clone.addEventListener("animationend", () => clone.remove());
+
+  // 3. Immediately hide original (remove from flow via collapse)
+  blockEl.style.maxHeight = rect.height + "px"; // set explicit start value
+  // Force reflow so transition picks up the starting value
+  void blockEl.offsetHeight;
+  blockEl.classList.add("b-collapsing");
+
+  // 4. Settle blocks that were ABOVE (they "fall" with a bounce)
+  setTimeout(() => {
+    domAbove.forEach(b => {
+      b.classList.add("b-settling");
+      b.addEventListener("animationend", () => b.classList.remove("b-settling"), { once:true });
+    });
+  }, 100);
+
+  // 5. Mark done after collapse finishes
+  setTimeout(() => {
+    blockEl.classList.add("b-done");
+    blockEl.classList.remove("b-collapsing", "b-removing");
+    onDone();
+  }, 480);
+}
+
+// ======================================================
+// DARUMA ABSORB (item): glow + shrink in place
+// ======================================================
+function darumaAbsorb(blockEl, ti, fi, onDone){
+  const stack    = $("tstack-" + ti);
+  const myIdx    = [...stack.children].indexOf(blockEl);
+  const domAbove = [...stack.children].filter((c,i) => i < myIdx && !c.classList.contains("b-done"));
+
+  blockEl.classList.add("b-absorbing");
+
+  setTimeout(() => {
+    const rect = blockEl.getBoundingClientRect();
+    blockEl.style.maxHeight = rect.height + "px";
+    void blockEl.offsetHeight;
+    blockEl.classList.add("b-collapsing");
+
+    domAbove.forEach(b => {
+      b.classList.add("b-settling");
+      b.addEventListener("animationend", () => b.classList.remove("b-settling"), { once:true });
+    });
+  }, 380);
+
+  setTimeout(() => {
+    blockEl.classList.add("b-done");
+    blockEl.classList.remove("b-absorbing", "b-collapsing", "b-removing");
+    onDone();
+  }, 660);
+}
+
+// ======================================================
+// AFTER BLOCK REMOVED
+// ======================================================
+function afterRemove(ti, floor){
+  updateProgress();
+
+  if(floor.isBoss){
+    setTimeout(() => showClear(), 600);
+    return;
+  }
+
+  // Check if all floors of THIS tower are done
+  const tower   = TOWERS[ti];
+  const allDone = tower.floors.every(f => gs.floorsDone.includes(ti + "-" + f.id));
+  if(allDone){
+    checkTowerAdvance();
+  }
+}
+
+// ======================================================
+// CHECK TOWER ADVANCE
+// ======================================================
+function checkTowerAdvance(){
+  if(gs.towerIndex >= TOWERS.length - 1) return;
+  gs.towerIndex++;
+
+  // Update current col label style
+  const prevCol = $("tcol-" + (gs.towerIndex - 1));
+  if(prevCol){ prevCol.className = "t-col t-done"; }
+
+  const nextCol = $("tcol-" + gs.towerIndex);
+  if(nextCol){
+    nextCol.className = "t-col t-active";
+    // Update label color
+    const lbl = nextCol.querySelector(".t-label");
+    if(lbl) lbl.style.color = "";
+
+    // Unlock blocks in this tower
+    const stack = $("tstack-" + gs.towerIndex);
+    if(stack){
+      const tower = TOWERS[gs.towerIndex];
+      [...stack.querySelectorAll(".b")].forEach((bEl, idx) => {
+        const fl = tower.floors[idx];
+        bEl.classList.remove("b-locked");
+        const t = gs.towerIndex;
+        const f = fl;
+        bEl.addEventListener("click",    ()    => onBlockTap(t, f.id, bEl, f));
+        bEl.addEventListener("touchend", (ev)  => { ev.preventDefault(); onBlockTap(t, f.id, bEl, f); });
+      });
     }
 
-    el.innerHTML = `
-      <div class="floor-emoji">${floor.emoji}</div>
-      <div class="fi-info">
-        <div class="fi-name">${floor.name}</div>
-        <div class="fi-value">${floor.type==="enemy"?"⚔️ 力："+floor.value:"🔮 "+floor.op+floor.value}</div>
-      </div>
-      <div class="fi-num ${floor.type==="item"?"item-num":""} ${floor.isBoss?"boss-num":""}">${numStr}</div>
-      ${floor.hint?`<div class="fi-hint">${floor.hint}</div>`:""}
-    `;
+    // Add active indicator
+    const ind = document.createElement("div");
+    ind.className = "t-active-indicator";
+    ind.textContent = "▲ NOW";
+    nextCol.appendChild(ind);
+  }
 
-    if(!done){
-      el.addEventListener("click", () => onFloorTap(floor.id, el));
-      el.addEventListener("touchend", e => { e.preventDefault(); onFloorTap(floor.id, el); });
-    }
+  // Remove old active indicator from previous column
+  const oldInd = document.querySelector("#tcol-" + (gs.towerIndex - 1) + " .t-active-indicator");
+  if(oldInd) oldInd.remove();
 
-    listEl.appendChild(el);
-  });
+  showTowerFlash(TOWERS[gs.towerIndex].name);
+}
+
+// ======================================================
+// POWER DISPLAY
+// ======================================================
+function updatePowerDisplay(){
+  const el = $("powerValue");
+  el.textContent = gs.power;
+  el.classList.remove("power-up");
+  void el.offsetWidth;
+  el.classList.add("power-up");
+}
+
+function updateProgress(){
+  $("progressLabel").textContent = gs.defeatedEnemies + " / " + TOTAL_ENEMIES + " 撃破";
+}
+
+// ======================================================
+// FLOATING TEXT + CLASH
+// ======================================================
+function spawnFloat(anchorEl, text, color){
+  const rect    = anchorEl.getBoundingClientRect();
+  const appRect = $("app").getBoundingClientRect();
+  const ft = document.createElement("div");
+  ft.className   = "float-text";
+  ft.textContent = text;
+  ft.style.color = color;
+  ft.style.left  = (rect.left - appRect.left + rect.width  / 2 - 20) + "px";
+  ft.style.top   = (rect.top  - appRect.top  + rect.height / 2 - 10) + "px";
+  $("app").appendChild(ft);
+  ft.addEventListener("animationend", () => ft.remove());
+}
+
+function spawnClash(anchorEl){
+  const rect    = anchorEl.getBoundingClientRect();
+  const appRect = $("app").getBoundingClientRect();
+  const cl = document.createElement("div");
+  cl.className   = "clash-effect";
+  cl.textContent = "⚔️";
+  cl.style.left  = (rect.left - appRect.left + rect.width  / 2 - 15) + "px";
+  cl.style.top   = (rect.top  - appRect.top  + rect.height / 2 - 15) + "px";
+  $("app").appendChild(cl);
+  cl.addEventListener("animationend", () => cl.remove());
 }
 
 // ======================================================
@@ -399,172 +779,72 @@ function renderCalcLog(){
   log.innerHTML = "";
   gs.calcTokens.forEach(t => {
     const span = document.createElement("span");
-    span.className = "calc-token " + t.cls;
+    span.className   = "calc-token " + t.cls;
     span.textContent = t.label;
     log.appendChild(span);
   });
-  // scroll to end
   log.scrollLeft = log.scrollWidth;
 }
 
 // ======================================================
-// FLOOR TAP
+// TOWER ADVANCE FLASH
 // ======================================================
-function onFloorTap(floorId, el){
-  const tower = TOWERS[gs.towerIndex];
-  const floor = tower.floors.find(f => f.id === floorId);
-  if(!floor) return;
-
-  const key = gs.towerIndex + "-" + floor.id;
-  if(gs.floorsDone.includes(key)) return;
-
-  gs.turnsTotal++;
-
-  const result = applyPower(floor);
-
-  if(!result.ok){
-    // DEFEAT - show gameover
-    showGameover(floor);
-    return;
-  }
-
-  // Mark done
-  gs.floorsDone.push(key);
-  el.classList.add("done");
-
-  // Push calc tokens
-  pushCalcToken(result.delta, floor.type==="item"?"op":"num");
-  pushCalcToken("=","op");
-  pushCalcToken(String(gs.power),"result");
-
-  // Floating text
-  spawnFloat(el, result.delta, floor.type==="item"?"#60a5fa":"#4ade80");
-
-  // Update power display
-  updatePowerDisplay();
-
-  // Check if boss defeated
-  if(floor.isBoss){
-    setTimeout(() => showClear(), 700);
-    return;
-  }
-
-  // Check if all floors of this tower are done
-  const allDone = tower.floors.every(f => gs.floorsDone.includes(gs.towerIndex+"-"+f.id));
-  if(allDone){
-    setTimeout(() => advanceTower(), 600);
-  }
-}
-
-// ======================================================
-// POWER DISPLAY
-// ======================================================
-function updatePowerDisplay(){
-  const el = $("powerValue");
-  el.textContent = gs.power;
-  el.classList.remove("power-up");
-  void el.offsetWidth;
-  el.classList.add("power-up");
-}
-
-// ======================================================
-// FLOATING TEXT
-// ======================================================
-function spawnFloat(anchorEl, text, color){
-  const rect = anchorEl.getBoundingClientRect();
-  const appRect = document.getElementById("app").getBoundingClientRect();
-  const ft = document.createElement("div");
-  ft.className = "float-text";
-  ft.textContent = text;
-  ft.style.color = color;
-  ft.style.left = (rect.left - appRect.left + rect.width/2 - 20) + "px";
-  ft.style.top  = (rect.top  - appRect.top  + rect.height/2 - 10) + "px";
-  document.getElementById("app").appendChild(ft);
-  ft.addEventListener("animationend", () => ft.remove());
-}
-
-// ======================================================
-// ADVANCE TOWER
-// ======================================================
-function advanceTower(){
-  if(gs.towerIndex >= TOWER_COUNT - 1) return;
-
-  // Fade out / in
-  const overlay = $("transOverlay");
-  overlay.style.transition = "opacity .3s";
-  overlay.style.opacity = "1";
-  overlay.style.pointerEvents = "all";
-
-  setTimeout(() => {
-    gs.towerIndex++;
-    buildTowersOverview();
-    buildFloorList();
-    overlay.style.opacity = "0";
-    overlay.style.pointerEvents = "none";
-    // Show tower name flash
-    const towerName = TOWERS[gs.towerIndex].name;
-    showTowerFlash(towerName);
-  }, 350);
-}
-
 function showTowerFlash(name){
   const el = document.createElement("div");
-  el.style.cssText = `
-    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
-    z-index:180;pointer-events:none;
-    background:rgba(0,0,0,.3);
-    flex-direction:column;gap:8px;
-  `;
-  el.innerHTML = `
-    <div style="font-size:13px;color:#a78bfa;letter-spacing:.14em;">TOWER ADVANCE</div>
-    <div style="font-size:26px;font-weight:900;color:#fde68a;">${name}</div>
-  `;
-  document.getElementById("app").appendChild(el);
-  el.animate([{opacity:0,transform:"scale(.8)"},{opacity:1,transform:"scale(1)"},{opacity:1,transform:"scale(1)"},{opacity:0,transform:"scale(1.1)"}],
-    {duration:1800,easing:"ease"}).onfinish = () => el.remove();
+  el.style.cssText =
+    "position:absolute;inset:0;display:flex;align-items:center;justify-content:center;" +
+    "z-index:180;pointer-events:none;background:rgba(0,0,0,.35);flex-direction:column;gap:8px;";
+  el.innerHTML =
+    "<div style='font-size:13px;color:#a78bfa;letter-spacing:.14em;'>TOWER ADVANCE</div>" +
+    "<div style='font-size:24px;font-weight:900;color:#fde68a;'>" + name + "</div>";
+  $("app").appendChild(el);
+  el.animate(
+    [
+      {opacity:0,transform:"scale(.8)"},
+      {opacity:1,transform:"scale(1)"},
+      {opacity:1,transform:"scale(1)"},
+      {opacity:0,transform:"scale(1.08)"}
+    ],
+    {duration:1600, easing:"ease"}
+  ).onfinish = () => el.remove();
 }
 
 // ======================================================
-// GAME OVER
+// GAME OVER / CLEAR
 // ======================================================
 function showGameover(floor){
   $("gameoverDesc").innerHTML =
-    `<strong>${floor.name}</strong>（力：${floor.value}）に負けた！<br>` +
-    `あなたの力 ${gs.power} では届かなかった…<br>順番を変えれば勝てるかも！`;
+    "<strong>" + floor.name + "</strong>（力：" + floor.value + "）に負けた！<br>" +
+    "あなたの力 " + gs.power + " では届かなかった…<br>順番を変えれば勝てるかも！";
   $("gameoverStats").innerHTML =
-    `現在の力：${gs.power}<br>倒した敵：${gs.defeatedEnemies}体<br>行動回数：${gs.turnsTotal}回`;
-
-  const overlay = $("transOverlay");
-  overlay.style.transition="opacity .4s";
-  overlay.style.opacity="1";
-  overlay.style.pointerEvents="all";
-  setTimeout(()=>{
-    $("gameScreen").style.display="none";
-    const go = $("gameoverScreen");
-    go.style.display="flex";
-    overlay.style.opacity="0";
-    overlay.style.pointerEvents="none";
-  },400);
+    "現在の力：" + gs.power + "<br>倒した敵：" + gs.defeatedEnemies + "体<br>行動回数：" + gs.turnsTotal + "回";
+  const ov = $("transOverlay");
+  ov.style.transition = "opacity .4s";
+  ov.style.opacity = "1";
+  ov.style.pointerEvents = "all";
+  setTimeout(() => {
+    $("gameScreen").style.display    = "none";
+    $("gameoverScreen").style.display = "flex";
+    ov.style.opacity       = "0";
+    ov.style.pointerEvents = "none";
+  }, 430);
 }
 
-// ======================================================
-// CLEAR
-// ======================================================
 function showClear(){
+  const diff = gs.power - BOSS_POWER;
   $("clearStats").innerHTML =
-    `最終パワー：${gs.power}<br>倒した敵：${gs.defeatedEnemies}体<br>行動回数：${gs.turnsTotal}回<br>魔王の力：1500 → あなた：${gs.power}（差：${gs.power-1500}）`;
-
-  const overlay = $("transOverlay");
-  overlay.style.transition="opacity .4s";
-  overlay.style.opacity="1";
-  overlay.style.pointerEvents="all";
-  setTimeout(()=>{
-    $("gameScreen").style.display="none";
-    const cl = $("clearScreen");
-    cl.style.display="flex";
-    overlay.style.opacity="0";
-    overlay.style.pointerEvents="none";
-  },400);
+    "最終パワー：" + gs.power + "<br>倒した敵：" + gs.defeatedEnemies + "体<br>行動回数：" + gs.turnsTotal + "回<br>" +
+    "魔王の力：" + BOSS_POWER + " → あなた：" + gs.power + "（差：" + (diff >= 0 ? "+" : "") + diff + "）";
+  const ov = $("transOverlay");
+  ov.style.transition = "opacity .4s";
+  ov.style.opacity = "1";
+  ov.style.pointerEvents = "all";
+  setTimeout(() => {
+    $("gameScreen").style.display  = "none";
+    $("clearScreen").style.display = "flex";
+    ov.style.opacity       = "0";
+    ov.style.pointerEvents = "none";
+  }, 430);
 }
 
 // ======================================================
@@ -572,43 +852,48 @@ function showClear(){
 // ======================================================
 function startGame(){
   gs = {
-    phase: "PLAY",
-    power: 10,
-    towerIndex: 0,
-    floorsDone: [],
-    calcTokens: [{ label: "10", cls: "num" }],
-    turnsTotal: 0,
-    defeatedEnemies: 0,
+    phase:"PLAY", power:10, towerIndex:0, floorsDone:[],
+    calcTokens:[{label:"10", cls:"num"}], turnsTotal:0, defeatedEnemies:0
   };
-
-  const overlay = $("transOverlay");
-  overlay.style.transition="opacity .3s";
-  overlay.style.opacity="1";
-  overlay.style.pointerEvents="all";
-
-  setTimeout(()=>{
+  const ov = $("transOverlay");
+  ov.style.transition = "opacity .3s";
+  ov.style.opacity = "1";
+  ov.style.pointerEvents = "all";
+  setTimeout(() => {
     $("titleScreen").style.display    = "none";
     $("clearScreen").style.display    = "none";
     $("gameoverScreen").style.display = "none";
     $("gameScreen").style.display     = "flex";
-
     updatePowerDisplay();
-    buildTowersOverview();
-    buildFloorList();
+    buildAllTowers();
     renderCalcLog();
-
-    overlay.style.opacity="0";
-    overlay.style.pointerEvents="none";
-  }, 350);
+    ov.style.opacity       = "0";
+    ov.style.pointerEvents = "none";
+  }, 360);
 }
-
 function restartGame(){ startGame(); }
 
 // ======================================================
-// INIT
+// TITLE STARS
 // ======================================================
-buildTitleStars();
-$("startBtn").addEventListener("click", startGame);
+(function buildTitleStars(){
+  const c = $("titleStars");
+  for(let i = 0; i < 60; i++){
+    const s  = document.createElement("div");
+    s.className = "star-p";
+    const sz = 1 + Math.random() * 2;
+    s.style.cssText =
+      "width:"  + sz + "px;" +
+      "height:" + sz + "px;" +
+      "top:"    + (Math.random() * 100) + "%;" +
+      "left:"   + (Math.random() * 100) + "%;" +
+      "animation-duration:" + (2 + Math.random() * 4) + "s;" +
+      "animation-delay:"    + (-Math.random() * 4)    + "s;";
+    c.appendChild(s);
+  }
+})();
+
+$("startBtn").addEventListener("click",    startGame);
 $("startBtn").addEventListener("touchend", e => { e.preventDefault(); startGame(); });
 </script>
 </body>

@@ -98,6 +98,21 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 /* ===== 施設キューバッジ ===== */
 .fc-queue{font-size:8px;color:#7dd3fc;font-weight:700;min-height:10px;}
 
+/* ===== 施設ワーカー&加工演出 ===== */
+.fc-worker{position:absolute;top:5px;left:5px;font-size:13px;line-height:1;pointer-events:none;opacity:0;transition:opacity .18s;}
+.fc.busy .fc-worker{opacity:1;animation:fcWkrBounce .45s ease-in-out infinite alternate;}
+@keyframes fcWkrBounce{from{transform:scale(1) rotate(-8deg)}to{transform:scale(1.2) rotate(8deg) translateY(-4px)}}
+.fc.busy .fc-icon{animation:fcIconBusy .55s ease-in-out infinite alternate;}
+@keyframes fcIconBusy{from{transform:scale(1) rotate(0)}to{transform:scale(1.22) rotate(-10deg)}}
+/* マーケット売人演出 */
+.mkt-worker{position:absolute;bottom:10px;right:8px;font-size:15px;line-height:1;pointer-events:none;}
+#marketCard.selling .mkt-worker{animation:mktWkrBounce .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes mktWkrBounce{0%{transform:scale(1) rotate(0)}40%{transform:scale(1.55) rotate(22deg)}100%{transform:scale(1) rotate(0)}}
+#marketCard.selling .mkt-icon{animation:mktIconSell .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes mktIconSell{0%{transform:scale(1)}45%{transform:scale(1.3) rotate(12deg)}100%{transform:scale(1) rotate(0)}}
+#marketCard.selling{animation:mktCardGlow .5s ease;}
+@keyframes mktCardGlow{0%,100%{box-shadow:none}50%{box-shadow:0 0 18px rgba(251,191,36,.65),inset 0 0 8px rgba(251,191,36,.12);}}
+
 /* ===== コンボカウンター ===== */
 #comboDisplay{position:absolute;right:8px;top:8px;z-index:25;pointer-events:none;opacity:0;transition:opacity .25s;text-align:right;}
 #comboDisplay.show{opacity:1;}
@@ -248,6 +263,20 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .mtb-desc{font-size:9px;color:#64748b;}
 .mtb-cur{font-size:8px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,.1);border-radius:4px;padding:1px 5px;display:inline-block;margin-top:2px;}
 
+/* ===== 初回売却後 モード選択ポップアップ ===== */
+#modeChoicePopup{position:absolute;inset:0;z-index:550;background:rgba(0,4,20,.93);backdrop-filter:blur(12px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:28px 22px;}
+#modeChoicePopup.open{display:flex;}
+.mcp-title{font-size:22px;font-weight:900;color:#fbbf24;text-shadow:0 0 18px rgba(251,191,36,.5);text-align:center;line-height:1.3;}
+.mcp-sub{font-size:12px;color:#94a3b8;text-align:center;line-height:1.55;}
+.mcp-btn{width:100%;padding:15px 14px;border-radius:18px;border:2px solid;display:flex;align-items:center;gap:13px;cursor:pointer;transition:transform .12s,box-shadow .2s;-webkit-tap-highlight-color:transparent;background:none;}
+.mcp-btn:active{transform:scale(.96);}
+.mcp-btn-speed{background:linear-gradient(135deg,rgba(249,115,22,.22),rgba(234,88,12,.3));border-color:rgba(249,115,22,.65);box-shadow:0 4px 18px rgba(249,115,22,.2);}
+.mcp-btn-infinite{background:linear-gradient(135deg,rgba(56,189,248,.12),rgba(14,165,233,.2));border-color:rgba(56,189,248,.5);box-shadow:0 4px 18px rgba(56,189,248,.14);}
+.mcp-btn-icon{font-size:34px;width:42px;text-align:center;flex-shrink:0;}
+.mcp-btn-body{display:flex;flex-direction:column;gap:2px;}
+.mcp-btn-name{font-size:16px;font-weight:900;color:#fff;text-align:left;}
+.mcp-btn-desc{font-size:11px;color:rgba(255,255,255,.65);text-align:left;line-height:1.4;}
+
 /* ===== スピードモード 3-2-1-START! カウントダウン ===== */
 .prestart-count{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:480;pointer-events:none;font-size:100px;font-weight:900;color:#fff;text-shadow:0 0 40px #f97316,0 0 80px rgba(249,115,22,.6),4px 4px 0 #92400e;animation:prestartPop .75s cubic-bezier(.34,1.56,.64,1) forwards;}
 .prestart-count.start-text{font-size:58px;color:#fbbf24;letter-spacing:.04em;}
@@ -290,6 +319,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 
   <div id="facilityRow">
     <div class="fc" id="fc-cooking" data-ftype="cooking">
+      <div class="fc-worker">👨‍🍳</div>
       <div class="fc-icon">🍳</div>
       <div class="fc-name">調理場</div>
       <div class="fc-lv" id="lv-cooking">LV.1</div>
@@ -298,6 +328,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
       <button class="fc-lvup-btn" id="lvup-cooking" onclick="buyUpgrade('cooking')">⬆️LV2<br>🪙30</button>
     </div>
     <div class="fc" id="fc-workshop" data-ftype="workshop">
+      <div class="fc-worker">🧑‍🔧</div>
       <div class="fc-icon">⚙️</div>
       <div class="fc-name">加工場</div>
       <div class="fc-lv" id="lv-workshop">LV.1</div>
@@ -306,6 +337,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
       <button class="fc-lvup-btn" id="lvup-workshop" onclick="buyUpgrade('workshop')">⬆️LV2<br>🪙30</button>
     </div>
     <div id="marketCard">
+      <div class="mkt-worker" id="worker-market">🧑‍💼</div>
       <div class="mkt-icon">🏪</div>
       <div class="mkt-name">マーケット</div>
       <div class="mkt-hint">製品をここへ</div>
@@ -372,8 +404,28 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
     </div>
   </div>
 
+  <!-- 初回売却後 モード選択ポップアップ -->
+  <div id="modeChoicePopup">
+    <div class="mcp-title">🎯 モードを選ぼう！</div>
+    <div class="mcp-sub">初めての売却おめでとう！<br>これからどうやって遊ぶ？</div>
+    <div class="mcp-btn mcp-btn-speed" onclick="chooseModeFromPopup('speed')">
+      <div class="mcp-btn-icon">⚡</div>
+      <div class="mcp-btn-body">
+        <div class="mcp-btn-name">🏆 スピードモードに挑戦</div>
+        <div class="mcp-btn-desc">1分間でどれだけ稼げる？<br>ライバルとスコアを競おう！</div>
+      </div>
+    </div>
+    <div class="mcp-btn mcp-btn-infinite" onclick="chooseModeFromPopup('infinite')">
+      <div class="mcp-btn-icon">♾️</div>
+      <div class="mcp-btn-body">
+        <div class="mcp-btn-name">🌙 このまま続ける（無限モード）</div>
+        <div class="mcp-btn-desc">自分のペースで<br>じっくり施設を育てよう</div>
+      </div>
+    </div>
+  </div>
+
   <!-- モード選択画面 -->
-  <div id="modeSelect">
+  <div id="modeSelect" class="hidden">
     <div class="ms-logo">🏔️</div>
     <div class="ms-title">スノーサバイバル</div>
     <div class="ms-sub">モードを選んでスタート！</div>
@@ -440,10 +492,14 @@ const gs = {
   speedTimeLeft: 60,
   speedTimerInterval: null,
   speedTutLocked: false,
+  firstSaleDone: false,
 };
 
 // ===== チュートリアル状態 =====
 const tut = { step: 0, shown: [false, false, false] };
+
+// ===== モード選択済みフラグ (ゲームリセット後も保持) =====
+let _modeChosen = false;
 
 // ===== 動物の定義 =====
 const ANIMAL_DEFS = [
@@ -734,6 +790,11 @@ function buildInvSection(parent, label, items, sectionType) {
 
   // Compute how many items fit side-by-side at normal spacing
   const maxNormal = Math.floor((INV_ROW_W - INV_ITEM_W + INV_GAP) / INV_NORMAL_STEP);
+  // If items overflow, compute a uniform step so ALL items overlap across the full width
+  const itemCount = items.length;
+  const itemStep = (itemCount > maxNormal && itemCount > 1)
+    ? Math.max(INV_STACK_STEP, Math.floor(INV_MAX_POS / (itemCount - 1)))
+    : INV_NORMAL_STEP;
 
   items.forEach((item, idx) => {
     const def = ITEM_DEF[item.type];
@@ -751,12 +812,7 @@ function buildInvSection(parent, label, items, sectionType) {
     el.title = def.name;
 
     // Calculate stacking position
-    let leftPos;
-    if (idx < maxNormal) {
-      leftPos = idx * INV_NORMAL_STEP;
-    } else {
-      leftPos = Math.min(INV_MAX_POS, (maxNormal - 1) * INV_NORMAL_STEP + (idx - maxNormal + 1) * INV_STACK_STEP);
-    }
+    const leftPos = Math.min(INV_MAX_POS, idx * itemStep);
     el.style.left   = `${leftPos}px`;
     el.style.zIndex = idx + 1;
 
@@ -929,6 +985,14 @@ function startFacilityProcessing(facType, recipe) {
   fac.busy = true;
   const facEl = document.getElementById(`fc-${facType}`);
   if (facEl) facEl.classList.add('busy');
+  // キューバッジに加工中の素材→製品を表示
+  const badge = document.getElementById(`queue-${facType}`);
+  if (badge) {
+    const iDef = ITEM_DEF[recipe.input], oDef = ITEM_DEF[recipe.output];
+    const queueCount = fac.queue.length;
+    badge.textContent = (iDef && oDef ? `${iDef.e}→${oDef.e}` : '') +
+      (queueCount > 0 ? ` ⏳×${queueCount}` : '');
+  }
   const dur = recipe.duration / fac.speedMult;
   const prog = document.getElementById(`prog-${facType}`);
   let elapsed = 0;
@@ -974,9 +1038,21 @@ function sellItem(itemId) {
   // +20% sell value per facility level above 1 (LV10≈2.8x, LV20≈4.8x base)
   const coins = Math.max(baseCoins, Math.round(baseCoins * (1 + (maxLevel - 1) * 0.2)));
   removeItem(itemId);
+  // マーケット売人アニメーション
+  $market.classList.remove('selling');
+  void $market.offsetWidth;
+  $market.classList.add('selling');
+  setTimeout(() => $market.classList.remove('selling'), 520);
   spawnCoinAnim(Math.ceil(coins / 5), $market);
   if (coins >= 25) setTimeout(() => showJackpot(coins, item.type), 150);
   setTimeout(() => addCoins(coins), 320);
+  // 初回売却後 モード選択ポップアップ
+  if (!gs.firstSaleDone) {
+    gs.firstSaleDone = true;
+    if (!_modeChosen) {
+      setTimeout(() => showModeChoicePopup(), 900);
+    }
+  }
 }
 
 // ===== ショップ =====
@@ -1063,12 +1139,12 @@ const TUT_STEPS = [
   {
     arrowText: '👇', arrowBelow: false,
     title: '⚙️ 素材を施設へ！',
-    sub: '肉→調理場 / 毛皮→加工場\nドラッグして施設へ投入しよう',
+    sub: '肉→調理場 / 毛皮→加工場\nタップか、ドラッグして施設へ投入しよう',
   },
   {
     arrowText: '👇', arrowBelow: false,
     title: '💰 製品を売ろう！',
-    sub: 'マーケットへドラッグして売却\nレベルが上がると高値で売れる！',
+    sub: 'マーケットへタップかドラッグして売却\nレベルが上がると高値で売れる！',
   },
 ];
 
@@ -1227,9 +1303,10 @@ function onDragEnd(e) {
   const item = gs.inventory.find(i => i.id === drag.itemId);
 
   if (!drag.moved) {
-    // タップのみでは自動処理しない（ドラッグして施設/マーケットへ）
+    // タップ → 施設/マーケットへ即送る
     FACILITY_TYPES.forEach(ft => { const el = document.getElementById(`fc-${ft}`); if (el) el.classList.remove('drop-active'); });
     $market.classList.remove('drop-active');
+    dropped = quickUseItem(drag.itemId);
   } else if (item) {
     if (!item.isProduct) {
       // 素材 → 施設
@@ -1401,6 +1478,23 @@ function showJackpot(coins, type) {
 
 // ===== モード選択・管理 =====
 
+function showModeChoicePopup() {
+  // ゲーム終了後は表示しない（売却アニメーションの遅延中に終了した場合）
+  if (gs.phase === 'ENDED') return;
+  document.getElementById('modeChoicePopup').classList.add('open');
+}
+
+function chooseModeFromPopup(mode) {
+  document.getElementById('modeChoicePopup').classList.remove('open');
+  _modeChosen = true;
+  document.getElementById('modeTab').style.display = 'flex';
+  if (mode === 'speed') {
+    startGameMode('speed');
+  } else {
+    updateModeToolbarUI();
+  }
+}
+
 // ===== スピードモード 3-2-1-START! カウントダウン =====
 function showPreStartCountdown(cb) {
   const counts = [
@@ -1483,6 +1577,7 @@ function startGameMode(mode) {
   gs.combo = 0;
   gs.speedTimeLeft = 60;
   gs.speedTutLocked = false;
+  gs.firstSaleDone = false;
 
   document.getElementById('coinCount').textContent = '0';
   document.getElementById('lv-cooking').textContent = 'LV.1';
@@ -1508,10 +1603,13 @@ function startGameMode(mode) {
   $tutOverlay.innerHTML = '';
   $respawnBadge.style.display = 'none';
   $shop.classList.remove('open');
+  document.getElementById('modeChoicePopup').classList.remove('open');
   document.getElementById('rankingOverlay').classList.remove('open');
   removeEndCountdown();
   updateLvUpButtons();
   updateModeToolbarUI();
+  // modeTab: モード選択済みのときのみ表示
+  document.getElementById('modeTab').style.display = _modeChosen ? 'flex' : 'none';
 
   // チュートリアル状態リセット（プレイアブル広告のため毎プレイ表示）
   tut.step = 0;
@@ -1695,8 +1793,9 @@ function updateModeToolbarUI() {
 }
 
 // ===== ゲーム開始 =====
-// モード選択画面を表示（ゲームはまだ開始しない）
+// 無限モードで即スタート（初回売却後にモード選択ポップアップ表示）
 updateLvUpButtons();
+startGameMode('infinite');
 </script>
 </body>
 </html>

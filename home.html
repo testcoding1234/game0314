@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ゲームホーム</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:pan-y;}
+
+/* ===== アプリコンテナ ===== */
+#app{position:relative;width:375px;height:667px;overflow:hidden;background:linear-gradient(180deg,#06111e 0%,#0a1829 55%,#101f30 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;display:flex;flex-direction:column;}
+
+/* ===== ヘッダー ===== */
+#home-header{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(4,10,24,0.9);border-bottom:1px solid rgba(125,211,252,0.18);flex-shrink:0;}
+#home-title{font-size:18px;font-weight:900;color:#7dd3fc;letter-spacing:.06em;}
+#home-subtitle{font-size:11px;color:#64748b;}
+
+/* ===== カテゴリタブ ===== */
+#cat-tabs{height:40px;display:flex;align-items:center;gap:6px;padding:0 14px;background:rgba(0,8,28,.7);border-bottom:1px solid rgba(125,211,252,.1);flex-shrink:0;overflow-x:auto;scrollbar-width:none;}
+#cat-tabs::-webkit-scrollbar{display:none;}
+.cat-tab{font-size:11px;font-weight:700;color:#64748b;padding:4px 12px;border-radius:20px;border:1px solid rgba(100,116,139,.3);cursor:pointer;white-space:nowrap;transition:all .2s;}
+.cat-tab.active,.cat-tab:active{color:#7dd3fc;border-color:rgba(125,211,252,.5);background:rgba(125,211,252,.1);}
+
+/* ===== スクロールリスト ===== */
+#game-list{flex:1;overflow-y:auto;padding:14px 14px 20px;display:flex;flex-direction:column;gap:14px;scrollbar-width:none;}
+#game-list::-webkit-scrollbar{display:none;}
+
+/* ===== バナーカード（横長サムネイル） ===== */
+.game-banner{width:100%;border-radius:16px;overflow:hidden;background:rgba(10,18,40,.9);border:1.5px solid rgba(56,189,248,.25);cursor:pointer;transition:transform .15s,border-color .2s;flex-shrink:0;}
+.game-banner:active{transform:scale(.975);border-color:rgba(125,211,252,.6);}
+
+/* サムネイル部分 */
+.banner-thumb{width:100%;height:160px;position:relative;overflow:hidden;background:linear-gradient(145deg,#08101e 0%,#0c1d36 50%,#142b42 100%);display:flex;align-items:center;justify-content:center;}
+.banner-thumb-inner{display:flex;flex-direction:column;align-items:center;gap:8px;pointer-events:none;}
+.banner-thumb-emoji{font-size:52px;filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));}
+.banner-thumb-title{font-size:22px;font-weight:900;color:#e2e8f0;text-shadow:0 2px 8px rgba(0,0,0,.8);}
+.banner-thumb-sub{font-size:11px;color:#94a3b8;}
+/* 雪オーバーレイ */
+.banner-snow{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.snowflake{position:absolute;color:rgba(255,255,255,.5);font-size:10px;animation:snow-fall linear infinite;}
+@keyframes snow-fall{0%{transform:translateY(-10px) rotate(0deg);opacity:.8}100%{transform:translateY(165px) rotate(360deg);opacity:0}}
+/* NEW バッジ */
+.banner-badge{position:absolute;top:10px;right:10px;background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:10px;font-weight:900;padding:3px 8px;border-radius:10px;text-shadow:0 1px 2px rgba(0,0,0,.4);}
+/* 評価星 */
+.banner-stars{position:absolute;bottom:8px;left:10px;display:flex;gap:2px;font-size:13px;}
+
+/* カード下部情報 */
+.banner-info{padding:10px 14px 12px;display:flex;align-items:center;justify-content:space-between;}
+.banner-info-left{display:flex;flex-direction:column;gap:2px;}
+.banner-game-name{font-size:15px;font-weight:800;color:#e2e8f0;}
+.banner-game-genre{font-size:10px;color:#64748b;}
+.banner-play-btn{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:12px;font-weight:800;padding:7px 18px;border-radius:20px;border:none;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,.4);transition:all .15s;}
+.banner-play-btn:active{transform:scale(.95);box-shadow:0 1px 4px rgba(59,130,246,.3);}
+
+/* ===== コミングスーン カード ===== */
+.game-coming{width:100%;border-radius:16px;overflow:hidden;background:rgba(10,18,40,.6);border:1.5px dashed rgba(56,189,248,.18);flex-shrink:0;}
+.coming-inner{padding:20px;display:flex;align-items:center;gap:14px;opacity:.55;}
+.coming-icon{font-size:40px;}
+.coming-text{display:flex;flex-direction:column;gap:3px;}
+.coming-name{font-size:14px;font-weight:800;color:#94a3b8;}
+.coming-label{font-size:10px;color:#475569;font-weight:600;letter-spacing:.08em;}
+
+/* ===== フッター ===== */
+#home-footer{height:52px;display:flex;align-items:center;justify-content:space-around;background:rgba(4,10,24,.95);border-top:1px solid rgba(125,211,252,.1);flex-shrink:0;}
+.footer-btn{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:9px;color:#475569;cursor:pointer;transition:color .2s;}
+.footer-btn.active,.footer-btn:active{color:#7dd3fc;}
+.footer-btn-icon{font-size:20px;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ヘッダー -->
+  <div id="home-header">
+    <div>
+      <div id="home-title">🎮 ゲームセンター</div>
+    </div>
+    <div id="home-subtitle">ゲームを選んでプレイ！</div>
+  </div>
+
+  <!-- カテゴリタブ -->
+  <div id="cat-tabs">
+    <div class="cat-tab active">すべて</div>
+    <div class="cat-tab">アクション</div>
+    <div class="cat-tab">サバイバル</div>
+    <div class="cat-tab">パズル</div>
+    <div class="cat-tab">RPG</div>
+  </div>
+
+  <!-- ゲームリスト -->
+  <div id="game-list">
+
+    <!-- ★ スノーサバイバル（現在のゲーム） バナーカード -->
+    <div class="game-banner" onclick="location.href='index.html'">
+      <div class="banner-thumb">
+        <!-- 雪アニメーション -->
+        <div class="banner-snow" id="bannerSnow"></div>
+        <div class="banner-thumb-inner">
+          <div class="banner-thumb-emoji">🏔️❄️🐻</div>
+          <div class="banner-thumb-title">スノーサバイバル</div>
+          <div class="banner-thumb-sub">狩猟・加工・販売で生き残れ！</div>
+        </div>
+        <div class="banner-badge">NEW</div>
+        <div class="banner-stars">⭐⭐⭐⭐⭐</div>
+      </div>
+      <div class="banner-info">
+        <div class="banner-info-left">
+          <div class="banner-game-name">スノーサバイバル</div>
+          <div class="banner-game-genre">サバイバル・放置系</div>
+        </div>
+        <button class="banner-play-btn">▶ プレイ</button>
+      </div>
+    </div>
+
+    <!-- コミングスーン：農場ゲーム -->
+    <div class="game-coming">
+      <div class="coming-inner">
+        <div class="coming-icon">🌾</div>
+        <div class="coming-text">
+          <div class="coming-name">ハーベストファーム</div>
+          <div class="coming-label">COMING SOON</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- コミングスーン：お城ゲーム -->
+    <div class="game-coming">
+      <div class="coming-inner">
+        <div class="coming-icon">🏰</div>
+        <div class="coming-text">
+          <div class="coming-name">キングダムクラッシュ</div>
+          <div class="coming-label">COMING SOON</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- コミングスーン：宇宙ゲーム -->
+    <div class="game-coming">
+      <div class="coming-inner">
+        <div class="coming-icon">🚀</div>
+        <div class="coming-text">
+          <div class="coming-name">ギャラクシーエクスプローラー</div>
+          <div class="coming-label">COMING SOON</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- フッターナビ -->
+  <div id="home-footer">
+    <div class="footer-btn active">
+      <span class="footer-btn-icon">🏠</span>ホーム
+    </div>
+    <div class="footer-btn">
+      <span class="footer-btn-icon">🔍</span>さがす
+    </div>
+    <div class="footer-btn">
+      <span class="footer-btn-icon">🏆</span>ランキング
+    </div>
+    <div class="footer-btn">
+      <span class="footer-btn-icon">👤</span>マイページ
+    </div>
+  </div>
+
+</div>
+
+<script>
+// 雪パーティクル生成
+(function() {
+  const container = document.getElementById('bannerSnow');
+  const FLAKES = 18;
+  for (let i = 0; i < FLAKES; i++) {
+    const el = document.createElement('span');
+    el.className = 'snowflake';
+    el.textContent = ['❄','✦','·','*'][Math.floor(Math.random()*4)];
+    el.style.left = Math.random()*100 + '%';
+    el.style.animationDuration = (2 + Math.random()*3) + 's';
+    el.style.animationDelay = (-Math.random()*5) + 's';
+    el.style.fontSize = (7 + Math.random()*8) + 'px';
+    container.appendChild(el);
+  }
+})();
+</script>
+</body>
+</html>

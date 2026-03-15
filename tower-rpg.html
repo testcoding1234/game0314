@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>勇者の塔</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
+#app{position:relative;width:375px;height:667px;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;}
+
+/* ====== TITLE SCREEN ====== */
+#titleScreen{position:absolute;inset:0;background:linear-gradient(180deg,#0a0020 0%,#1a0040 40%,#0a0020 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:0;}
+.title-bg-stars{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
+.star-p{position:absolute;border-radius:50%;background:#fff;animation:twinkle linear infinite;}
+@keyframes twinkle{0%,100%{opacity:.2}50%{opacity:1}}
+.title-logo{font-size:64px;margin-bottom:8px;animation:floatY 2.5s ease-in-out infinite;}
+@keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+.title-main{font-size:38px;font-weight:900;background:linear-gradient(135deg,#fde68a,#f59e0b,#fde68a);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;letter-spacing:.08em;text-shadow:none;filter:drop-shadow(0 0 20px rgba(245,158,11,.6));}
+.title-sub{font-size:13px;color:#a78bfa;letter-spacing:.12em;margin-top:4px;margin-bottom:32px;}
+.title-hero{font-size:80px;margin:8px 0;animation:heroIdle 1.2s ease-in-out infinite alternate;}
+@keyframes heroIdle{from{transform:translateY(0) scaleX(1)}to{transform:translateY(-6px) scaleX(-1)}}
+.title-desc{font-size:12px;color:#94a3b8;text-align:center;line-height:1.8;margin-bottom:28px;padding:0 24px;}
+.title-start-btn{background:linear-gradient(135deg,#7c3aed,#9333ea,#c026d3);color:#fff;font-size:20px;font-weight:900;padding:16px 48px;border-radius:50px;border:none;cursor:pointer;box-shadow:0 0 30px rgba(147,51,234,.7),0 4px 16px rgba(0,0,0,.5);letter-spacing:.1em;animation:pulseShadow 1.5s ease-in-out infinite;}
+@keyframes pulseShadow{0%,100%{box-shadow:0 0 20px rgba(147,51,234,.5),0 4px 16px rgba(0,0,0,.5)}50%{box-shadow:0 0 40px rgba(147,51,234,.9),0 4px 20px rgba(0,0,0,.6)}}
+.title-start-btn:active{transform:scale(.95);}
+.back-link{position:absolute;top:14px;left:14px;font-size:12px;color:#6b7280;cursor:pointer;padding:6px 10px;border-radius:8px;border:1px solid rgba(107,114,128,.3);}
+.back-link:active{background:rgba(255,255,255,.05);}
+
+/* ====== GAME SCREEN ====== */
+#gameScreen{position:absolute;inset:0;background:linear-gradient(180deg,#0a0020 0%,#150030 50%,#0a0015 100%);display:none;flex-direction:column;}
+
+/* header */
+#gameHeader{height:54px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 14px;background:rgba(0,0,20,.85);border-bottom:1px solid rgba(139,92,246,.3);}
+#powerDisplay{display:flex;align-items:center;gap:7px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.5);border-radius:20px;padding:5px 13px;}
+#powerIcon{font-size:18px;}
+#powerValue{font-size:22px;font-weight:900;color:#fbbf24;min-width:56px;text-align:right;transition:color .2s;}
+.power-up{animation:powerBump .4s ease;}
+@keyframes powerBump{0%,100%{transform:scale(1);color:#fbbf24}40%{transform:scale(1.5);color:#fde68a}}
+#progressLabel{font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:.05em;}
+
+/* towers overview */
+#towersOverview{height:120px;flex-shrink:0;display:flex;align-items:flex-end;justify-content:center;gap:8px;padding:8px 12px 0;position:relative;}
+.tower-silhouette{display:flex;flex-direction:column;align-items:center;gap:3px;transition:transform .3s;}
+.tower-label{font-size:9px;color:#64748b;font-weight:700;letter-spacing:.04em;white-space:nowrap;}
+.tower-block{border-radius:6px 6px 0 0;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .3s;}
+.tower-silhouette.done .tower-block{background:rgba(74,222,128,.15);border:1px solid rgba(74,222,128,.3);filter:grayscale(.4);}
+.tower-silhouette.done .tower-label{color:#4ade80;}
+.tower-silhouette.active .tower-block{background:rgba(139,92,246,.25);border:2px solid #7c3aed;box-shadow:0 0 12px rgba(139,92,246,.5);}
+.tower-silhouette.active .tower-label{color:#a78bfa;}
+.tower-silhouette.locked .tower-block{background:rgba(30,10,60,.5);border:1px solid rgba(100,80,140,.2);filter:grayscale(.8) brightness(.6);}
+.tower-silhouette.locked .tower-label{color:#374151;}
+.tower-arrow{position:absolute;bottom:4px;font-size:18px;color:#7c3aed;animation:arrowPulse .8s ease-in-out infinite alternate;}
+@keyframes arrowPulse{from{opacity:.4;transform:translateX(-2px)}to{opacity:1;transform:translateX(2px)}}
+
+/* current tower panel */
+#towerPanel{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:8px 12px 0;}
+#towerTitle{font-size:15px;font-weight:900;color:#c4b5fd;letter-spacing:.06em;margin-bottom:6px;display:flex;align-items:center;gap:8px;}
+#towerTitle span{font-size:11px;color:#6b7280;font-weight:500;}
+#floorList{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;scrollbar-width:none;padding-bottom:4px;}
+#floorList::-webkit-scrollbar{display:none;}
+
+.floor-item{border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .12s,opacity .3s,background .2s;border:2px solid transparent;position:relative;overflow:hidden;}
+.floor-item.enemy{background:rgba(60,10,20,.8);border-color:rgba(239,68,68,.3);}
+.floor-item.item-floor{background:rgba(10,30,60,.8);border-color:rgba(96,165,250,.3);}
+.floor-item.enemy:active,.floor-item.item-floor:active{transform:scale(.97);}
+.floor-item.done{opacity:.35;pointer-events:none;}
+.floor-item.boss{background:rgba(80,0,0,.9);border-color:rgba(239,68,68,.7);box-shadow:0 0 16px rgba(239,68,68,.4);}
+.floor-item.boss .fi-name{color:#fca5a5;}
+.floor-emoji{font-size:34px;flex-shrink:0;}
+.fi-info{flex:1;}
+.fi-name{font-size:14px;font-weight:700;color:#e2e8f0;margin-bottom:2px;}
+.fi-value{font-size:11px;color:#94a3b8;}
+.fi-num{font-size:28px;font-weight:900;color:#fbbf24;flex-shrink:0;}
+.fi-num.item-num{color:#60a5fa;}
+.fi-num.boss-num{color:#f87171;}
+.fi-hint{position:absolute;top:4px;right:8px;font-size:9px;color:#6b7280;}
+
+/* calc log */
+#calcLog{height:38px;flex-shrink:0;background:rgba(0,0,20,.8);border-top:1px solid rgba(139,92,246,.2);display:flex;align-items:center;padding:0 12px;overflow-x:auto;scrollbar-width:none;gap:4px;white-space:nowrap;}
+#calcLog::-webkit-scrollbar{display:none;}
+.calc-token{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;}
+.calc-token.op{color:#a78bfa;background:rgba(139,92,246,.15);}
+.calc-token.num{color:#fbbf24;background:rgba(245,158,11,.12);}
+.calc-token.result{color:#4ade80;background:rgba(74,222,128,.12);}
+.calc-token.lose{color:#f87171;background:rgba(239,68,68,.12);}
+
+/* floating dmg */
+.float-text{position:absolute;pointer-events:none;z-index:300;font-size:26px;font-weight:900;text-shadow:2px 2px 0 rgba(0,0,0,.8);animation:floatUp .9s ease-out forwards;}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}60%{opacity:1;transform:translateY(-50px) scale(1.3)}100%{opacity:0;transform:translateY(-90px) scale(.6)}}
+
+/* instruction */
+#instruction{height:36px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,20,.6);}
+#instruction p{font-size:11px;color:#6b7280;letter-spacing:.04em;}
+
+/* ====== RESULT SCREENS ====== */
+#clearScreen,#gameoverScreen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:14px;}
+#clearScreen{background:linear-gradient(180deg,#0f3020 0%,#1a4030 50%,#0f3020 100%);}
+#gameoverScreen{background:linear-gradient(180deg,#300a0a 0%,#500d0d 50%,#300a0a 100%);}
+.result-emoji{font-size:80px;animation:resultPop .6s cubic-bezier(.175,.885,.32,1.275) both;}
+@keyframes resultPop{from{transform:scale(0) rotate(-20deg)}to{transform:scale(1) rotate(0deg)}}
+.result-title{font-size:36px;font-weight:900;letter-spacing:.1em;}
+.result-title.win{background:linear-gradient(135deg,#fde68a,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.result-title.lose{color:#f87171;}
+.result-desc{font-size:14px;color:#94a3b8;text-align:center;padding:0 24px;line-height:1.7;}
+.result-stats{background:rgba(0,0,0,.3);border-radius:14px;padding:14px 24px;font-size:13px;color:#c4b5fd;text-align:center;line-height:2;}
+.result-btn{background:linear-gradient(135deg,#7c3aed,#9333ea);color:#fff;font-size:16px;font-weight:900;padding:14px 40px;border-radius:40px;border:none;cursor:pointer;box-shadow:0 4px 20px rgba(147,51,234,.5);}
+.result-btn:active{transform:scale(.95);}
+.result-btn.retry{background:linear-gradient(135deg,#dc2626,#b91c1c);}
+.result-home{font-size:12px;color:#6b7280;cursor:pointer;padding:6px;border-bottom:1px solid rgba(107,114,128,.3);}
+
+/* transition overlay */
+#transOverlay{position:absolute;inset:0;background:#000;z-index:150;pointer-events:none;opacity:0;transition:opacity .3s;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== TITLE SCREEN ===== -->
+  <div id="titleScreen">
+    <div class="title-bg-stars" id="titleStars"></div>
+    <div class="back-link" onclick="location.href='index.html'">← ホーム</div>
+    <div class="title-logo">🏰</div>
+    <div class="title-main">勇者の塔</div>
+    <div class="title-sub">HERO'S TOWER</div>
+    <div class="title-hero">⚔️</div>
+    <div class="title-desc">左から迫る塔の敵を倒せ！<br>敵やアイテムを選ぶ順番が勝敗を分ける！<br>魔王の力を超えられるか？</div>
+    <button class="title-start-btn" id="startBtn">ゲームスタート</button>
+  </div>
+
+  <!-- ===== GAME SCREEN ===== -->
+  <div id="gameScreen">
+    <div id="gameHeader">
+      <div id="powerDisplay">
+        <span id="powerIcon">⚔️</span>
+        <span id="powerValue">10</span>
+      </div>
+      <div id="progressLabel">塔 1 / 4</div>
+    </div>
+
+    <div id="towersOverview" id="towersOverview"></div>
+
+    <div id="towerPanel">
+      <div id="towerTitle">⬛ 塔の名前 <span>タップして敵・アイテムを選べ！</span></div>
+      <div id="floorList"></div>
+    </div>
+
+    <div id="calcLog"><span class="calc-token num">10</span></div>
+
+    <div id="instruction"><p>⬆ 敵に勝てれば数字が加算される　アイテムは計算に影響する</p></div>
+  </div>
+
+  <!-- ===== CLEAR SCREEN ===== -->
+  <div id="clearScreen">
+    <div class="result-emoji">🏆</div>
+    <div class="result-title win">VICTORY!</div>
+    <div class="result-desc">魔王を倒した！<br>勇者の伝説が始まる…</div>
+    <div class="result-stats" id="clearStats"></div>
+    <button class="result-btn" onclick="restartGame()">もう一度挑戦</button>
+    <div class="result-home" onclick="location.href='index.html'">← ホームへ戻る</div>
+  </div>
+
+  <!-- ===== GAMEOVER SCREEN ===== -->
+  <div id="gameoverScreen">
+    <div class="result-emoji">💀</div>
+    <div class="result-title lose">GAME OVER</div>
+    <div class="result-desc" id="gameoverDesc">選ぶ順番が鍵だ…<br>もう一度戦略を考えよう！</div>
+    <div class="result-stats" id="gameoverStats"></div>
+    <button class="result-btn retry" onclick="restartGame()">リベンジ！</button>
+    <div class="result-home" onclick="location.href='index.html'">← ホームへ戻る</div>
+  </div>
+
+  <div id="transOverlay"></div>
+</div>
+
+<script>
+// ======================================================
+// GAME DATA
+// ======================================================
+const TOWERS = [
+  {
+    id: 0,
+    name: "エントランスの塔",
+    emoji: "🌲",
+    width: 54,
+    height: 70,
+    bg: "#1a3a10",
+    borderColor: "#4ade80",
+    floors: [
+      { id: 0, type: "enemy", emoji: "🐺", name: "ウルフ",       value: 8,  hint: "倒せる！" },
+      { id: 1, type: "item",  emoji: "🍄", name: "魔法のキノコ", op: "×",   value: 4, hint: "×4になる" },
+    ]
+  },
+  {
+    id: 1,
+    name: "森の砦",
+    emoji: "🏚️",
+    width: 68,
+    height: 92,
+    bg: "#1e3a10",
+    borderColor: "#86efac",
+    floors: [
+      { id: 0, type: "enemy", emoji: "👺", name: "ゴブリン兵A",  value: 50, hint: "" },
+      { id: 1, type: "enemy", emoji: "👺", name: "ゴブリン兵B",  value: 60, hint: "" },
+      { id: 2, type: "item",  emoji: "💊", name: "回復ポーション", op: "+", value: 100, hint: "+100" },
+    ]
+  },
+  {
+    id: 2,
+    name: "暗黒の塔",
+    emoji: "🏰",
+    width: 80,
+    height: 110,
+    bg: "#10103a",
+    borderColor: "#818cf8",
+    floors: [
+      { id: 0, type: "enemy", emoji: "🗡️", name: "闇の騎士",     value: 180, hint: "" },
+      { id: 1, type: "item",  emoji: "💎", name: "魔法の結晶",   op: "×",    value: 2,   hint: "×2になる" },
+      { id: 2, type: "enemy", emoji: "🧙", name: "大魔道士",     value: 600, hint: "強い！" },
+      { id: 3, type: "item",  emoji: "💀", name: "呪われた偶像", op: "÷",    value: 5,   hint: "÷5になる" },
+    ]
+  },
+  {
+    id: 3,
+    name: "魔王城",
+    emoji: "👑",
+    width: 90,
+    height: 110,
+    bg: "#3a0808",
+    borderColor: "#f87171",
+    floors: [
+      { id: 0, type: "enemy", emoji: "👹",  name: "魔王の番人",  value: 200,  hint: "" },
+      { id: 1, type: "item",  emoji: "⚡",  name: "聖剣の力",    op: "×",     value: 3,   hint: "×3になる" },
+      { id: 2, type: "enemy", emoji: "😈",  name: "魔王",        value: 1500, hint: "ラスボス！", isBoss: true },
+    ]
+  }
+];
+
+const TOWER_COUNT = TOWERS.length;
+
+// ======================================================
+// GAME STATE
+// ======================================================
+let gs = {
+  phase: "TITLE",   // TITLE | PLAY | OVER | CLEAR
+  power: 10,
+  towerIndex: 0,
+  floorsDone: [],   // set of "towerIdx-floorId" strings
+  calcTokens: [],   // [{label,cls}]
+  turnsTotal: 0,
+  defeatedEnemies: 0,
+};
+
+// ======================================================
+// HELPERS
+// ======================================================
+function $(id){ return document.getElementById(id); }
+
+function applyPower(token){
+  const p = gs.power;
+  if(token.type === "enemy"){
+    if(gs.power > token.value){
+      gs.power = Math.floor(gs.power + token.value);
+      gs.defeatedEnemies++;
+      return { ok: true, delta: "+" + token.value };
+    } else {
+      return { ok: false };
+    }
+  } else {
+    // item
+    if(token.op === "×"){
+      gs.power = Math.floor(gs.power * token.value);
+      return { ok: true, delta: "×" + token.value };
+    } else if(token.op === "+"){
+      gs.power = Math.floor(gs.power + token.value);
+      return { ok: true, delta: "+" + token.value };
+    } else if(token.op === "÷"){
+      gs.power = Math.floor(gs.power / token.value);
+      return { ok: true, delta: "÷" + token.value };
+    }
+    return { ok: true, delta: token.op + token.value };
+  }
+}
+
+// ======================================================
+// TITLE SCREEN
+// ======================================================
+function buildTitleStars(){
+  const c = $("titleStars");
+  for(let i=0;i<60;i++){
+    const s = document.createElement("div");
+    s.className = "star-p";
+    const sz = 1+Math.random()*2;
+    s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;animation-duration:${2+Math.random()*4}s;animation-delay:${-Math.random()*4}s;`;
+    c.appendChild(s);
+  }
+}
+
+// ======================================================
+// TOWERS OVERVIEW (silhouettes at the top of game screen)
+// ======================================================
+function buildTowersOverview(){
+  const container = $("towersOverview");
+  container.innerHTML = "";
+  let arrowLeft = 12;
+  TOWERS.forEach((tower, i) => {
+    const isDone   = i < gs.towerIndex;
+    const isActive = i === gs.towerIndex;
+    const isLocked = i > gs.towerIndex;
+
+    const wrap = document.createElement("div");
+    wrap.className = "tower-silhouette " + (isDone?"done":isActive?"active":"locked");
+
+    const block = document.createElement("div");
+    block.className = "tower-block";
+    block.style.width  = tower.width  + "px";
+    block.style.height = tower.height + "px";
+    block.textContent  = tower.emoji;
+
+    const lbl = document.createElement("div");
+    lbl.className = "tower-label";
+    lbl.textContent = isDone ? "✓ クリア" : isActive ? "▼ 現在" : "???";
+
+    wrap.appendChild(block);
+    wrap.appendChild(lbl);
+    container.appendChild(wrap);
+
+    if(isActive){
+      const arrow = document.createElement("div");
+      arrow.className = "tower-arrow";
+      arrow.textContent = "►";
+      arrow.style.left = (arrowLeft + tower.width/2 - 9) + "px";
+      container.appendChild(arrow);
+    }
+    arrowLeft += tower.width + 8;
+  });
+}
+
+// ======================================================
+// FLOOR LIST
+// ======================================================
+function buildFloorList(){
+  const tower  = TOWERS[gs.towerIndex];
+  const listEl = $("floorList");
+  listEl.innerHTML = "";
+
+  $("towerTitle").innerHTML = tower.emoji + " " + tower.name +
+    " <span>タップして敵・アイテムを選べ！</span>";
+
+  $("progressLabel").textContent = "塔 " + (gs.towerIndex+1) + " / " + TOWER_COUNT;
+
+  tower.floors.forEach(floor => {
+    const key  = gs.towerIndex + "-" + floor.id;
+    const done = gs.floorsDone.includes(key);
+
+    const el = document.createElement("div");
+    el.className = "floor-item " +
+      (floor.type==="enemy" ? "enemy" : "item-floor") +
+      (floor.isBoss ? " boss" : "") +
+      (done ? " done" : "");
+    el.dataset.floorId = floor.id;
+
+    // hint text
+    let numStr = "";
+    if(floor.type === "enemy"){
+      numStr = String(floor.value);
+    } else {
+      numStr = (floor.op || "") + String(floor.value);
+    }
+
+    el.innerHTML = `
+      <div class="floor-emoji">${floor.emoji}</div>
+      <div class="fi-info">
+        <div class="fi-name">${floor.name}</div>
+        <div class="fi-value">${floor.type==="enemy"?"⚔️ 力："+floor.value:"🔮 "+floor.op+floor.value}</div>
+      </div>
+      <div class="fi-num ${floor.type==="item"?"item-num":""} ${floor.isBoss?"boss-num":""}">${numStr}</div>
+      ${floor.hint?`<div class="fi-hint">${floor.hint}</div>`:""}
+    `;
+
+    if(!done){
+      el.addEventListener("click", () => onFloorTap(floor.id, el));
+      el.addEventListener("touchend", e => { e.preventDefault(); onFloorTap(floor.id, el); });
+    }
+
+    listEl.appendChild(el);
+  });
+}
+
+// ======================================================
+// CALC LOG
+// ======================================================
+function pushCalcToken(label, cls){
+  gs.calcTokens.push({ label, cls });
+  renderCalcLog();
+}
+function renderCalcLog(){
+  const log = $("calcLog");
+  log.innerHTML = "";
+  gs.calcTokens.forEach(t => {
+    const span = document.createElement("span");
+    span.className = "calc-token " + t.cls;
+    span.textContent = t.label;
+    log.appendChild(span);
+  });
+  // scroll to end
+  log.scrollLeft = log.scrollWidth;
+}
+
+// ======================================================
+// FLOOR TAP
+// ======================================================
+function onFloorTap(floorId, el){
+  const tower = TOWERS[gs.towerIndex];
+  const floor = tower.floors.find(f => f.id === floorId);
+  if(!floor) return;
+
+  const key = gs.towerIndex + "-" + floor.id;
+  if(gs.floorsDone.includes(key)) return;
+
+  gs.turnsTotal++;
+
+  const result = applyPower(floor);
+
+  if(!result.ok){
+    // DEFEAT - show gameover
+    showGameover(floor);
+    return;
+  }
+
+  // Mark done
+  gs.floorsDone.push(key);
+  el.classList.add("done");
+
+  // Push calc tokens
+  pushCalcToken(result.delta, floor.type==="item"?"op":"num");
+  pushCalcToken("=","op");
+  pushCalcToken(String(gs.power),"result");
+
+  // Floating text
+  spawnFloat(el, result.delta, floor.type==="item"?"#60a5fa":"#4ade80");
+
+  // Update power display
+  updatePowerDisplay();
+
+  // Check if boss defeated
+  if(floor.isBoss){
+    setTimeout(() => showClear(), 700);
+    return;
+  }
+
+  // Check if all floors of this tower are done
+  const allDone = tower.floors.every(f => gs.floorsDone.includes(gs.towerIndex+"-"+f.id));
+  if(allDone){
+    setTimeout(() => advanceTower(), 600);
+  }
+}
+
+// ======================================================
+// POWER DISPLAY
+// ======================================================
+function updatePowerDisplay(){
+  const el = $("powerValue");
+  el.textContent = gs.power;
+  el.classList.remove("power-up");
+  void el.offsetWidth;
+  el.classList.add("power-up");
+}
+
+// ======================================================
+// FLOATING TEXT
+// ======================================================
+function spawnFloat(anchorEl, text, color){
+  const rect = anchorEl.getBoundingClientRect();
+  const appRect = document.getElementById("app").getBoundingClientRect();
+  const ft = document.createElement("div");
+  ft.className = "float-text";
+  ft.textContent = text;
+  ft.style.color = color;
+  ft.style.left = (rect.left - appRect.left + rect.width/2 - 20) + "px";
+  ft.style.top  = (rect.top  - appRect.top  + rect.height/2 - 10) + "px";
+  document.getElementById("app").appendChild(ft);
+  ft.addEventListener("animationend", () => ft.remove());
+}
+
+// ======================================================
+// ADVANCE TOWER
+// ======================================================
+function advanceTower(){
+  if(gs.towerIndex >= TOWER_COUNT - 1) return;
+
+  // Fade out / in
+  const overlay = $("transOverlay");
+  overlay.style.transition = "opacity .3s";
+  overlay.style.opacity = "1";
+  overlay.style.pointerEvents = "all";
+
+  setTimeout(() => {
+    gs.towerIndex++;
+    buildTowersOverview();
+    buildFloorList();
+    overlay.style.opacity = "0";
+    overlay.style.pointerEvents = "none";
+    // Show tower name flash
+    const towerName = TOWERS[gs.towerIndex].name;
+    showTowerFlash(towerName);
+  }, 350);
+}
+
+function showTowerFlash(name){
+  const el = document.createElement("div");
+  el.style.cssText = `
+    position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    z-index:180;pointer-events:none;
+    background:rgba(0,0,0,.3);
+    flex-direction:column;gap:8px;
+  `;
+  el.innerHTML = `
+    <div style="font-size:13px;color:#a78bfa;letter-spacing:.14em;">TOWER ADVANCE</div>
+    <div style="font-size:26px;font-weight:900;color:#fde68a;">${name}</div>
+  `;
+  document.getElementById("app").appendChild(el);
+  el.animate([{opacity:0,transform:"scale(.8)"},{opacity:1,transform:"scale(1)"},{opacity:1,transform:"scale(1)"},{opacity:0,transform:"scale(1.1)"}],
+    {duration:1800,easing:"ease"}).onfinish = () => el.remove();
+}
+
+// ======================================================
+// GAME OVER
+// ======================================================
+function showGameover(floor){
+  $("gameoverDesc").innerHTML =
+    `<strong>${floor.name}</strong>（力：${floor.value}）に負けた！<br>` +
+    `あなたの力 ${gs.power} では届かなかった…<br>順番を変えれば勝てるかも！`;
+  $("gameoverStats").innerHTML =
+    `現在の力：${gs.power}<br>倒した敵：${gs.defeatedEnemies}体<br>行動回数：${gs.turnsTotal}回`;
+
+  const overlay = $("transOverlay");
+  overlay.style.transition="opacity .4s";
+  overlay.style.opacity="1";
+  overlay.style.pointerEvents="all";
+  setTimeout(()=>{
+    $("gameScreen").style.display="none";
+    const go = $("gameoverScreen");
+    go.style.display="flex";
+    overlay.style.opacity="0";
+    overlay.style.pointerEvents="none";
+  },400);
+}
+
+// ======================================================
+// CLEAR
+// ======================================================
+function showClear(){
+  $("clearStats").innerHTML =
+    `最終パワー：${gs.power}<br>倒した敵：${gs.defeatedEnemies}体<br>行動回数：${gs.turnsTotal}回<br>魔王の力：1500 → あなた：${gs.power}（差：${gs.power-1500}）`;
+
+  const overlay = $("transOverlay");
+  overlay.style.transition="opacity .4s";
+  overlay.style.opacity="1";
+  overlay.style.pointerEvents="all";
+  setTimeout(()=>{
+    $("gameScreen").style.display="none";
+    const cl = $("clearScreen");
+    cl.style.display="flex";
+    overlay.style.opacity="0";
+    overlay.style.pointerEvents="none";
+  },400);
+}
+
+// ======================================================
+// START / RESTART
+// ======================================================
+function startGame(){
+  gs = {
+    phase: "PLAY",
+    power: 10,
+    towerIndex: 0,
+    floorsDone: [],
+    calcTokens: [{ label: "10", cls: "num" }],
+    turnsTotal: 0,
+    defeatedEnemies: 0,
+  };
+
+  const overlay = $("transOverlay");
+  overlay.style.transition="opacity .3s";
+  overlay.style.opacity="1";
+  overlay.style.pointerEvents="all";
+
+  setTimeout(()=>{
+    $("titleScreen").style.display    = "none";
+    $("clearScreen").style.display    = "none";
+    $("gameoverScreen").style.display = "none";
+    $("gameScreen").style.display     = "flex";
+
+    updatePowerDisplay();
+    buildTowersOverview();
+    buildFloorList();
+    renderCalcLog();
+
+    overlay.style.opacity="0";
+    overlay.style.pointerEvents="none";
+  }, 350);
+}
+
+function restartGame(){ startGame(); }
+
+// ======================================================
+// INIT
+// ======================================================
+buildTitleStars();
+$("startBtn").addEventListener("click", startGame);
+$("startBtn").addEventListener("touchend", e => { e.preventDefault(); startGame(); });
+</script>
+</body>
+</html>

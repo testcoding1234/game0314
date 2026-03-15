@@ -199,8 +199,8 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 .b.b-item .b-val{color:#60a5fa;}
 .b.b-boss .b-val{color:#f87171;font-size:11px;}
 
-/* ====== DARUMA KNOCK-OUT ANIMATION ====== */
-/* The flying clone that slides out */
+/* ====== ROCK CRUSH ANIMATION ====== */
+/* Clone that shatters in place like a hard stone */
 .b-clone{
   position:absolute;
   z-index:80;
@@ -214,18 +214,53 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   justify-content:center;
   gap:1px;
 }
-@keyframes darumaFly{
-  0%  {transform:translateX(0) rotate(0deg);opacity:1;}
-  35% {transform:translateX(60px) rotate(8deg);opacity:1;}
-  100%{transform:translateX(180px) rotate(20deg);opacity:0;}
+@keyframes rockShatter{
+  0%  {transform:scale(1) rotate(0deg);opacity:1;filter:brightness(1);}
+  18% {transform:scale(1.08) rotate(3deg);opacity:1;filter:brightness(3) saturate(0);}
+  40% {transform:scale(.78) rotate(-6deg);opacity:.85;filter:brightness(1.4);}
+  70% {transform:scale(.4) rotate(9deg);opacity:.45;}
+  100%{transform:scale(0) rotate(14deg);opacity:0;}
 }
-.b-clone.fly-right{animation:darumaFly .38s ease-in forwards;}
-@keyframes darumaFlyLeft{
-  0%  {transform:translateX(0) rotate(0deg);opacity:1;}
-  35% {transform:translateX(-60px) rotate(-8deg);opacity:1;}
-  100%{transform:translateX(-180px) rotate(-20deg);opacity:0;}
+.b-clone.shatter{animation:rockShatter .4s ease-in forwards;}
+
+/* rock particle chips */
+.rock-particle{
+  position:absolute;
+  z-index:90;
+  pointer-events:none;
+  border-radius:2px;
+  animation:particleFly .5s ease-out forwards;
 }
-.b-clone.fly-left{animation:darumaFlyLeft .38s ease-in forwards;}
+@keyframes particleFly{
+  0%  {opacity:1;transform:translate(0,0) scale(1);}
+  100%{opacity:0;transform:translate(var(--pdx),var(--pdy)) scale(0);}
+}
+
+/* hero character */
+#hero{
+  position:absolute;
+  bottom:14px;
+  font-size:28px;
+  z-index:50;
+  pointer-events:none;
+  width:40px;
+  text-align:center;
+  margin-left:-20px;
+  filter:drop-shadow(0 0 8px rgba(139,92,246,.9));
+  transition:left .45s cubic-bezier(.22,.68,0,1.2);
+}
+@keyframes heroAttack{
+  0%  {transform:scale(1) rotate(0deg);}
+  25% {transform:scale(1.5) rotate(-20deg) translateX(10px);}
+  55% {transform:scale(1.25) rotate(12deg) translateX(-4px);}
+  100%{transform:scale(1) rotate(0deg);}
+}
+.hero-attacking{animation:heroAttack .38s ease-out;}
+@keyframes heroStep{
+  0%,100%{transform:translateY(0);}
+  50%     {transform:translateY(-5px);}
+}
+.hero-stepping{animation:heroStep .22s steps(1) 4;}
 
 /* height collapse — applied after clone is detached */
 .b-collapsing{
@@ -297,6 +332,9 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 #instruction{height:30px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,18,.62);}
 #instruction p{font-size:10px;color:#6b7280;letter-spacing:.03em;}
 
+/* ====== STAGE FLASH ====== */
+.stage-badge{font-size:11px;font-weight:800;color:#fde68a;background:rgba(245,158,11,.18);border:1.5px solid rgba(245,158,11,.4);border-radius:12px;padding:2px 9px;letter-spacing:.06em;}
+
 /* ====== RESULT SCREENS ====== */
 #clearScreen,#gameoverScreen{position:absolute;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;z-index:200;gap:14px;}
 #clearScreen{background:linear-gradient(180deg,#0f3020 0%,#1a4030 50%,#0f3020 100%);}
@@ -326,7 +364,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
     <div class="title-main">勇者の塔</div>
     <div class="title-sub">HERO'S TOWER</div>
     <div class="title-hero">⚔️</div>
-    <div class="title-desc">敵やアイテムを選ぶと<br>だるま落としのように消える！<br>塔を攻略して魔王を倒せ！</div>
+    <div class="title-desc">敵やアイテムを選んで石を砕け！<br>塔を攻略して魔王を倒せ！</div>
     <button class="title-start-btn" id="startBtn">ゲームスタート</button>
   </div>
 
@@ -337,25 +375,27 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
         <span id="powerIcon">⚔️</span>
         <span id="powerValue">10</span>
       </div>
+      <span class="stage-badge" id="stageLabel">STAGE 1</span>
       <div id="progressLabel">0 / 0 撃破</div>
     </div>
 
     <!-- All 4 towers visible side-by-side, anchored to bottom -->
     <div id="gameArea">
       <!-- towers built by JS -->
+      <div id="hero">🧙</div>
     </div>
 
     <div id="calcLog"><span class="calc-token num">10</span></div>
-    <div id="instruction"><p>ブロックをタップ → だるま落とし！　アイテムで強化して敵を倒せ</p></div>
+    <div id="instruction"><p>ブロックをタップして石を砕け！　アイテムで強化して敵を倒せ</p></div>
   </div>
 
   <!-- ===== CLEAR SCREEN ===== -->
   <div id="clearScreen">
     <div class="result-emoji">🏆</div>
-    <div class="result-title win">VICTORY!</div>
-    <div class="result-desc">魔王を倒した！<br>勇者の伝説が始まる…</div>
+    <div class="result-title win" id="clearTitle">VICTORY!</div>
+    <div class="result-desc" id="clearDesc">魔王を倒した！<br>勇者の伝説が始まる…</div>
     <div class="result-stats" id="clearStats"></div>
-    <button class="result-btn" onclick="restartGame()">もう一度挑戦</button>
+    <button class="result-btn" id="clearNextBtn" onclick="restartGame()">もう一度挑戦</button>
     <div class="result-home" onclick="location.href='index.html'">← ホームへ戻る</div>
   </div>
 
@@ -374,73 +414,86 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 
 <script>
 // ======================================================
-// GAME DATA
-// Floors ordered TOP→BOTTOM (index 0 = top/hardest, last = bottom/easiest)
-// This way knocking out a bottom block makes the boss visually "fall" closer
+// GAME DATA — towers are generated per stage
 // ======================================================
-const BOSS_POWER = 3000;
+const BOSS_POWER_BASE = 3000;
+const MAX_STAGES = 5;
 
-const TOWERS = [
-  {
-    id:0, name:"入口の塔", emoji:"🌲",
-    floors:[
-      // top → bottom
-      { id:0, type:"enemy", emoji:"🦁", name:"ライオン",     value:25 },
-      { id:1, type:"item",  emoji:"🍄", name:"魔法のキノコ", op:"×", value:3 },
-      { id:2, type:"enemy", emoji:"🐺", name:"ウルフ",       value:8 },
-    ]
-  },
-  {
-    id:1, name:"森の砦", emoji:"🏚️",
-    floors:[
-      { id:0, type:"enemy", emoji:"🐉", name:"小ドラゴン",   value:180 },
-      { id:1, type:"item",  emoji:"🌟", name:"魔法の粉",     op:"×", value:2 },
-      { id:2, type:"enemy", emoji:"👺", name:"ゴブリンB",    value:70 },
-      { id:3, type:"item",  emoji:"��", name:"回復薬",       op:"+", value:100 },
-      { id:4, type:"enemy", emoji:"👺", name:"ゴブリンA",    value:50 },
-    ]
-  },
-  {
-    id:2, name:"暗黒の塔", emoji:"🏰",
-    floors:[
-      { id:0, type:"enemy", emoji:"🌑", name:"暗黒竜",       value:1200 },
-      { id:1, type:"item",  emoji:"💀", name:"呪いの偶像",   op:"÷", value:3 },
-      { id:2, type:"enemy", emoji:"👿", name:"堕天使",       value:800 },
-      { id:3, type:"item",  emoji:"💊", name:"上級回復薬",   op:"+", value:300 },
-      { id:4, type:"enemy", emoji:"🧙", name:"大魔道士",     value:500 },
-      { id:5, type:"item",  emoji:"💎", name:"魔法の結晶",   op:"×", value:2 },
-      { id:6, type:"enemy", emoji:"🗡️",  name:"闇の騎士",    value:250 },
-    ]
-  },
-  {
-    id:3, name:"魔王城", emoji:"👑",
-    floors:[
-      { id:0, type:"enemy", emoji:"😈", name:"魔王",         value:BOSS_POWER, isBoss:true },
-      { id:1, type:"item",  emoji:"🌟", name:"英雄の魂",     op:"×", value:2 },
-      { id:2, type:"enemy", emoji:"🐲", name:"炎竜",         value:2000 },
-      { id:3, type:"item",  emoji:"💎", name:"神秘の結晶",   op:"×", value:2 },
-      { id:4, type:"enemy", emoji:"🦊", name:"九尾の狐",     value:1200 },
-      { id:5, type:"item",  emoji:"🔮", name:"賢者の石",     op:"+", value:500 },
-      { id:6, type:"enemy", emoji:"👹", name:"魔王の番人B",  value:600 },
-      { id:7, type:"item",  emoji:"⚡", name:"聖剣の力",     op:"×", value:3 },
-      { id:8, type:"enemy", emoji:"👹", name:"魔王の番人A",  value:400 },
-    ]
-  }
+const STAGE_TOWER_META = [
+  ["入口の塔","🌲","森の砦","🏚️","暗黒の塔","🏰","魔王城","👑"],
+  ["業火の塔","🔥","毒霧の砦","🌫️","虚空の城","🌑","大魔神城","💀"],
+  ["奈落の塔","🕳️","混沌の砦","⚡","冥界の城","👁️","魔神皇城","☠️"],
+  ["深淵の塔","🌊","業魔の砦","🌪️","天獄の城","🌌","神魔皇城","🔱"],
+  ["虚無の塔","⚫","絶望の砦","💧","終焉の城","🌀","究極魔王城","💠"],
 ];
 
-const TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
+function makeTowers(stage) {
+  const em = Math.pow(3, stage - 1);
+  const m  = STAGE_TOWER_META[Math.min(stage - 1, STAGE_TOWER_META.length - 1)];
+  return [
+    {
+      id:0, name:m[0], emoji:m[1],
+      floors:[
+        { id:0, type:"enemy", emoji:"🦁", name:"ライオン",     value:Math.floor(25*em) },
+        { id:1, type:"item",  emoji:"🍄", name:"魔法のキノコ", op:"×", value:3 },
+        { id:2, type:"enemy", emoji:"🐺", name:"ウルフ",       value:Math.floor(8*em) },
+      ]
+    },
+    {
+      id:1, name:m[2], emoji:m[3],
+      floors:[
+        { id:0, type:"enemy", emoji:"🐉", name:"小ドラゴン",   value:Math.floor(180*em) },
+        { id:1, type:"item",  emoji:"🌟", name:"魔法の粉",     op:"×", value:Math.min(2+stage,6) },
+        { id:2, type:"enemy", emoji:"👺", name:"ゴブリンB",    value:Math.floor(70*em) },
+        { id:3, type:"item",  emoji:"🧪", name:"回復薬",       op:"+", value:Math.floor(100*em) },
+        { id:4, type:"enemy", emoji:"👺", name:"ゴブリンA",    value:Math.floor(50*em) },
+      ]
+    },
+    {
+      id:2, name:m[4], emoji:m[5],
+      floors:[
+        { id:0, type:"enemy", emoji:"🌑", name:"暗黒竜",       value:Math.floor(1200*em) },
+        { id:1, type:"item",  emoji:"💀", name:"呪いの偶像",   op:"÷", value:3 },
+        { id:2, type:"enemy", emoji:"👿", name:"堕天使",       value:Math.floor(800*em) },
+        { id:3, type:"item",  emoji:"💊", name:"上級回復薬",   op:"+", value:Math.floor(300*em) },
+        { id:4, type:"enemy", emoji:"🧙", name:"大魔道士",     value:Math.floor(500*em) },
+        { id:5, type:"item",  emoji:"💎", name:"魔法の結晶",   op:"×", value:Math.min(2+stage,6) },
+        { id:6, type:"enemy", emoji:"🗡️",  name:"闇の騎士",    value:Math.floor(250*em) },
+      ]
+    },
+    {
+      id:3, name:m[6], emoji:m[7],
+      floors:[
+        { id:0, type:"enemy", emoji:"😈", name:"魔王",         value:Math.floor(BOSS_POWER_BASE*em), isBoss:true },
+        { id:1, type:"item",  emoji:"🌟", name:"英雄の魂",     op:"×", value:Math.min(2+stage,6) },
+        { id:2, type:"enemy", emoji:"🐲", name:"炎竜",         value:Math.floor(2000*em) },
+        { id:3, type:"item",  emoji:"💎", name:"神秘の結晶",   op:"×", value:Math.min(2+stage,6) },
+        { id:4, type:"enemy", emoji:"🦊", name:"九尾の狐",     value:Math.floor(1200*em) },
+        { id:5, type:"item",  emoji:"🔮", name:"賢者の石",     op:"+", value:Math.floor(500*em) },
+        { id:6, type:"enemy", emoji:"👹", name:"魔王の番人B",  value:Math.floor(600*em) },
+        { id:7, type:"item",  emoji:"⚡", name:"聖剣の力",     op:"×", value:Math.min(3+stage,7) },
+        { id:8, type:"enemy", emoji:"👹", name:"魔王の番人A",  value:Math.floor(400*em) },
+      ]
+    }
+  ];
+}
+
+let TOWERS = makeTowers(1);
+let TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
 
 // ======================================================
 // GAME STATE
 // ======================================================
 let gs = {
   phase:"TITLE",
+  stage:1,
   power:10,
   towerIndex:0,
   floorsDone:[],   // "ti-fi" strings
   calcTokens:[],
   turnsTotal:0,
   defeatedEnemies:0,
+  totalDefeated:0,
 };
 
 function $(id){ return document.getElementById(id); }
@@ -535,6 +588,8 @@ function buildAllTowers(){
   });
 
   updateProgress();
+  // Position hero under active tower (after DOM is built)
+  setTimeout(() => updateHeroPosition(gs.towerIndex, false), 0);
 }
 
 // ======================================================
@@ -570,34 +625,37 @@ function onBlockTap(ti, fi, el, floor){
   }
 
   pushCalcToken(result.delta, floor.type === "item" ? "op" : "num");
-  pushCalcToken("=", "op");
+  pushCalcToken("→", "op");
   pushCalcToken(String(gs.power), "result");
   updatePowerDisplay();
 }
 
 // ======================================================
-// DARUMA KNOCK-OUT (enemy): clone flies out, original collapses
+// BLOCK CRUSH (enemy): hero attacks, stone shatters, original collapses
 // ======================================================
 function darumaKnockOut(blockEl, ti, fi, onDone){
   const stack = $("tstack-" + ti);
   const appEl = $("app");
 
-  // Which blocks are ABOVE this one in the DOM (DOM index < blockEl's DOM index)?
+  // Which blocks are ABOVE this one in the DOM?
   const stackChildren = [...stack.children];
   const myIdx    = stackChildren.indexOf(blockEl);
   const domAbove = stackChildren.filter((c,i) => i < myIdx && !c.classList.contains("b-done"));
 
-  // Slide direction: alternate by tower index
-  const flyClass = (ti % 2 === 0) ? "fly-right" : "fly-left";
+  // 1. Hero attack animation
+  animateHeroAttack();
 
-  // 1. Snapshot position for clone
+  // 2. Spawn rock particles from block center
+  spawnRockParticles(blockEl);
+
+  // 3. Snapshot position for clone
   const rect    = blockEl.getBoundingClientRect();
   const appRect = appEl.getBoundingClientRect();
 
-  // 2. Create flying clone
+  // 4. Create shattering clone
   const clone = document.createElement("div");
   clone.className = "b-clone " + (blockEl.classList.contains("b-enemy") ? "b-enemy " : "b-item ") +
-                    (blockEl.classList.contains("b-boss") ? "b-boss " : "") + flyClass;
+                    (blockEl.classList.contains("b-boss") ? "b-boss " : "") + "shatter";
   clone.style.cssText =
     "left:"   + (rect.left - appRect.left) + "px;" +
     "top:"    + (rect.top  - appRect.top)  + "px;" +
@@ -608,13 +666,12 @@ function darumaKnockOut(blockEl, ti, fi, onDone){
   appEl.appendChild(clone);
   clone.addEventListener("animationend", () => clone.remove());
 
-  // 3. Immediately hide original (remove from flow via collapse)
-  blockEl.style.maxHeight = rect.height + "px"; // set explicit start value
-  // Force reflow so transition picks up the starting value
+  // 5. Collapse original
+  blockEl.style.maxHeight = rect.height + "px";
   void blockEl.offsetHeight;
   blockEl.classList.add("b-collapsing");
 
-  // 4. Settle blocks that were ABOVE (they "fall" with a bounce)
+  // 6. Settle blocks above
   setTimeout(() => {
     domAbove.forEach(b => {
       b.classList.add("b-settling");
@@ -622,7 +679,7 @@ function darumaKnockOut(blockEl, ti, fi, onDone){
     });
   }, 100);
 
-  // 5. Mark done after collapse finishes
+  // 7. Mark done
   setTimeout(() => {
     blockEl.classList.add("b-done");
     blockEl.classList.remove("b-collapsing", "b-removing");
@@ -631,7 +688,64 @@ function darumaKnockOut(blockEl, ti, fi, onDone){
 }
 
 // ======================================================
-// DARUMA ABSORB (item): glow + shrink in place
+// ROCK PARTICLES
+// ======================================================
+function spawnRockParticles(anchorEl){
+  const rect    = anchorEl.getBoundingClientRect();
+  const appRect = $("app").getBoundingClientRect();
+  const cx = rect.left - appRect.left + rect.width  / 2;
+  const cy = rect.top  - appRect.top  + rect.height / 2;
+  const colors = ["#9ca3af","#6b7280","#d1d5db","#e5e7eb","#fbbf24"];
+  for(let i = 0; i < 9; i++){
+    const p = document.createElement("div");
+    p.className = "rock-particle";
+    const angle = (i / 9) * Math.PI * 2 + (Math.random() - .5) * .6;
+    const dist  = 28 + Math.random() * 36;
+    const size  = 4 + Math.random() * 5;
+    p.style.cssText =
+      "left:"       + (cx - size/2) + "px;" +
+      "top:"        + (cy - size/2) + "px;" +
+      "width:"      + size + "px;" +
+      "height:"     + size + "px;" +
+      "background:" + colors[Math.floor(Math.random()*colors.length)] + ";" +
+      "--pdx:"      + (Math.cos(angle)*dist).toFixed(1) + "px;" +
+      "--pdy:"      + (Math.sin(angle)*dist).toFixed(1) + "px;";
+    $("app").appendChild(p);
+    p.addEventListener("animationend", () => p.remove());
+  }
+}
+
+// ======================================================
+// HERO ANIMATIONS
+// ======================================================
+function animateHeroAttack(){
+  const hero = $("hero");
+  if(!hero) return;
+  hero.classList.remove("hero-attacking");
+  void hero.offsetWidth;
+  hero.classList.add("hero-attacking");
+  hero.addEventListener("animationend", () => hero.classList.remove("hero-attacking"), { once:true });
+}
+
+function updateHeroPosition(towerIdx, animate){
+  const hero = $("hero");
+  if(!hero) return;
+  const col  = $("tcol-" + towerIdx);
+  if(!col)  return;
+  const colRect  = col.getBoundingClientRect();
+  const areaRect = $("gameArea").getBoundingClientRect();
+  const heroLeft = colRect.left - areaRect.left + colRect.width / 2;
+  if(animate){
+    hero.classList.remove("hero-stepping");
+    void hero.offsetWidth;
+    hero.classList.add("hero-stepping");
+    hero.addEventListener("animationend", () => hero.classList.remove("hero-stepping"), { once:true });
+  }
+  hero.style.left = heroLeft + "px";
+}
+
+// ======================================================
+// ITEM ABSORB: glow + shrink in place (crystal-style)
 // ======================================================
 function darumaAbsorb(blockEl, ti, fi, onDone){
   const stack    = $("tstack-" + ti);
@@ -664,6 +778,7 @@ function darumaAbsorb(blockEl, ti, fi, onDone){
 // ======================================================
 function afterRemove(ti, floor){
   updateProgress();
+  if(floor.type === "enemy") gs.totalDefeated++;
 
   if(floor.isBoss){
     setTimeout(() => showClear(), 600);
@@ -722,6 +837,7 @@ function checkTowerAdvance(){
   if(oldInd) oldInd.remove();
 
   showTowerFlash(TOWERS[gs.towerIndex].name);
+  updateHeroPosition(gs.towerIndex, true);
 }
 
 // ======================================================
@@ -831,10 +947,21 @@ function showGameover(floor){
 }
 
 function showClear(){
-  const diff = gs.power - BOSS_POWER;
+  const bossVal = Math.floor(BOSS_POWER_BASE * Math.pow(3, gs.stage - 1));
+  const diff    = gs.power - bossVal;
+  const isLastStage = gs.stage >= MAX_STAGES;
+  const nextStage   = gs.stage + 1;
+
+  $("clearTitle").textContent    = isLastStage ? "🏆 ALL CLEAR!" : "STAGE " + gs.stage + " CLEAR!";
+  $("clearDesc").innerHTML       = isLastStage
+    ? "全ステージを制覇した！<br>真の勇者の称号を得た！"
+    : "ステージ " + gs.stage + " の魔王を倒した！<br>次はさらなる強敵が待つ…";
   $("clearStats").innerHTML =
-    "最終パワー：" + gs.power + "<br>倒した敵：" + gs.defeatedEnemies + "体<br>行動回数：" + gs.turnsTotal + "回<br>" +
-    "魔王の力：" + BOSS_POWER + " → あなた：" + gs.power + "（差：" + (diff >= 0 ? "+" : "") + diff + "）";
+    "パワー：" + gs.power + "<br>ステージ：" + gs.stage + "<br>撃破数：" + gs.defeatedEnemies + "体（累計：" + gs.totalDefeated + "体）<br>行動回数：" + gs.turnsTotal + "回<br>" +
+    "魔王の力：" + bossVal + "　vs　あなた：" + gs.power + "（差：" + (diff >= 0 ? "+" : "") + diff + "）";
+  $("clearNextBtn").textContent  = isLastStage ? "もう一度挑戦" : "ステージ " + nextStage + " へ進む！";
+  $("clearNextBtn").onclick      = isLastStage ? restartGame : () => advanceStage(nextStage);
+
   const ov = $("transOverlay");
   ov.style.transition = "opacity .4s";
   ov.style.opacity = "1";
@@ -848,12 +975,52 @@ function showClear(){
 }
 
 // ======================================================
+// ADVANCE TO NEXT STAGE (carry power)
+// ======================================================
+function advanceStage(newStage){
+  const carryPower = gs.power;
+  const carryTotal = gs.totalDefeated;
+
+  TOWERS       = makeTowers(newStage);
+  TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
+
+  gs = {
+    phase:"PLAY",
+    stage:newStage,
+    power:carryPower,
+    towerIndex:0,
+    floorsDone:[],
+    calcTokens:[{label:String(carryPower), cls:"num"}],
+    turnsTotal:0,
+    defeatedEnemies:0,
+    totalDefeated:carryTotal,
+  };
+
+  const ov = $("transOverlay");
+  ov.style.transition = "opacity .3s";
+  ov.style.opacity = "1";
+  ov.style.pointerEvents = "all";
+  setTimeout(() => {
+    $("clearScreen").style.display = "none";
+    $("gameScreen").style.display  = "flex";
+    $("stageLabel").textContent = "STAGE " + newStage;
+    updatePowerDisplay();
+    buildAllTowers();
+    renderCalcLog();
+    ov.style.opacity       = "0";
+    ov.style.pointerEvents = "none";
+  }, 360);
+}
+
+// ======================================================
 // START / RESTART
 // ======================================================
 function startGame(){
+  TOWERS       = makeTowers(1);
+  TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
   gs = {
-    phase:"PLAY", power:10, towerIndex:0, floorsDone:[],
-    calcTokens:[{label:"10", cls:"num"}], turnsTotal:0, defeatedEnemies:0
+    phase:"PLAY", stage:1, power:10, towerIndex:0, floorsDone:[],
+    calcTokens:[{label:"10", cls:"num"}], turnsTotal:0, defeatedEnemies:0, totalDefeated:0
   };
   const ov = $("transOverlay");
   ov.style.transition = "opacity .3s";
@@ -864,6 +1031,7 @@ function startGame(){
     $("clearScreen").style.display    = "none";
     $("gameoverScreen").style.display = "none";
     $("gameScreen").style.display     = "flex";
+    $("stageLabel").textContent = "STAGE " + gs.stage;
     updatePowerDisplay();
     buildAllTowers();
     renderCalcLog();

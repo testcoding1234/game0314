@@ -83,10 +83,6 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 /* ===== フッター ===== */
 #footer{display:none;}
 
-/* ===== スコアバー ===== */
-#scoreBar{height:4px;background:rgba(0,0,0,.3);}
-#scoreFill{height:100%;background:linear-gradient(90deg,#38bdf8,#7dd3fc);width:0%;transition:width .8s ease;}
-
 /* ===== フェーズフラッシュ ===== */
 .phase-flash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:300;pointer-events:none;font-size:28px;font-weight:900;color:#fff;text-shadow:0 0 20px #7dd3fc,0 0 40px rgba(125,211,252,.5);white-space:nowrap;text-align:center;animation:pfAnim 1.4s ease forwards;}
 @keyframes pfAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
@@ -325,8 +321,6 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
     <button id="hintBtn" onclick="onHint()">💡 ヒント</button>
   </div>
 
-  <div id="scoreBar"><div id="scoreFill"></div></div>
-
   <div id="shopModal">
     <div class="shop-title">🏗️ 拡張ショップ</div>
     <div class="shop-card">
@@ -407,9 +401,12 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 <script>
 // ===== 定数 =====
 const GW = 375, GH = 667;
-const CTA_THRESHOLD = 100;
-const SHOP_CYCLE_INTERVAL = 3;
+const SHOP_CYCLE_INTERVAL   = 3;
 const REPLACEMENT_SPAWN_DELAY = 800;
+const SPAWN_SLOTS = [
+  { x: 28,  y: 120 }, { x: 148, y: 95  }, { x: 268, y: 120 },
+  { x: 88,  y: 195 }, { x: 215, y: 200 },
+];
 
 // ===== ゲーム状態 =====
 const gs = {
@@ -427,7 +424,6 @@ const gs = {
   upgrades: { hunting: false },
   animalCount: 3,
   nextId: 1,
-  ctaShown: false,
   huntCycle: 0,
   waveKills: 0,
   respawning: false,
@@ -538,6 +534,17 @@ const INV_MAX_POS     = INV_ROW_W - INV_ITEM_W;  // 317px
 
 const RANKING_DISPLAY_DELAY = 1200; // ゲーム終了からランキング表示までのms
 
+// ===== ランキング設定 =====
+const RANK_TOTAL_ENTRIES      = 12;   // 表示プレイヤー総数
+const RANK_PLAYER_MIN         = 3;    // プレイヤー最高順位
+const RANK_PLAYER_MAX         = 7;    // プレイヤー最低順位
+const RANK_UPPER_SCORE_RATIO  = 0.08; // 上位スコアの基本ギャップ率
+const RANK_UPPER_SCORE_RAND   = 15;   // 上位スコアのランダム幅
+const RANK_UPPER_SCORE_BASE   = 8;    // 上位スコアの最小ギャップ
+const RANK_LOWER_SCORE_RATIO  = 0.07; // 下位スコアの基本ギャップ率
+const RANK_LOWER_SCORE_RAND   = 12;   // 下位スコアのランダム幅
+const RANK_LOWER_SCORE_BASE   = 5;    // 下位スコアの最小ギャップ
+
 // ===== DOM参照 =====
 const $game       = document.getElementById('game');
 const $canvas     = document.getElementById('bgCanvas');
@@ -608,8 +615,6 @@ function addCoins(n) {
   el.classList.remove('coin-bump');
   void el.offsetWidth;
   el.classList.add('coin-bump');
-  const pct = Math.min(100, (gs.totalCoins / CTA_THRESHOLD) * 100);
-  document.getElementById('scoreFill').style.width = `${pct}%`;
   updateLvUpButtons();
 }
 
@@ -706,7 +711,7 @@ function renderInv() {
   const facItems  = gs.facilityItems || [];
   const products  = gs.inventory.filter(i => i.isProduct);
   buildInvSection($invRow, '🏹 狩猟素材', rawItems,  'raw');
-  buildInvSection($invRow, '⚙️ 加工中',   facItems.map(fi => ({ id: null, type: fi.type, isProduct: false })), 'processing');
+  buildInvSection($invRow, '⚙️ 加工中',   facItems.map(fi => ({ id: null, type: fi.type })), 'processing'); // id:null → no drag/attr
   buildInvSection($invRow, '🏪 売却前',   products, 'product');
 }
 
@@ -722,8 +727,8 @@ function buildInvSection(parent, label, items, sectionType) {
   const container = document.createElement('div');
   container.className = 'inv-section-items';
 
-  // Layout constants (defined globally above)
-  const maxNormal = Math.floor((INV_ROW_W - INV_ITEM_W + INV_GAP) / INV_NORMAL_STEP); // items at normal spacing
+  // Compute how many items fit side-by-side at normal spacing
+  const maxNormal = Math.floor((INV_ROW_W - INV_ITEM_W + INV_GAP) / INV_NORMAL_STEP);
 
   items.forEach((item, idx) => {
     const def = ITEM_DEF[item.type];
@@ -772,17 +777,13 @@ function startHunting() {
   $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
   gs.animals = [];
 
-  const slots = [
-    { x: 28,  y: 120 }, { x: 148, y: 95  }, { x: 268, y: 120 },
-    { x: 88,  y: 195 }, { x: 215, y: 200 },
-  ];
   const maxFacLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
   const availDefs = ANIMAL_DEFS.filter(d => maxFacLevel >= d.minFacLevel);
   const shuffled = [...availDefs].sort(() => Math.random() - 0.5);
-  const count = Math.min(gs.animalCount, slots.length);
+  const count = Math.min(gs.animalCount, SPAWN_SLOTS.length);
   for (let i = 0; i < count; i++) {
     const def = shuffled[i % shuffled.length];
-    const slot = slots[i];
+    const slot = SPAWN_SLOTS[i];
     spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y, i);
   }
 
@@ -862,13 +863,9 @@ function checkHuntingComplete() {
   gs.waveKills++;
   if (gs.waveKills < gs.animalCount) {
     // Spawn a replacement animal while others still live
-    const slots = [
-      { x: 28,  y: 120 }, { x: 148, y: 95  }, { x: 268, y: 120 },
-      { x: 88,  y: 195 }, { x: 215, y: 200 },
-    ];
     setTimeout(() => {
       if (!gs.respawning && gs.phase !== 'ENDED') {
-        const slot = slots[Math.floor(Math.random() * slots.length)];
+        const slot = SPAWN_SLOTS[Math.floor(Math.random() * SPAWN_SLOTS.length)];
         const maxFacLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
         const availDefs = ANIMAL_DEFS.filter(d => maxFacLevel >= d.minFacLevel);
         const def = availDefs[Math.floor(Math.random() * availDefs.length)];
@@ -1039,9 +1036,6 @@ function skipShop() {
 }
 
 // ===== CTAポップアップ =====
-function openCTAPopup() {
-  document.getElementById('ctaPopup').classList.add('visible');
-}
 function closeCTAPopup() {
   document.getElementById('ctaPopup').classList.remove('visible');
 }
@@ -1500,7 +1494,6 @@ function startGameMode(mode) {
   gs.upgrades = { hunting: false };
   gs.animalCount = 3;
   gs.nextId = 1;
-  gs.ctaShown = false;
   gs.huntCycle = 0;
   gs.waveKills = 0;
   gs.respawning = false;
@@ -1509,7 +1502,6 @@ function startGameMode(mode) {
   gs.speedTutLocked = false;
 
   document.getElementById('coinCount').textContent = '0';
-  document.getElementById('scoreFill').style.width = '0%';
   document.getElementById('lv-cooking').textContent = 'LV.1';
   document.getElementById('lv-workshop').textContent = 'LV.1';
   document.getElementById('lvup-cooking').innerHTML = '⬆️LV2<br>🪙30';
@@ -1523,7 +1515,6 @@ function startGameMode(mode) {
   document.getElementById('comboDisplay').classList.remove('show');
   $gameArea.classList.remove('hot');
   $gameArea.querySelectorAll('.animal').forEach(el => el.remove());
-  $invRow.innerHTML = '';
   renderInv();
   $invRow.style.pointerEvents = '';
   FACILITY_TYPES.forEach(ft => {
@@ -1621,17 +1612,6 @@ function endSpeedMode() {
 function showRanking(score) {
   const overlay = document.getElementById('rankingOverlay');
 
-  // ランキング設定定数
-  const RANK_TOTAL_ENTRIES      = 12;   // 表示プレイヤー総数
-  const RANK_PLAYER_MIN         = 3;    // プレイヤー最高順位
-  const RANK_PLAYER_MAX         = 7;    // プレイヤー最低順位
-  const RANK_UPPER_SCORE_RATIO  = 0.08; // 上位スコアの基本ギャップ率
-  const RANK_UPPER_SCORE_RAND   = 15;   // 上位スコアのランダム幅
-  const RANK_UPPER_SCORE_BASE   = 8;    // 上位スコアの最小ギャップ
-  const RANK_LOWER_SCORE_RATIO  = 0.07; // 下位スコアの基本ギャップ率
-  const RANK_LOWER_SCORE_RAND   = 12;   // 下位スコアのランダム幅
-  const RANK_LOWER_SCORE_BASE   = 5;    // 下位スコアの最小ギャップ
-
   // フェイクプレイヤー生成（射幸心をあおる構成）
   const fakeNames = [
     'アイスハンター', 'スノーウルフ', 'タイガーキング',
@@ -1641,12 +1621,11 @@ function showRanking(score) {
   ];
 
   // プレイヤーの順位をランダムで設定（「あと少し！」感を演出）
-  const playerRank  = Math.floor(Math.random() * (RANK_PLAYER_MAX - RANK_PLAYER_MIN + 1)) + RANK_PLAYER_MIN;
-  const totalEntries = RANK_TOTAL_ENTRIES;
+  const playerRank = Math.floor(Math.random() * (RANK_PLAYER_MAX - RANK_PLAYER_MIN + 1)) + RANK_PLAYER_MIN;
 
   // スコアテーブルを生成
   const entries = [];
-  for (let i = 1; i <= totalEntries; i++) {
+  for (let i = 1; i <= RANK_TOTAL_ENTRIES; i++) {
     if (i === playerRank) {
       entries.push({ rank: i, name: 'あなた', score: score, isYou: true });
     } else {
@@ -1667,12 +1646,11 @@ function showRanking(score) {
 
   const rankMedals = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-  // 表示する行: 1〜playerRank+2位まで（前後2行）
-  const showFrom = 1;
-  const showTo   = Math.min(totalEntries, playerRank + 2);
+  // 表示する行: 1〜playerRank+2位まで
+  const showTo = Math.min(RANK_TOTAL_ENTRIES, playerRank + 2);
 
   let rowsHTML = '';
-  entries.slice(showFrom - 1, showTo).forEach((e, idx) => {
+  entries.slice(0, showTo).forEach(e => {
     const medal = rankMedals[e.rank] ? `<span class="rk-crown">${rankMedals[e.rank]}</span>` : '';
     const youClass = e.isYou ? ' rk-you-row' : '';
     const tag = e.isYou ? '' : (e.rank <= 2 ? '<span class="rk-tag">最強</span>' : '');
@@ -1695,7 +1673,7 @@ function showRanking(score) {
       <button class="rk-switch" onclick="selectMode('infinite')">♾️ 無限モードでプレイ</button>
     </div>
     <div class="rk-badge">🏆 スピードランキング</div>
-    <div class="rk-title">あなたの順位<br>${playerRank}位 / ${totalEntries}人中</div>
+    <div class="rk-title">あなたの順位<br>${playerRank}位 / ${RANK_TOTAL_ENTRIES}人中</div>
     <div class="rk-you-box">
       <div class="rk-you-label">YOUR SCORE</div>
       <div class="rk-you-score">${score}</div>
@@ -1715,7 +1693,6 @@ function showRanking(score) {
 
 function retrySpeedMode() {
   document.getElementById('rankingOverlay').classList.remove('open');
-  gs.phase = 'PLAYING';
   startGameMode('speed');
 }
 

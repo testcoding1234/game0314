@@ -404,8 +404,16 @@ const GW = 375, GH = 667;
 const SHOP_CYCLE_INTERVAL   = 3;
 const REPLACEMENT_SPAWN_DELAY = 800;
 const SPAWN_SLOTS = [
-  { x: 28,  y: 120 }, { x: 148, y: 95  }, { x: 268, y: 120 },
-  { x: 88,  y: 195 }, { x: 215, y: 200 },
+  { x: 28,  y: 120, minLevel: 1  },
+  { x: 148, y: 95,  minLevel: 1  },
+  { x: 268, y: 120, minLevel: 1  },
+  { x: 88,  y: 195, minLevel: 1  },
+  { x: 215, y: 200, minLevel: 1  },
+  { x: 300, y: 158, minLevel: 5  },
+  { x: 45,  y: 238, minLevel: 5  },
+  { x: 188, y: 243, minLevel: 10 },
+  { x: 295, y: 232, minLevel: 10 },
+  { x: 135, y: 162, minLevel: 15 },
 ];
 
 // ===== ゲーム状態 =====
@@ -416,7 +424,6 @@ const gs = {
   totalCoins: 0,
   animals: [],
   inventory: [],
-  facilityItems: [],   // items currently being processed / queued in facilities
   facilities: {
     cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
     workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
@@ -514,10 +521,10 @@ const MATERIAL_TO_FACILITY_MAP = FACILITY_TYPES.reduce((map, facType) => {
 }, {});
 
 // ===== 施設アップグレード設定 (LV1→LV50, 49エントリ) =====
-// cost: ~30*n^1.45  speedMult: n+2 (LV2=2x … LV50=50x)
+// cost: ~30*n^1.45  speedMult: steep exponential ~n^1.4+1 (LV5≈9x, LV10≈24x) for exciting level-up feel
 const FACILITY_UPGRADE_LEVELS = Array.from({length: 49}, (_, i) => ({
   cost:      Math.round(30 * Math.pow(i + 1, 1.45)),
-  speedMult: i + 2,
+  speedMult: Math.round(Math.pow(i + 1, 1.4) + 1),  // 1.4 exponent gives satisfying steep acceleration
 }));
 const UPGRADE_CONFIG = { cooking: FACILITY_UPGRADE_LEVELS, workshop: FACILITY_UPGRADE_LEVELS };
 const DRAG_MOVEMENT_THRESHOLD = 10;
@@ -708,10 +715,8 @@ function removeItem(id) {
 function renderInv() {
   $invRow.innerHTML = '';
   const rawItems  = gs.inventory.filter(i => !i.isProduct);
-  const facItems  = gs.facilityItems || [];
   const products  = gs.inventory.filter(i => i.isProduct);
   buildInvSection($invRow, '🏹 狩猟素材', rawItems,  'raw');
-  buildInvSection($invRow, '⚙️ 加工中',   facItems.map(fi => ({ id: null, type: fi.type })), 'processing'); // id:null → no drag/attr
   buildInvSection($invRow, '🏪 売却前',   products, 'product');
 }
 
@@ -778,12 +783,16 @@ function startHunting() {
   gs.animals = [];
 
   const maxFacLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  const availSlots = SPAWN_SLOTS.filter(s => maxFacLevel >= s.minLevel);
+  if (availSlots.length === 0) return;  // safety guard (should never happen with minLevel:1 entries)
   const availDefs = ANIMAL_DEFS.filter(d => maxFacLevel >= d.minFacLevel);
   const shuffled = [...availDefs].sort(() => Math.random() - 0.5);
-  const count = Math.min(gs.animalCount, SPAWN_SLOTS.length);
+  // animal count = available slots minus 2 reserve (min 3), so more slots = more animals as level rises
+  const count = Math.max(3, availSlots.length - 2);
+  gs.animalCount = count;
   for (let i = 0; i < count; i++) {
     const def = shuffled[i % shuffled.length];
-    const slot = SPAWN_SLOTS[i];
+    const slot = availSlots[i % availSlots.length];
     spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y, i);
   }
 
@@ -865,8 +874,10 @@ function checkHuntingComplete() {
     // Spawn a replacement animal while others still live
     setTimeout(() => {
       if (!gs.respawning && gs.phase !== 'ENDED') {
-        const slot = SPAWN_SLOTS[Math.floor(Math.random() * SPAWN_SLOTS.length)];
         const maxFacLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+        const availSlots = SPAWN_SLOTS.filter(s => maxFacLevel >= s.minLevel);
+        if (availSlots.length === 0) return;  // safety guard
+        const slot = availSlots[Math.floor(Math.random() * availSlots.length)];
         const availDefs = ANIMAL_DEFS.filter(d => maxFacLevel >= d.minFacLevel);
         const def = availDefs[Math.floor(Math.random() * availDefs.length)];
         spawnAnimal(def, slot.x + (Math.random() * 12 - 6), slot.y, 0);
@@ -902,9 +913,6 @@ function processMaterial(facType, itemId) {
   // チュートリアルStep1：素材投入で施設ガイドを閉じる
   if (tut.step === 1 && $tutOverlay.innerHTML) hideTutStep();
   removeItem(itemId);
-  // Track the item as being processed in a facility
-  gs.facilityItems.push({ type: item.type, facType });
-  renderInv();
   if (fac.busy) {
     fac.queue.push(recipe);
     updateQueueBadge(facType);
@@ -935,9 +943,6 @@ function startFacilityProcessing(facType, recipe) {
       fac.busy = false;
       if (prog) prog.style.width = '0%';
       if (facEl) facEl.classList.remove('busy');
-      // Remove one matching facilityItem entry
-      const fiIdx = gs.facilityItems.findIndex(fi => fi.facType === facType && fi.type === recipe.input);
-      if (fiIdx !== -1) gs.facilityItems.splice(fiIdx, 1);
       addItem(recipe.output);
       if (facEl) facFloat(facEl, `✅ ${ITEM_DEF[recipe.output].name}完成！`);
       // Process next queued item
@@ -964,7 +969,10 @@ function sellItem(itemId) {
   if (!item) return;
   // チュートリアルStep2：売却で販売ガイドを閉じる
   if (tut.step === 2 && $tutOverlay.innerHTML) hideTutStep();
-  const coins = (ITEM_DEF[item.type] || {}).coins || 5;
+  const baseCoins = (ITEM_DEF[item.type] || {}).coins || 5;
+  const maxLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  // +20% sell value per facility level above 1 (LV10≈2.8x, LV20≈4.8x base)
+  const coins = Math.max(baseCoins, Math.round(baseCoins * (1 + (maxLevel - 1) * 0.2)));
   removeItem(itemId);
   spawnCoinAnim(Math.ceil(coins / 5), $market);
   if (coins >= 25) setTimeout(() => showJackpot(coins, item.type), 150);
@@ -1024,7 +1032,9 @@ function buyUpgrade(type) {
   }
   if (newMax > prevMax) {
     const newlyUnlocked = ANIMAL_DEFS.filter(d => d.minFacLevel === newMax);
-    if (newlyUnlocked.length > 0) setTimeout(() => showAnimalUnlockBanner(newlyUnlocked), 700);
+    const newSlots = SPAWN_SLOTS.filter(s => s.minLevel === newMax);
+    if (newlyUnlocked.length > 0) setTimeout(() => showAnimalUnlockBanner(newlyUnlocked, newSlots.length), 700);
+    else if (newSlots.length > 0) setTimeout(() => showSpawnUnlockBanner(newSlots.length, newMax), 700);
   }
   updateLvUpButtons();
   if ($shop.classList.contains('open')) openShop();
@@ -1053,12 +1063,12 @@ const TUT_STEPS = [
   {
     arrowText: '👇', arrowBelow: false,
     title: '⚙️ 素材を施設へ！',
-    sub: '肉→調理場 / 毛皮→加工場\nタップorドラッグで投入OK',
+    sub: '肉→調理場 / 毛皮→加工場\nドラッグして施設へ投入しよう',
   },
   {
     arrowText: '👇', arrowBelow: false,
     title: '💰 製品を売ろう！',
-    sub: 'マーケットへドラッグ\nまたはタップで即売却',
+    sub: 'マーケットへドラッグして売却\nレベルが上がると高値で売れる！',
   },
 ];
 
@@ -1126,11 +1136,9 @@ function hideTutStep() {
 }
 
 // ===== ドラッグ＆ドロップ =====
-const INITIAL_DRAG_STATE = { active:false, itemId:null, offsetX:0, offsetY:0, startX:0, startY:0, moved:false, lpTimer:null, lpInterval:null, lpFired:false };
+const INITIAL_DRAG_STATE = { active:false, itemId:null, offsetX:0, offsetY:0, startX:0, startY:0, moved:false };
 const drag = { ...INITIAL_DRAG_STATE };
 function resetDragState() {
-  clearTimeout(drag.lpTimer);
-  clearInterval(drag.lpInterval);
   Object.assign(drag, INITIAL_DRAG_STATE);
 }
 
@@ -1167,39 +1175,12 @@ function startDrag(e, itemId, mode) {
   drag.startX  = cx;
   drag.startY  = cy;
   drag.moved   = false;
-  drag.lpFired = false;
 
   $ghost.textContent = def ? def.e : '';
   $ghost.className   = `inv-item ${item.type} show`;
   $ghost.style.left  = `${cx - drag.offsetX - 26}px`;
   $ghost.style.top   = `${cy - drag.offsetY - 26}px`;
   srcEl.style.opacity = '0.3';
-
-  // Long-press: after 600ms hold without significant movement, start continuous send
-  drag.lpTimer = setTimeout(() => {
-    if (gs.phase === 'ENDED') { resetDragState(); return; }
-    drag.lpFired = true;
-    $ghost.className = '';  // hide ghost during long-press
-    const srcEl2 = document.getElementById(`itm-${itemId}`);
-    if (srcEl2) srcEl2.style.opacity = '1';
-
-    const doSend = () => {
-      if (gs.phase === 'ENDED') { clearInterval(drag.lpInterval); return; }
-      if (!item.isProduct) {
-        const sendable = gs.inventory.filter(i => !i.isProduct);
-        if (sendable.length === 0) { clearInterval(drag.lpInterval); return; }
-        const first = sendable[0];
-        const facType = MATERIAL_TO_FACILITY_MAP[first.type];
-        if (facType) processMaterial(facType, first.id);
-      } else {
-        const sendable = gs.inventory.filter(i => i.isProduct);
-        if (sendable.length === 0) { clearInterval(drag.lpInterval); return; }
-        sellItem(sendable[0].id);
-      }
-    };
-    doSend();
-    drag.lpInterval = setInterval(doSend, LONG_PRESS_SEND_INTERVAL);
-  }, LONG_PRESS_DELAY);
 
   if (mode === 'touch') {
     document.addEventListener('touchmove', onDragMove, { passive: false });
@@ -1217,11 +1198,6 @@ function onDragMove(e) {
   const cy = e.touches ? e.touches[0].clientY : e.clientY;
   if (Math.abs(cx - drag.startX) > DRAG_MOVEMENT_THRESHOLD || Math.abs(cy - drag.startY) > DRAG_MOVEMENT_THRESHOLD) {
     drag.moved = true;
-    // Cancel long-press if user starts dragging
-    if (drag.lpTimer && !drag.lpFired) {
-      clearTimeout(drag.lpTimer);
-      drag.lpTimer = null;
-    }
   }
   $ghost.style.left = `${cx - drag.offsetX - 26}px`;
   $ghost.style.top  = `${cy - drag.offsetY - 26}px`;
@@ -1234,17 +1210,6 @@ function onDragEnd(e) {
   document.removeEventListener('touchend',  onDragEnd);
   document.removeEventListener('mousemove', onDragMove);
   document.removeEventListener('mouseup',   onDragEnd);
-
-  // Always cancel long-press timers on drag end
-  clearTimeout(drag.lpTimer);
-  clearInterval(drag.lpInterval);
-
-  // If long-press was active, it already handled sending — just clean up
-  if (drag.lpFired) {
-    $ghost.className = '';
-    resetDragState();
-    return;
-  }
 
   // Phase guard: if game ended during drag, cancel without action
   if (gs.phase === 'ENDED') {
@@ -1262,7 +1227,7 @@ function onDragEnd(e) {
   const item = gs.inventory.find(i => i.id === drag.itemId);
 
   if (!drag.moved) {
-    dropped = quickUseItem(drag.itemId);
+    // タップのみでは自動処理しない（ドラッグして施設/マーケットへ）
     FACILITY_TYPES.forEach(ft => { const el = document.getElementById(`fc-${ft}`); if (el) el.classList.remove('drop-active'); });
     $market.classList.remove('drop-active');
   } else if (item) {
@@ -1374,7 +1339,7 @@ function showLvUpBurst(facEl, newLevel) {
   }
 }
 
-function showAnimalUnlockBanner(animals) {
+function showAnimalUnlockBanner(animals, newSlotCount) {
   const el = document.createElement('div');
   el.className = 'unlock-banner';
   const emojiSpan = document.createElement('span');
@@ -1385,7 +1350,26 @@ function showAnimalUnlockBanner(animals) {
   titleDiv.textContent = '🆕 新種の動物が解放！';
   const subDiv = document.createElement('div');
   subDiv.className = 'unlock-banner-sub';
-  subDiv.textContent = `施設 LV.${animals[0].minFacLevel} 達成ボーナス`;
+  subDiv.textContent = `施設 LV.${animals[0].minFacLevel} 達成ボーナス${newSlotCount > 0 ? ` ／ 出現ポイント+${newSlotCount}` : ''}`;
+  el.appendChild(emojiSpan);
+  el.appendChild(titleDiv);
+  el.appendChild(subDiv);
+  $game.appendChild(el);
+  setTimeout(() => el.remove(), 2450);
+}
+
+function showSpawnUnlockBanner(count, newLevel) {
+  const el = document.createElement('div');
+  el.className = 'unlock-banner';
+  const emojiSpan = document.createElement('span');
+  emojiSpan.className = 'unlock-banner-emoji';
+  emojiSpan.textContent = '📍'.repeat(count);
+  const titleDiv = document.createElement('div');
+  titleDiv.className = 'unlock-banner-title';
+  titleDiv.textContent = `🆕 出現ポイント+${count}解放！`;
+  const subDiv = document.createElement('div');
+  subDiv.className = 'unlock-banner-sub';
+  subDiv.textContent = `施設 LV.${newLevel} 達成ボーナス`;
   el.appendChild(emojiSpan);
   el.appendChild(titleDiv);
   el.appendChild(subDiv);
@@ -1486,7 +1470,6 @@ function startGameMode(mode) {
   gs.totalCoins = 0;
   gs.animals = [];
   gs.inventory = [];
-  gs.facilityItems = [];
   gs.facilities = {
     cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
     workshop: { level: 1, busy: false, speedMult: 1, queue: [] },

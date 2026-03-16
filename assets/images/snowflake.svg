@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Snowflake -->
+  <g fill="none" stroke="#90caf9" stroke-width="3" stroke-linecap="round">
+    <!-- Main axes -->
+    <line x1="32" y1="6" x2="32" y2="58"/>
+    <line x1="6" y1="32" x2="58" y2="32"/>
+    <line x1="12.5" y1="12.5" x2="51.5" y2="51.5"/>
+    <line x1="51.5" y1="12.5" x2="12.5" y2="51.5"/>
+    <!-- Branches on vertical axis -->
+    <line x1="32" y1="16" x2="24" y2="24"/>
+    <line x1="32" y1="16" x2="40" y2="24"/>
+    <line x1="32" y1="48" x2="24" y2="40"/>
+    <line x1="32" y1="48" x2="40" y2="40"/>
+    <!-- Branches on horizontal axis -->
+    <line x1="16" y1="32" x2="24" y2="24"/>
+    <line x1="16" y1="32" x2="24" y2="40"/>
+    <line x1="48" y1="32" x2="40" y2="24"/>
+    <line x1="48" y1="32" x2="40" y2="40"/>
+    <!-- Diagonal branches -->
+    <line x1="21" y1="21" x2="26" y2="28"/>
+    <line x1="21" y1="21" x2="28" y2="26"/>
+    <line x1="43" y1="21" x2="38" y2="28"/>
+    <line x1="43" y1="21" x2="36" y2="26"/>
+    <line x1="21" y1="43" x2="26" y2="36"/>
+    <line x1="21" y1="43" x2="28" y2="38"/>
+    <line x1="43" y1="43" x2="38" y2="36"/>
+    <line x1="43" y1="43" x2="36" y2="38"/>
+  </g>
+  <!-- Center dot -->
+  <circle cx="32" cy="32" r="4" fill="#bbdefb" stroke="#90caf9" stroke-width="2"/>
+  <!-- Tip dots -->
+  <circle cx="32" cy="6" r="2.5" fill="#e3f2fd"/>
+  <circle cx="32" cy="58" r="2.5" fill="#e3f2fd"/>
+  <circle cx="6" cy="32" r="2.5" fill="#e3f2fd"/>
+  <circle cx="58" cy="32" r="2.5" fill="#e3f2fd"/>
+  <circle cx="12.5" cy="12.5" r="2.5" fill="#e3f2fd"/>
+  <circle cx="51.5" cy="12.5" r="2.5" fill="#e3f2fd"/>
+  <circle cx="12.5" cy="51.5" r="2.5" fill="#e3f2fd"/>
+  <circle cx="51.5" cy="51.5" r="2.5" fill="#e3f2fd"/>
+</svg>

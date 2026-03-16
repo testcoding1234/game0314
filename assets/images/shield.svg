@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Shield / Defense icon -->
+  <!-- Shadow -->
+  <path d="M32,58 Q10,46 10,26 L10,12 L32,6 L54,12 L54,26 Q54,46 32,58 Z"
+        fill="#1565c0" transform="translate(1,1.5)"/>
+  <!-- Main shield body -->
+  <path d="M32,58 Q10,46 10,26 L10,12 L32,6 L54,12 L54,26 Q54,46 32,58 Z"
+        fill="#1976d2"/>
+  <!-- Shield face -->
+  <path d="M32,54 Q14,44 14,26 L14,15 L32,10 L50,15 L50,26 Q50,44 32,54 Z"
+        fill="#2196f3"/>
+  <!-- Shield emblem - cross -->
+  <rect x="29" y="18" width="6" height="24" rx="2" fill="#fff" opacity="0.9"/>
+  <rect x="20" y="27" width="24" height="6" rx="2" fill="#fff" opacity="0.9"/>
+  <!-- Shield outline trim -->
+  <path d="M32,56 Q12,44 12,26 L12,13 L32,7 L52,13 L52,26 Q52,44 32,56 Z"
+        fill="none" stroke="#0d47a1" stroke-width="1.5"/>
+  <!-- Highlight on shield -->
+  <path d="M16,16 Q14,24 14,30" stroke="#90caf9" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+  <path d="M18,12 Q22,10 28,9" stroke="#90caf9" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.4"/>
+</svg>

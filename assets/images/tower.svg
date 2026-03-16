@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Castle Tower -->
+  <!-- Base shadow -->
+  <rect x="14" y="10" width="36" height="50" rx="2" fill="#1a237e" transform="translate(1,2)"/>
+  <!-- Main tower body -->
+  <rect x="14" y="10" width="36" height="50" rx="2" fill="#283593"/>
+  <!-- Tower face -->
+  <rect x="16" y="12" width="32" height="46" rx="1" fill="#3949ab"/>
+  <!-- Battlements (merlons) -->
+  <rect x="14" y="4" width="8" height="10" rx="1" fill="#283593"/>
+  <rect x="26" y="4" width="8" height="10" rx="1" fill="#283593"/>
+  <rect x="38" y="4" width="8" height="10" rx="1" fill="#283593"/>
+  <!-- Battlement faces -->
+  <rect x="15" y="5" width="6" height="8" rx="1" fill="#3949ab"/>
+  <rect x="27" y="5" width="6" height="8" rx="1" fill="#3949ab"/>
+  <rect x="39" y="5" width="6" height="8" rx="1" fill="#3949ab"/>
+  <!-- Crenels (gaps between merlons) -->
+  <rect x="22" y="4" width="4" height="10" rx="0" fill="#1a237e"/>
+  <rect x="34" y="4" width="4" height="10" rx="0" fill="#1a237e"/>
+  <!-- Window (arrow slit) -->
+  <rect x="28" y="22" width="8" height="14" rx="2" fill="#0d1b6e"/>
+  <rect x="30" y="22" width="4" height="18" rx="1" fill="#0d1b6e"/>
+  <!-- Gate (arch) -->
+  <path d="M24,58 L24,44 Q24,38 32,38 Q40,38 40,44 L40,58 Z" fill="#0d1b6e"/>
+  <!-- Stone lines -->
+  <line x1="16" y1="24" x2="48" y2="24" stroke="#1a237e" stroke-width="1.5" opacity="0.5"/>
+  <line x1="16" y1="34" x2="48" y2="34" stroke="#1a237e" stroke-width="1.5" opacity="0.5"/>
+  <!-- Flag on top -->
+  <line x1="32" y1="4" x2="32" y2="0" stroke="#ffd700" stroke-width="2"/>
+  <polygon points="32,0 44,4 32,8" fill="#f44336"/>
+</svg>

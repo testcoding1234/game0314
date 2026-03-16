@@ -163,7 +163,7 @@ html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:cen
   <!-- Header -->
   <div id="header">
     <div id="header-left">
-      <div id="level-label">🧪 レベル <span id="lv-num">1</span></div>
+      <div id="level-label"><img src="assets/images/tube.svg" width="16" height="16" alt="🧪" style="vertical-align:middle;margin-right:3px;"> レベル <span id="lv-num">1</span></div>
       <div id="move-label">手数: <span id="move-num">0</span></div>
     </div>
     <div id="header-right">
@@ -189,7 +189,7 @@ html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:cen
 
   <!-- Start overlay -->
   <div class="overlay" id="start-overlay">
-    <div style="font-size:50px">🧪</div>
+    <div style="font-size:50px"><img src="assets/images/tube.svg" width="50" height="50" alt="🧪"></div>
     <h2>カラーソート</h2>
     <p>試験管の液体を揃えよう！<br>試験管をタップして<br>液体を移動させてね。</p>
     <button class="big-btn green" onclick="startGame()">▶ スタート</button>
@@ -494,6 +494,7 @@ function checkNewlyDone() {
 }
 
 function celebrateTube(idx) {
+  _sfx.play('powerup');
   const tubeEl = document.querySelector(`.tube[data-idx="${idx}"]`);
   if (!tubeEl) return;
   tubeEl.classList.add('tube-complete-anim');
@@ -536,6 +537,7 @@ function onTubeTap(idx) {
   // ── Phase 1: nothing selected ─────────────────────────────
   if (gs.selected === -1) {
     if (!gs.tubes[idx].length) return;
+    _sfx.play('click');
     gs.selected = idx;
     renderTubes();
     return;
@@ -633,6 +635,7 @@ function giveHint() {
    CLEAR
    ============================================================ */
 function showClear() {
+  _sfx.play('success');
   spawnWaterParticles();
   const overlay = document.getElementById('clear-overlay');
   const inner   = document.getElementById('clear-overlay-inner');
@@ -715,6 +718,53 @@ function startGame() {
 document.getElementById('undo-btn').addEventListener('click', undoMove);
 document.getElementById('restart-btn').addEventListener('click', restartLevel);
 document.getElementById('hint-btn').addEventListener('click', giveHint);
+
+// ============================================================
+// SOUND SYSTEM (Web Audio API)
+// ============================================================
+const _sfx = (() => {
+  let ctx = null;
+  const bufs = {};
+  const SOUNDS = ['click','success','powerup'];
+
+  function getCtx(){
+    if(!ctx){
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    return ctx;
+  }
+
+  function load(name){
+    if(bufs[name] !== undefined) return;
+    bufs[name] = null;
+    const c = getCtx();
+    if(!c) return;
+    fetch('assets/sounds/' + name + '.wav')
+      .then(r => r.arrayBuffer())
+      .then(ab => c.decodeAudioData(ab))
+      .then(buf => { bufs[name] = buf; })
+      .catch(() => {});
+  }
+
+  function play(name){
+    const c = getCtx();
+    if(!c) return;
+    if(c.state === 'suspended') c.resume();
+    if(!bufs[name]) { load(name); return; }
+    try {
+      const src = c.createBufferSource();
+      src.buffer = bufs[name];
+      src.connect(c.destination);
+      src.start(0);
+    } catch(e){}
+  }
+
+  function preload(){ SOUNDS.forEach(load); }
+  document.addEventListener('click',    preload, { once:true });
+  document.addEventListener('touchend', preload, { once:true });
+
+  return { play };
+})();
 </script>
 </body>
 </html>

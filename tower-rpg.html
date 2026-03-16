@@ -86,7 +86,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   margin-bottom:3px;
 }
 .t-col.t-active .t-label{color:#a78bfa;}
-.t-col.t-locked  .t-label{color:#374151;}
+.t-col.t-locked  .t-label{color:#5a3d7a;}
 
 /* stack holds the blocks */
 .t-stack{
@@ -138,7 +138,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   /* 3-D raised look */
   box-shadow:0 4px 0 rgba(0,0,0,.55),0 5px 8px rgba(0,0,0,.35);
   transition:box-shadow .1s;
-  max-height:56px; /* used by the collapse transition */
+  max-height:80px; /* used by the collapse transition */
 }
 .b:active:not(.b-done):not(.b-locked):not(.b-removing){
   transform:translateY(3px);
@@ -180,11 +180,11 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   line-height:1;
 }
 
-/* locked (future tower) */
+/* locked (future tower) — content visible so player can plan ahead */
 .b.b-locked{
   cursor:default;
-  filter:grayscale(.7) brightness(.5);
-  opacity:.45;
+  filter:brightness(.78) saturate(.5);
+  opacity:.75;
   pointer-events:none;
 }
 /* done (removed) */
@@ -606,6 +606,21 @@ function applyPower(floor){
 }
 
 // ======================================================
+// BLOCK HEIGHT — varies by enemy power / item / boss
+// ======================================================
+function getBlockHeight(floor){
+  if(floor.isBoss)           return 72;
+  if(floor.type === "item")  return 40;
+  // Normalize value to stage-1 scale so thresholds are consistent across stages
+  const em = Math.pow(3, gs.stage - 1);
+  const v  = floor.value / em;
+  if(v >= 400) return 66;
+  if(v >= 60)  return 58;
+  if(v >= 20)  return 50;
+  return 44;
+}
+
+// ======================================================
 // BUILD ALL TOWERS
 // ======================================================
 function buildAllTowers(){
@@ -643,6 +658,11 @@ function buildAllTowers(){
         done       ? "b-done"   : "",
         isLocked   ? "b-locked" : "",
       ].filter(Boolean).join(" ");
+
+      // Variable height based on enemy power / item / boss
+      const bh = getBlockHeight(floor);
+      b.style.height    = bh + "px";
+      b.style.maxHeight = (bh + 4) + "px";
 
       b.innerHTML =
         "<span class='b-emoji'>" + floor.emoji + "</span>" +

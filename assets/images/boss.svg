@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Dragon Boss -->
+  <!-- Wings -->
+  <path d="M8,30 Q4,12 16,18 Q20,22 22,32 Z" fill="#b71c1c"/>
+  <path d="M56,30 Q60,12 48,18 Q44,22 42,32 Z" fill="#b71c1c"/>
+  <path d="M10,30 Q6,16 16,20 Q19,23 22,31 Z" fill="#e53935" opacity="0.5"/>
+  <path d="M54,30 Q58,16 48,20 Q45,23 42,31 Z" fill="#e53935" opacity="0.5"/>
+  <!-- Body -->
+  <ellipse cx="32" cy="40" rx="18" ry="16" fill="#880e4f"/>
+  <ellipse cx="32" cy="39" rx="16" ry="14" fill="#ad1457"/>
+  <!-- Head -->
+  <ellipse cx="32" cy="26" rx="14" ry="12" fill="#880e4f"/>
+  <!-- Crown -->
+  <rect x="20" y="13" width="24" height="5" rx="1" fill="#ffd700"/>
+  <polygon points="22,13 24,6 26,13" fill="#ffd700"/>
+  <polygon points="29,13 32,5 35,13" fill="#ffd700"/>
+  <polygon points="38,13 40,6 42,13" fill="#ffd700"/>
+  <circle cx="24" cy="10" r="2" fill="#e53935"/>
+  <circle cx="32" cy="9" r="2" fill="#e53935"/>
+  <circle cx="40" cy="10" r="2" fill="#e53935"/>
+  <!-- Eyes (glowing) -->
+  <circle cx="26" cy="26" r="4" fill="#fff"/>
+  <circle cx="38" cy="26" r="4" fill="#fff"/>
+  <circle cx="26" cy="26" r="2.5" fill="#ff6f00"/>
+  <circle cx="38" cy="26" r="2.5" fill="#ff6f00"/>
+  <circle cx="27" cy="25" r="1" fill="#1a1a1a"/>
+  <circle cx="39" cy="25" r="1" fill="#1a1a1a"/>
+  <!-- Fangs -->
+  <polygon points="27,35 29,35 28,40" fill="#fff"/>
+  <polygon points="33,35 35,35 34,40" fill="#fff"/>
+  <!-- Chest highlight -->
+  <ellipse cx="32" cy="38" rx="8" ry="5" fill="#c2185b" opacity="0.6"/>
+  <!-- Tail -->
+  <path d="M50,48 Q58,44 60,52 Q58,58 52,56 Q46,52 50,48" fill="#880e4f"/>
+</svg>

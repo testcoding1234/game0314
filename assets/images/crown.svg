@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Crown (Boss indicator) -->
+  <!-- Shadow -->
+  <path d="M8,52 L8,34 L20,44 L32,24 L44,44 L56,34 L56,52 Z" fill="#e65100" transform="translate(0,3)"/>
+  <!-- Main crown body -->
+  <path d="M8,52 L8,34 L20,44 L32,24 L44,44 L56,34 L56,52 Z" fill="#ffa000"/>
+  <!-- Crown face -->
+  <path d="M8,50 L8,36 L20,46 L32,26 L44,46 L56,36 L56,50 Z" fill="#ffb300"/>
+  <!-- Crown base band -->
+  <rect x="8" y="48" width="48" height="8" rx="3" fill="#ff8f00"/>
+  <rect x="8" y="48" width="48" height="5" rx="2" fill="#ffc107"/>
+  <!-- Gems on crown -->
+  <circle cx="32" cy="50.5" r="4" fill="#e91e63"/>
+  <circle cx="32" cy="50.5" r="3" fill="#f48fb1"/>
+  <circle cx="18" cy="50.5" r="3" fill="#7c4dff"/>
+  <circle cx="18" cy="50.5" r="2" fill="#b39ddb"/>
+  <circle cx="46" cy="50.5" r="3" fill="#00bcd4"/>
+  <circle cx="46" cy="50.5" r="2" fill="#80deea"/>
+  <!-- Crown point tips decorations -->
+  <circle cx="32" cy="24" r="4" fill="#ffd700"/>
+  <circle cx="32" cy="24" r="2.5" fill="#fff9c4"/>
+  <circle cx="20" cy="44" r="3" fill="#ffd700"/>
+  <circle cx="44" cy="44" r="3" fill="#ffd700"/>
+  <!-- Outline -->
+  <path d="M8,52 L8,34 L20,44 L32,24 L44,44 L56,34 L56,52 Z"
+        fill="none" stroke="#e65100" stroke-width="1.5"/>
+</svg>

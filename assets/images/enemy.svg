@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Slime / monster enemy -->
+  <!-- Body -->
+  <ellipse cx="32" cy="40" rx="22" ry="18" fill="#4caf50"/>
+  <ellipse cx="32" cy="38" rx="20" ry="16" fill="#66bb6a"/>
+  <!-- Eyes -->
+  <circle cx="25" cy="36" r="5" fill="white"/>
+  <circle cx="39" cy="36" r="5" fill="white"/>
+  <circle cx="26" cy="37" r="3" fill="#d32f2f"/>
+  <circle cx="40" cy="37" r="3" fill="#d32f2f"/>
+  <circle cx="27" cy="36" r="1.2" fill="#1a1a1a"/>
+  <circle cx="41" cy="36" r="1.2" fill="#1a1a1a"/>
+  <!-- Mouth (angry) -->
+  <path d="M25,46 Q32,52 39,46" stroke="#2e7d32" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <path d="M27,47 L29,44 M31,47 L32,44 M35,47 L33,44" stroke="#2e7d32" stroke-width="1.5" stroke-linecap="round"/>
+  <!-- Horns -->
+  <polygon points="22,26 18,14 27,24" fill="#388e3c"/>
+  <polygon points="42,26 46,14 37,24" fill="#388e3c"/>
+  <!-- Highlight -->
+  <ellipse cx="26" cy="32" rx="5" ry="3" fill="#a5d6a7" opacity="0.5"/>
+</svg>

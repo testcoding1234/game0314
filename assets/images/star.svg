@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- 5-pointed star -->
+  <!-- Glow effect -->
+  <circle cx="32" cy="32" r="26" fill="#fff176" opacity="0.3"/>
+  <!-- Star shadow -->
+  <polygon points="32,6 38.8,24.6 58,24.6 43.2,36 48.8,54.6 32,43 15.2,54.6 20.8,36 6,24.6 25.2,24.6"
+           fill="#f57f17" transform="translate(1.5,1.5)"/>
+  <!-- Main star -->
+  <polygon points="32,6 38.8,24.6 58,24.6 43.2,36 48.8,54.6 32,43 15.2,54.6 20.8,36 6,24.6 25.2,24.6"
+           fill="#ffd700"/>
+  <!-- Inner star for dimension -->
+  <polygon points="32,13 37.1,27.4 52,27.4 40.1,36 44.5,50.4 32,42 19.5,50.4 23.9,36 12,27.4 26.9,27.4"
+           fill="#ffee58" opacity="0.6"/>
+  <!-- Shine -->
+  <path d="M22,18 Q25,14 30,14" stroke="#fff9c4" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.8"/>
+</svg>

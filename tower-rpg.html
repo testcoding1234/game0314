@@ -418,6 +418,20 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 .result-btn.retry{background:linear-gradient(135deg,#dc2626,#b91c1c);}
 .result-home{font-size:12px;color:#6b7280;cursor:pointer;padding:6px;border-bottom:1px solid rgba(107,114,128,.3);}
 #transOverlay{position:absolute;inset:0;background:#000;z-index:150;pointer-events:none;opacity:0;transition:opacity .3s;}
+
+/* ====== GAME HEADER HOME BUTTON ====== */
+.game-back-btn{font-size:12px;color:#6b7280;cursor:pointer;padding:5px 8px;border-radius:8px;border:1px solid rgba(107,114,128,.3);flex-shrink:0;line-height:1;}
+.game-back-btn:active{background:rgba(255,255,255,.07);}
+
+/* ====== DIFFICULTY SELECTOR ====== */
+.diff-row{display:flex;gap:12px;margin-bottom:10px;}
+.diff-btn{padding:10px 22px;border-radius:28px;border:2px solid;font-size:13px;font-weight:800;cursor:pointer;letter-spacing:.05em;transition:all .2s;-webkit-tap-highlight-color:transparent;}
+.diff-btn:active{transform:scale(.93);}
+.diff-normal{background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.35);color:#93c5fd;}
+.diff-hard{background:rgba(220,38,38,.1);border-color:rgba(220,38,38,.35);color:#fca5a5;}
+.diff-normal.diff-sel{background:rgba(59,130,246,.25);border-color:#3b82f6;color:#bfdbfe;box-shadow:0 0 18px rgba(59,130,246,.45);}
+.diff-hard.diff-sel{background:rgba(220,38,38,.25);border-color:#ef4444;color:#fecaca;box-shadow:0 0 18px rgba(239,68,68,.55);}
+.hard-badge{font-size:10px;font-weight:800;color:#fca5a5;background:rgba(220,38,38,.22);border:1.5px solid rgba(239,68,68,.5);border-radius:10px;padding:2px 7px;letter-spacing:.06em;margin-left:4px;}
 </style>
 </head>
 <body>
@@ -432,12 +446,17 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
     <div class="title-sub">HERO'S TOWER</div>
     <div class="title-hero"><img src="assets/images/sword.svg" width="72" height="72" alt="⚔️" style="filter:drop-shadow(0 0 14px #a78bfa);"></div>
     <div class="title-desc">塔を攻略して魔王を倒せ！<br>アイテムを駆使して力をつけろ！</div>
+    <div class="diff-row">
+      <div class="diff-btn diff-normal" id="btnNormal" onclick="selectDiff('normal')">🌙 ノーマル</div>
+      <div class="diff-btn diff-hard diff-sel" id="btnHard" onclick="selectDiff('hard')">⚡ ハード</div>
+    </div>
     <button class="title-start-btn" id="startBtn">ゲームスタート</button>
   </div>
 
   <!-- ===== GAME SCREEN ===== -->
   <div id="gameScreen">
     <div id="gameHeader">
+      <div class="game-back-btn" onclick="goHome()">🏠</div>
       <div id="powerDisplay">
         <img id="powerIcon" src="assets/images/sword.svg" width="18" height="18" alt="⚔️" style="vertical-align:middle;flex-shrink:0;">
         <span id="powerValue">10</span>
@@ -559,8 +578,64 @@ let TOWERS = makeTowers(1);
 let TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
 
 // ======================================================
+// HARD MODE TOWERS — unique-solution design for every stage
+// Each tower follows a strict "small enemy → item → big enemy" chain
+// where the exact order is the ONLY path to victory.
+// Power resets to 10 at each hard-mode stage start to preserve
+// the per-stage puzzle balance.
+// ======================================================
+function makeHardTowers(stage) {
+  const em = stageEm(stage);
+  const m  = STAGE_TOWER_META[Math.min(stage - 1, STAGE_TOWER_META.length - 1)];
+  // Tower-0 item multiplier grows with stage so the unique-solution
+  // constraint holds even as enemy values scale by ×10 per stage.
+  const k0 = stage <= 1 ? 5 : stage <= 2 ? 7 : 8;
+  return [
+    {
+      id:0, name:m[0], emoji:m[1],
+      floors:[
+        { id:0, type:"enemy", emoji:"🦁", name:"ライオン",    value:Math.floor(60*em) },
+        { id:1, type:"item",  emoji:"🌀", name:"魔法の渦",    op:"×", value:k0 },
+        { id:2, type:"enemy", emoji:"🐺", name:"ウルフ",      value:Math.floor(8*em) },
+      ]
+    },
+    {
+      id:1, name:m[2], emoji:m[3],
+      floors:[
+        { id:0, type:"enemy", emoji:"🐉", name:"ドラゴン",    value:Math.floor(2000*em) },
+        { id:1, type:"item",  emoji:"🌟", name:"勇者の証",    op:"×", value:8 },
+        { id:2, type:"enemy", emoji:"👿", name:"魔人",        value:Math.floor(160*em) },
+        { id:3, type:"enemy", emoji:"👺", name:"ゴブリン",    value:Math.floor(40*em) },
+      ]
+    },
+    {
+      id:2, name:m[4], emoji:m[5],
+      floors:[
+        { id:0, type:"enemy", emoji:"🌑", name:"暗黒神",      value:Math.floor(240000*em) },
+        { id:1, type:"item",  emoji:"💎", name:"神の結晶",    op:"×", value:20 },
+        { id:2, type:"enemy", emoji:"👿", name:"堕天使",      value:Math.floor(5200*em) },
+        { id:3, type:"enemy", emoji:"🧙", name:"大魔道士",    value:Math.floor(5000*em) },
+        { id:4, type:"enemy", emoji:"🗡️",  name:"暗黒騎士",   value:Math.floor(500*em) },
+      ]
+    },
+    {
+      id:3, name:m[6], emoji:m[7],
+      floors:[
+        { id:0, type:"enemy", emoji:"😈", name:"魔王",        value:Math.floor(20000000*em), isBoss:true },
+        { id:1, type:"item",  emoji:"⚡", name:"聖剣の真髄",  op:"×", value:12 },
+        { id:2, type:"enemy", emoji:"🐲", name:"炎竜王",      value:Math.floor(1100000*em) },
+        { id:3, type:"enemy", emoji:"🦊", name:"九尾の狐神",  value:Math.floor(570000*em) },
+        { id:4, type:"enemy", emoji:"👹", name:"魔王の衛兵",  value:Math.floor(25000*em) },
+      ]
+    }
+  ];
+}
+
+// ======================================================
 // GAME STATE
 // ======================================================
+let selectedDifficulty = 'hard'; // Default: hard mode
+
 let gs = {
   phase:"TITLE",
   stage:1,
@@ -572,6 +647,7 @@ let gs = {
   turnsTotal:0,
   defeatedEnemies:0,
   totalDefeated:0,
+  hardMode:true,
 };
 
 function $(id){ return document.getElementById(id); }
@@ -582,28 +658,32 @@ function $(id){ return document.getElementById(id); }
 function applyPower(floor){
   if(floor.type==="enemy"){
     if(gs.power > floor.value){
-      // COMBO bonus: +20% at 3, +50% at 5, +80% at 7+
+      // COMBO bonus: +20% at 3, +50% at 5, +80% at 7+ (normal mode only)
       let bonus = 0;
-      if(gs.combo >= 7) bonus = Math.floor(floor.value * .8);
-      else if(gs.combo >= 5) bonus = Math.floor(floor.value * .5);
-      else if(gs.combo >= 3) bonus = Math.floor(floor.value * .2);
+      if(!gs.hardMode){
+        if(gs.combo >= 7) bonus = Math.floor(floor.value * .8);
+        else if(gs.combo >= 5) bonus = Math.floor(floor.value * .5);
+        else if(gs.combo >= 3) bonus = Math.floor(floor.value * .2);
+      }
       gs.power = Math.floor(gs.power + floor.value + bonus);
       gs.defeatedEnemies++;
       gs.combo++;
 
-      // JACKPOT: 5% chance for extra bonus burst
-      const jpRoll = Math.random();
-      if(jpRoll < .05){
-        const jpBonus = Math.floor(floor.value * (1 + Math.random()));
-        gs.power += jpBonus;
-        return { ok:true, delta:"+"+(floor.value+bonus), jackpot:true, jackpotBonus:jpBonus };
+      // JACKPOT: 5% chance for extra bonus burst (normal mode only)
+      if(!gs.hardMode){
+        const jpRoll = Math.random();
+        if(jpRoll < .05){
+          const jpBonus = Math.floor(floor.value * (1 + Math.random()));
+          gs.power += jpBonus;
+          return { ok:true, delta:"+"+(floor.value+bonus), jackpot:true, jackpotBonus:jpBonus };
+        }
       }
       return { ok:true, delta:"+"+(floor.value+bonus), combo:gs.combo };
     }
     return { ok:false };
   }
-  // ITEM — CRITICAL: 20% chance to double the effect
-  const isCrit = (Math.random() < .20);
+  // ITEM — CRITICAL: 20% chance to double the effect (normal mode only)
+  const isCrit = (!gs.hardMode && Math.random() < .20);
   let effVal = isCrit ? floor.value * 2 : floor.value;
   if(floor.op==="×")      gs.power = Math.floor(gs.power * effVal);
   else if(floor.op==="+") gs.power = Math.floor(gs.power + effVal);
@@ -723,6 +803,10 @@ function buildAllTowers(){
 // BLOCK TAP
 // ======================================================
 function onBlockTap(ti, fi, el, floor){
+  // Guard: reject taps from inactive towers.
+  // CSS pointer-events:none can be bypassed on some mobile browsers, so we
+  // enforce the active-tower rule here in JS as the authoritative check.
+  if(ti !== gs.towerIndex) return;
   const key = ti + "-" + floor.id;
   if(gs.floorsDone.includes(key)) return;
   if(el.classList.contains("b-removing")) return;
@@ -1169,16 +1253,28 @@ function showGameover(floor){
 }
 
 function showClear(){
-  const bossVal = Math.floor(BOSS_POWER_BASE * stageEm(gs.stage));
+  // Read actual boss value using the isBoss flag (robust against floor reordering)
+  const bossTower = TOWERS[TOWERS.length - 1];
+  const bossFloor = bossTower.floors.find(f => f.isBoss);
+  const bossVal   = bossFloor ? bossFloor.value : 0;
   const diff    = gs.power - bossVal;
   const isLastStage = gs.stage >= MAX_STAGES;
   const nextStage   = gs.stage + 1;
-  const nextBossVal = !isLastStage ? Math.floor(BOSS_POWER_BASE * stageEm(nextStage)) : 0;
+  // Preview next stage boss using the correct tower factory
+  let nextBossVal = 0;
+  if(!isLastStage){
+    const nextTowers   = gs.hardMode ? makeHardTowers(nextStage) : makeTowers(nextStage);
+    const nextBossFlr  = nextTowers[nextTowers.length - 1].floors.find(f => f.isBoss);
+    nextBossVal        = nextBossFlr ? nextBossFlr.value : 0;
+  }
 
   $("clearTitle").textContent    = isLastStage ? "🏆 ALL CLEAR!" : "STAGE " + gs.stage + " CLEAR!";
   $("clearDesc").innerHTML       = isLastStage
     ? "全ステージを制覇した！<br>真の勇者の称号を得た！"
-    : "ステージ " + gs.stage + " の魔王を倒した！<br>次の魔王の力は <strong style='color:#f87171'>" + nextBossVal.toLocaleString() + "</strong>！<br>引き継いだ力で挑め！";
+    : "ステージ " + gs.stage + " の魔王を倒した！<br>" +
+      (gs.hardMode
+        ? "次の魔王の力は <strong style='color:#f87171'>" + nextBossVal.toLocaleString() + "</strong>！<br><span style='color:#fca5a5;font-size:12px'>⚡ ハードモード：次ステージは力10でスタート！</span>"
+        : "次の魔王の力は <strong style='color:#f87171'>" + nextBossVal.toLocaleString() + "</strong>！<br>引き継いだ力で挑め！");
   $("clearStats").innerHTML =
     "パワー：" + gs.power.toLocaleString() + "<br>ステージ：" + gs.stage + "<br>撃破数：" + gs.defeatedEnemies + "体（累計：" + gs.totalDefeated + "体）<br>行動回数：" + gs.turnsTotal + "回<br>" +
     "魔王の力：" + bossVal.toLocaleString() + "　vs　あなた：" + gs.power.toLocaleString() + "（差：" + (diff >= 0 ? "+" : "") + diff.toLocaleString() + "）";
@@ -1198,13 +1294,16 @@ function showClear(){
 }
 
 // ======================================================
-// ADVANCE TO NEXT STAGE (carry power)
+// ADVANCE TO NEXT STAGE
+// Hard mode: reset power to 10 (each stage is an independent puzzle).
+// Normal mode: carry power forward.
 // ======================================================
 function advanceStage(newStage){
-  const carryPower = gs.power;
+  const hardMode   = gs.hardMode;
+  const carryPower = hardMode ? 10 : gs.power;
   const carryTotal = gs.totalDefeated;
 
-  TOWERS       = makeTowers(newStage);
+  TOWERS        = hardMode ? makeHardTowers(newStage) : makeTowers(newStage);
   TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
 
   gs = {
@@ -1218,6 +1317,7 @@ function advanceStage(newStage){
     defeatedEnemies:0,
     totalDefeated:carryTotal,
     combo:0,
+    hardMode,
   };
 
   const ov = $("transOverlay");
@@ -1227,7 +1327,7 @@ function advanceStage(newStage){
   setTimeout(() => {
     $("clearScreen").style.display = "none";
     $("gameScreen").style.display  = "flex";
-    $("stageLabel").textContent = "STAGE " + newStage;
+    setStageLabel(newStage, hardMode);
     updatePowerDisplay();
     buildAllTowers();
     renderCalcLog();
@@ -1237,15 +1337,31 @@ function advanceStage(newStage){
 }
 
 // ======================================================
+// SET STAGE LABEL (safe DOM, no innerHTML with variables)
+// ======================================================
+function setStageLabel(stageNum, hardMode){
+  const el = $("stageLabel");
+  el.textContent = "STAGE " + stageNum;
+  if(hardMode){
+    const badge = document.createElement("span");
+    badge.className = "hard-badge";
+    badge.textContent = "HARD";
+    el.appendChild(badge);
+  }
+}
+
+// ======================================================
 // START / RESTART
 // ======================================================
 function startGame(){
   _sfx.play('click');
-  TOWERS       = makeTowers(1);
+  const hardMode = (selectedDifficulty === 'hard');
+  TOWERS        = hardMode ? makeHardTowers(1) : makeTowers(1);
   TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
   gs = {
     phase:"PLAY", stage:1, power:10, towerIndex:0, floorsDone:[],
-    calcTokens:[{label:"10", cls:"num"}], turnsTotal:0, defeatedEnemies:0, totalDefeated:0, combo:0
+    calcTokens:[{label:"10", cls:"num"}], turnsTotal:0, defeatedEnemies:0, totalDefeated:0, combo:0,
+    hardMode,
   };
   const ov = $("transOverlay");
   ov.style.transition = "opacity .3s";
@@ -1256,7 +1372,7 @@ function startGame(){
     $("clearScreen").style.display    = "none";
     $("gameoverScreen").style.display = "none";
     $("gameScreen").style.display     = "flex";
-    $("stageLabel").textContent = "STAGE " + gs.stage;
+    setStageLabel(1, hardMode);
     updatePowerDisplay();
     buildAllTowers();
     renderCalcLog();
@@ -1265,6 +1381,32 @@ function startGame(){
   }, 360);
 }
 function restartGame(){ startGame(); }
+
+// ======================================================
+// DIFFICULTY SELECTION
+// ======================================================
+function selectDiff(mode){
+  selectedDifficulty = mode;
+  $("btnNormal").classList.toggle("diff-sel", mode === "normal");
+  $("btnHard").classList.toggle("diff-sel",   mode === "hard");
+}
+
+// ======================================================
+// GO HOME (from game screen)
+// ======================================================
+function goHome(){
+  gs.phase = "TITLE";
+  const ov = $("transOverlay");
+  ov.style.transition = "opacity .3s";
+  ov.style.opacity = "1";
+  ov.style.pointerEvents = "all";
+  setTimeout(() => {
+    $("gameScreen").style.display  = "none";
+    $("titleScreen").style.display = "flex";
+    ov.style.opacity       = "0";
+    ov.style.pointerEvents = "none";
+  }, 300);
+}
 
 // ======================================================
 // TITLE STARS

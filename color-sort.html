@@ -88,24 +88,6 @@ html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:cen
   overflow:hidden;
   /* background gradient set via JS */
 }
-/* Left-side glass reflection on liquid */
-.color-cell::before{
-  content:'';
-  position:absolute;
-  top:0;left:2px;bottom:0;width:5px;
-  background:linear-gradient(90deg,rgba(255,255,255,.28) 0%,rgba(255,255,255,.04) 100%);
-  pointer-events:none;z-index:5;
-}
-/* Liquid surface shimmer — only on topmost cell */
-.color-cell.liquid-top::after{
-  content:'';
-  position:absolute;
-  top:0;left:0;right:0;height:6px;
-  background:linear-gradient(180deg,rgba(255,255,255,.48) 0%,rgba(255,255,255,.12) 55%,transparent 100%);
-  pointer-events:none;z-index:6;
-  animation:surface-shimmer 3s ease-in-out infinite;
-}
-@keyframes surface-shimmer{0%,100%{opacity:.65;}55%{opacity:1;}}
 /* Bottom cell rounded corners */
 .color-cell.liquid-bottom{border-radius:0 0 16px 16px;}
 
@@ -249,12 +231,9 @@ function hexToRgba(hex, a) {
   return `rgba(${r},${g},${b},${a})`;
 }
 
-/* Water-like gradient for a liquid layer */
+/* Flat matte color for a liquid layer (no gradient) */
 function liquidGrad(c) {
-  return `linear-gradient(180deg,
-    ${hexToRgba(c.light, .80)} 0%,
-    ${hexToRgba(c.hex,   .88)} 42%,
-    ${hexToRgba(c.dark,  .94)} 100%)`;
+  return hexToRgba(c.hex, .92);
 }
 
 /* Radial gradient for the flying water drop */

@@ -653,6 +653,54 @@ let gs = {
 function $(id){ return document.getElementById(id); }
 
 // ======================================================
+// SOUND SYSTEM (Web Audio API)
+// ======================================================
+const _sfx = (() => {
+  let ctx = null;
+  const bufs = {};
+  const SOUNDS = ['click','hit','coin','success','gameover','powerup','whoosh'];
+
+  function getCtx(){
+    if(!ctx){
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    return ctx;
+  }
+
+  function load(name){
+    if(bufs[name] !== undefined) return;
+    bufs[name] = null;
+    const c = getCtx();
+    if(!c) return;
+    fetch('assets/sounds/' + name + '.wav')
+      .then(r => r.arrayBuffer())
+      .then(ab => c.decodeAudioData(ab))
+      .then(buf => { bufs[name] = buf; })
+      .catch(() => {});
+  }
+
+  function play(name){
+    const c = getCtx();
+    if(!c) return;
+    if(c.state === 'suspended') c.resume();
+    if(!bufs[name]) { load(name); return; }
+    try {
+      const src = c.createBufferSource();
+      src.buffer = bufs[name];
+      src.connect(c.destination);
+      src.start(0);
+    } catch(e){}
+  }
+
+  // Preload on first user interaction
+  function preload(){ SOUNDS.forEach(load); }
+  document.addEventListener('click',    preload, { once:true });
+  document.addEventListener('touchend', preload, { once:true });
+
+  return { play };
+})();
+
+// ======================================================
 // APPLY POWER
 // ======================================================
 function applyPower(floor){
@@ -1420,54 +1468,6 @@ function goHome(){
 
 $("startBtn").addEventListener("click",    startGame);
 $("startBtn").addEventListener("touchend", e => { e.preventDefault(); startGame(); });
-
-// ======================================================
-// SOUND SYSTEM (Web Audio API)
-// ======================================================
-const _sfx = (() => {
-  let ctx = null;
-  const bufs = {};
-  const SOUNDS = ['click','hit','coin','success','gameover','powerup','whoosh'];
-
-  function getCtx(){
-    if(!ctx){
-      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
-    }
-    return ctx;
-  }
-
-  function load(name){
-    if(bufs[name] !== undefined) return;
-    bufs[name] = null;
-    const c = getCtx();
-    if(!c) return;
-    fetch('assets/sounds/' + name + '.wav')
-      .then(r => r.arrayBuffer())
-      .then(ab => c.decodeAudioData(ab))
-      .then(buf => { bufs[name] = buf; })
-      .catch(() => {});
-  }
-
-  function play(name){
-    const c = getCtx();
-    if(!c) return;
-    if(c.state === 'suspended') c.resume();
-    if(!bufs[name]) { load(name); return; }
-    try {
-      const src = c.createBufferSource();
-      src.buffer = bufs[name];
-      src.connect(c.destination);
-      src.start(0);
-    } catch(e){}
-  }
-
-  // Preload on first user interaction
-  function preload(){ SOUNDS.forEach(load); }
-  document.addEventListener('click',    preload, { once:true });
-  document.addEventListener('touchend', preload, { once:true });
-
-  return { play };
-})();
 </script>
 </body>
 </html>

@@ -621,7 +621,6 @@ const $gameArea   = document.getElementById('gameArea');
 const $invRow     = document.getElementById('invRow');
 const $phase      = document.getElementById('phaseLabel');
 const $coins      = document.getElementById('coinCount');
-const $instr      = document.getElementById('instruction');
 const $hint       = document.getElementById('hintBtn');
 const $market     = document.getElementById('marketCard');
 const $shop       = document.getElementById('shopModal');
@@ -737,7 +736,6 @@ function spawnDmg(x, y, text) {
 }
 
 // ===== ヒントボタン =====
-function setInstruction(text) { $instr.textContent = text; }
 function showHint(text) { $hint.textContent = text; $hint.classList.add('visible'); }
 function hideHint() { $hint.classList.remove('visible'); }
 function onHint() {
@@ -1560,8 +1558,8 @@ function switchMode(mode) {
   setTimeout(() => startGameMode(mode), 100);
 }
 
-function startGameMode(mode) {
-  // ゲーム状態リセット
+// ===== ゲーム状態リセット =====
+function resetGameState(mode) {
   clearInterval(gs.speedTimerInterval);
   gs.speedTimerInterval = null;
   clearTimeout(gs.hintTimer);
@@ -1587,7 +1585,10 @@ function startGameMode(mode) {
   gs.speedTimeLeft = 60;
   gs.speedTutLocked = false;
   gs.firstSaleDone = false;
+}
 
+// ===== UI リセット =====
+function resetGameUI() {
   document.getElementById('coinCount').textContent = '0';
   document.getElementById('lv-cooking').textContent = 'LV.1';
   document.getElementById('lv-workshop').textContent = 'LV.1';
@@ -1619,6 +1620,11 @@ function startGameMode(mode) {
   updateModeToolbarUI();
   // modeTab: モード選択済みのときのみ表示
   document.getElementById('modeTab').style.display = _modeChosen ? 'flex' : 'none';
+}
+
+function startGameMode(mode) {
+  resetGameState(mode);
+  resetGameUI();
 
   // チュートリアル状態リセット（モード選択前のみ毎プレイ表示、選択後は非表示）
   tut.step = 0;

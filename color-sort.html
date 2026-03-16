@@ -716,13 +716,6 @@ function startGame() {
   startLevel(1);
 }
 
-/* ============================================================
-   BUTTON WIRING
-   ============================================================ */
-document.getElementById('undo-btn').addEventListener('click', undoMove);
-document.getElementById('restart-btn').addEventListener('click', restartLevel);
-document.getElementById('hint-btn').addEventListener('click', giveHint);
-
 // ============================================================
 // SOUND SYSTEM (Web Audio API)
 // ============================================================
@@ -769,6 +762,13 @@ const _sfx = (() => {
 
   return { play };
 })();
+
+/* ============================================================
+   BUTTON WIRING
+   ============================================================ */
+document.getElementById('undo-btn').addEventListener('click', undoMove);
+document.getElementById('restart-btn').addEventListener('click', restartLevel);
+document.getElementById('hint-btn').addEventListener('click', giveHint);
 </script>
 </body>
 </html>

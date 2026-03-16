@@ -8,7 +8,7 @@
 /* === RESET & BASE === */
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
 html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-#app{position:relative;width:375px;height:667px;overflow:hidden;background:linear-gradient(180deg,#050f1c 0%,#091823 55%,#0d1f2e 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;display:flex;flex-direction:column;}
+#app{position:relative;width:375px;height:667px;max-height:100vh;max-height:100svh;overflow:hidden;background:linear-gradient(180deg,#050f1c 0%,#091823 55%,#0d1f2e 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;display:flex;flex-direction:column;}
 
 /* === HEADER === */
 #header{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(2,8,18,.92);border-bottom:1px solid rgba(100,200,255,.18);flex-shrink:0;}
@@ -19,6 +19,8 @@ html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:cen
 .hdr-btn{background:rgba(8,24,44,.85);border:1px solid rgba(100,180,255,.22);color:#7dd3fc;font-size:10px;font-weight:700;padding:4px 8px;border-radius:6px;cursor:pointer;}
 .hdr-btn:active{opacity:.7;}
 #home-btn{font-size:14px;padding:4px 7px;}
+.home-nav{background:transparent;border:none;font-size:12px;color:#4a6078;cursor:pointer;padding:6px 12px;border-radius:6px;text-decoration:none;display:inline-block;}
+.home-nav:active{color:#7dd3fc;background:rgba(100,180,255,.08);}
 
 /* === GAME AREA === */
 #game-area{flex:1;display:flex;align-items:center;justify-content:center;padding:4px 6px 0;}
@@ -193,6 +195,7 @@ html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:cen
     <h2>カラーソート</h2>
     <p>試験管の液体を揃えよう！<br>試験管をタップして<br>液体を移動させてね。</p>
     <button class="big-btn green" onclick="startGame()">▶ スタート</button>
+    <button class="home-nav" onclick="location.href='index.html'">← ホームへ戻る</button>
   </div>
 
   <!-- Clear overlay -->
@@ -651,6 +654,7 @@ function showClear() {
       <button class="big-btn" onclick="restartLevel()">↺ もう一度</button>
       <button class="big-btn green" onclick="nextLevel()">次へ ▶</button>
     </div>
+    <button class="home-nav" onclick="location.href='index.html'" style="margin-top:4px;">← ホームへ戻る</button>
   `;
   overlay.style.display = 'flex';
 }

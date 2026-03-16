@@ -7,7 +7,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
 html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
-#app{position:relative;width:375px;height:667px;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;}
+#app{position:relative;width:375px;height:667px;max-height:100vh;max-height:100svh;overflow:hidden;font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;}
 
 /* ====== TITLE SCREEN ====== */
 #titleScreen{position:absolute;inset:0;background:linear-gradient(180deg,#0a0020 0%,#1a0040 40%,#0a0020 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:100;gap:0;}
@@ -1395,17 +1395,7 @@ function selectDiff(mode){
 // GO HOME (from game screen)
 // ======================================================
 function goHome(){
-  gs.phase = "TITLE";
-  const ov = $("transOverlay");
-  ov.style.transition = "opacity .3s";
-  ov.style.opacity = "1";
-  ov.style.pointerEvents = "all";
-  setTimeout(() => {
-    $("gameScreen").style.display  = "none";
-    $("titleScreen").style.display = "flex";
-    ov.style.opacity       = "0";
-    ov.style.pointerEvents = "none";
-  }, 300);
+  location.href = 'index.html';
 }
 
 // ======================================================

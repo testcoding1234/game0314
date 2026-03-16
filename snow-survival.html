@@ -10,23 +10,25 @@
 html,body{width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
 
 /* ===== ゲームコンテナ ===== */
-#game{position:relative;width:375px;height:667px;overflow:hidden;background:linear-gradient(180deg,#08101e 0%,#0c1d36 50%,#142b42 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;}
+#game{position:relative;width:375px;height:667px;max-height:100vh;max-height:100svh;overflow:hidden;background:linear-gradient(180deg,#08101e 0%,#0c1d36 50%,#142b42 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;}
 
 /* ===== 背景Canvas（雪パーティクル） ===== */
 #bgCanvas{position:absolute;inset:0;pointer-events:none;z-index:0;}
 
 /* ===== ヘッダー ===== */
-#header{position:relative;z-index:10;height:52px;display:flex;justify-content:space-between;align-items:center;padding:0 14px;background:rgba(4,10,24,0.85);border-bottom:1px solid rgba(125,211,252,0.2);}
-#phaseLabel{font-size:13px;font-weight:700;color:#7dd3fc;letter-spacing:.05em;}
+#header{position:relative;z-index:10;height:52px;display:flex;justify-content:space-between;align-items:center;padding:0 10px 0 8px;background:rgba(4,10,24,0.85);border-bottom:1px solid rgba(125,211,252,0.2);}
+#phaseLabel{font-size:12px;font-weight:700;color:#7dd3fc;letter-spacing:.03em;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.home-btn{background:rgba(8,24,44,.82);border:1px solid rgba(125,211,252,.28);color:#7dd3fc;font-size:16px;padding:5px 9px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1;}
+.home-btn:active{background:rgba(125,211,252,.18);}
 #coinDisplay{display:flex;align-items:center;gap:6px;background:rgba(249,115,22,.14);border:1px solid rgba(249,115,22,.5);border-radius:20px;padding:5px 12px;}
 #coinCount{font-size:18px;font-weight:900;color:#fbbf24;min-width:36px;text-align:right;}
 @keyframes coinBump{0%,100%{transform:scale(1)}50%{transform:scale(1.45);color:#fde68a;}}
 .coin-bump{animation:coinBump .3s ease;}
 
 /* ===== ゲームエリア（動物・背景） ===== */
-#gameArea{position:relative;z-index:5;width:375px;height:320px;overflow:hidden;}
-.snow-ground{position:absolute;bottom:0;left:0;right:0;height:52px;background:linear-gradient(0deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,.05) 100%);border-top:2px solid rgba(255,255,255,.28);}
-.mtn{position:absolute;bottom:0;width:0;height:0;border-left:solid transparent;border-right:solid transparent;border-bottom:solid rgba(255,255,255,.11);}
+#gameArea{position:relative;z-index:5;width:375px;height:320px;overflow:hidden;background:linear-gradient(180deg,#2b5278 0%,#3d6e9e 22%,#5a96c2 48%,#88b8d5 68%,#c4dde9 82%,#deeef6 92%,#f0f7fb 100%);}
+.snow-ground{position:absolute;bottom:0;left:0;right:0;height:52px;background:linear-gradient(0deg,rgba(255,255,255,.92) 0%,rgba(230,244,255,.55) 100%);border-top:2px solid rgba(255,255,255,.95);}
+.mtn{position:absolute;bottom:0;width:0;height:0;border-left:solid transparent;border-right:solid transparent;border-bottom:solid rgba(210,232,248,.55);}
 
 /* ===== 動物 ===== */
 .animal{position:absolute;z-index:20;cursor:pointer;text-align:center;}
@@ -190,7 +192,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
 .tut-close:active{background:rgba(0,0,0,.35);}
 
 /* ===== モード選択画面 ===== */
-#modeSelect{position:absolute;inset:0;z-index:600;background:linear-gradient(180deg,#06111e 0%,#0a1829 55%,#101f30 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:28px 22px;}
+#modeSelect{position:absolute;inset:0;z-index:600;background:linear-gradient(180deg,#06111e 0%,#0a1829 55%,#101f30 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px 22px;}
 #modeSelect.hidden{display:none;}
 .ms-logo{font-size:52px;line-height:1;text-align:center;filter:drop-shadow(0 0 14px rgba(125,211,252,.6));}
 .ms-title{font-size:26px;font-weight:900;color:#7dd3fc;text-shadow:0 0 22px rgba(125,211,252,.7);letter-spacing:.06em;text-align:center;}
@@ -300,7 +302,8 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
   <canvas id="bgCanvas" width="375" height="667"></canvas>
 
   <div id="header">
-    <div id="phaseLabel"><img src="assets/images/snowflake.svg" width="16" height="16" alt="❄️" style="vertical-align:middle;margin-right:4px;opacity:0.85;"> スノーサバイバル</div>
+    <button class="home-btn" onclick="location.href='index.html'">🏠</button>
+    <div id="phaseLabel"><img src="assets/images/snowflake.svg" width="14" height="14" alt="❄️" style="vertical-align:middle;margin-right:3px;opacity:0.85;"> スノーサバイバル</div>
     <div id="speedTimer"><span style="font-size:14px">⏱</span><span id="timerVal">60</span><span style="font-size:11px;color:#fca5a5">s</span></div>
     <div id="coinDisplay">
       <span style="font-size:16px">🪙</span>
@@ -365,6 +368,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
       <button class="shop-btn" id="btn-hunting" onclick="buyUpgrade('hunting')">購入<span class="sbp">🪙50</span></button>
     </div>
     <button class="shop-skip" onclick="skipShop()">次のサイクルへ →</button>
+    <button class="home-btn" onclick="location.href='index.html'" style="font-size:13px;padding:7px 18px;">🏠 ホームへ戻る</button>
   </div>
 
   <!-- CTAポップアップ（右上・バツボタンで消せる） -->
@@ -422,10 +426,12 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
         <div class="mcp-btn-desc">自分のペースで<br>じっくり施設を育てよう</div>
       </div>
     </div>
+    <button class="home-btn" onclick="location.href='index.html'" style="margin-top:4px;font-size:13px;padding:8px 20px;">🏠 ホームへ戻る</button>
   </div>
 
   <!-- モード選択画面 -->
   <div id="modeSelect" class="hidden">
+    <button class="home-btn" onclick="location.href='index.html'" style="align-self:flex-end;">🏠 ホームへ</button>
     <div class="ms-logo">🏔️</div>
     <div class="ms-title">スノーサバイバル</div>
     <div class="ms-sub">モードを選んでスタート！</div>
@@ -625,19 +631,19 @@ const $respawnBadge = document.getElementById('respawnBadge');
 
 // ===== Canvas 雪パーティクル =====
 const ctx = $canvas.getContext('2d');
-const snow = Array.from({ length: 55 }, () => ({
+const snow = Array.from({ length: 90 }, () => ({
   x: Math.random() * GW, y: Math.random() * GH,
-  r: Math.random() * 2.4 + 0.5,
-  vy: Math.random() * 0.75 + 0.2,
-  vx: Math.random() * 0.35 - 0.17,
-  a: Math.random() * 0.5 + 0.18,
+  r: Math.random() * 3.2 + 0.8,
+  vy: Math.random() * 0.9 + 0.25,
+  vx: Math.random() * 0.45 - 0.22,
+  a: Math.random() * 0.55 + 0.28,
 }));
 (function animSnow() {
   ctx.clearRect(0, 0, GW, GH);
   snow.forEach(s => {
     ctx.beginPath();
     ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-    ctx.fillStyle = `rgba(226,232,240,${s.a})`;
+    ctx.fillStyle = `rgba(200,228,248,${s.a})`;
     ctx.fill();
     s.y += s.vy; s.x += s.vx;
     if (s.y > GH) { s.y = -s.r; s.x = Math.random() * GW; }
@@ -1760,6 +1766,7 @@ function showRanking(score) {
     <div class="rk-actions">
       <button class="rk-again" onclick="retrySpeedMode()">🔥 もう1回挑戦！</button>
       <button class="rk-switch" onclick="selectMode('infinite')">♾️ 無限モードでプレイ</button>
+      <button class="home-btn" onclick="location.href='index.html'" style="font-size:13px;padding:9px 14px;width:100%;text-align:center;">🏠 ホームへ戻る</button>
     </div>
     <div class="rk-badge">🏆 スピードランキング</div>
     <div class="rk-title">あなたの順位<br>${playerRank}位 / ${RANK_TOTAL_ENTRIES}人中</div>

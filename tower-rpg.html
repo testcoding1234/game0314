@@ -320,7 +320,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}55%{opacity:1;transform:translateY(-44px) scale(1.2)}100%{opacity:0;transform:translateY(-80px) scale(.5)}}
 
 /* ====== CALC LOG ====== */
-#calcLog{height:36px;flex-shrink:0;background:rgba(0,0,18,.82);border-top:1px solid rgba(139,92,246,.2);display:flex;align-items:center;padding:0 12px;overflow-x:auto;scrollbar-width:none;gap:4px;white-space:nowrap;}
+#calcLog{height:36px;flex-shrink:0;background:rgba(0,0,18,.82);border-top:1px solid rgba(139,92,246,.2);display:flex;align-items:center;padding:0 12px;overflow:hidden;gap:4px;white-space:nowrap;}
 #calcLog::-webkit-scrollbar{display:none;}
 .calc-token{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;}
 .calc-token.op{color:#a78bfa;background:rgba(139,92,246,.15);}
@@ -856,13 +856,13 @@ function animateHeroAttack(){
 function updateHeroPosition(towerIdx, animate){
   const hero = $("hero");
   if(!hero) return;
-  // Always stand to the left of the leftmost tower, facing right toward the towers
-  const col0 = $("tcol-0");
-  if(!col0)  return;
-  const colRect  = col0.getBoundingClientRect();
+  // Stand to the left of the current active tower (moves right as towers are cleared)
+  const col = $("tcol-" + towerIdx);
+  if(!col) return;
+  const colRect  = col.getBoundingClientRect();
   const areaRect = $("gameArea").getBoundingClientRect();
-  // Position hero so its right edge is ~4px from the leftmost tower's left edge
-  // 44px: hero is 40px wide + 4px gap before the first tower's left edge
+  // Position hero so its right edge is ~4px from the active tower's left edge
+  // 44px: hero is 40px wide + 4px gap before the tower's left edge
   const heroLeft = colRect.left - areaRect.left - 44;
   // 2px: minimum left offset to keep hero just inside the visible game area
   hero.style.left = Math.max(2, heroLeft) + "px";
@@ -1098,7 +1098,18 @@ function renderCalcLog(){
     span.textContent = t.label;
     log.appendChild(span);
   });
-  log.scrollLeft = log.scrollWidth;
+  // If content overflows the container, reset to show only the last result on the left
+  if(log.scrollWidth > log.clientWidth){
+    const lastResult = [...gs.calcTokens].reverse().find(t => t.cls === "result");
+    gs.calcTokens = lastResult ? [lastResult] : [];
+    log.innerHTML = "";
+    if(lastResult){
+      const span = document.createElement("span");
+      span.className   = "calc-token " + lastResult.cls;
+      span.textContent = lastResult.label;
+      log.appendChild(span);
+    }
+  }
 }
 
 // ======================================================

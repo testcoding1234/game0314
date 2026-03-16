@@ -32,7 +32,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 #gameHeader{height:50px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 12px;background:rgba(0,0,18,.88);border-bottom:1px solid rgba(139,92,246,.3);}
 #powerDisplay{display:flex;align-items:center;gap:6px;background:rgba(245,158,11,.12);border:1.5px solid rgba(245,158,11,.5);border-radius:20px;padding:4px 12px;}
 #powerIcon{font-size:17px;}
-#powerValue{font-size:21px;font-weight:900;color:#fbbf24;min-width:52px;text-align:right;}
+#powerValue{font-size:21px;font-weight:900;color:#fbbf24;min-width:52px;max-width:140px;text-align:right;font-variant-numeric:tabular-nums;}
 .power-up{animation:powerBump .4s ease;}
 @keyframes powerBump{0%,100%{transform:scale(1);color:#fbbf24}40%{transform:scale(1.5);color:#fde68a}}
 #progressLabel{font-size:11px;color:#a78bfa;font-weight:700;letter-spacing:.04em;}
@@ -195,7 +195,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 .b-emoji{font-size:22px;line-height:1;pointer-events:none;}
 .b.b-boss .b-emoji{font-size:26px;}
 .b-name{font-size:7px;color:#94a3b8;line-height:1;pointer-events:none;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
-.b-val{font-size:12px;font-weight:900;color:#fbbf24;line-height:1;pointer-events:none;}
+.b-val{font-size:11px;font-weight:900;color:#fbbf24;line-height:1.2;pointer-events:none;text-align:center;word-break:break-all;}
 .b.b-item .b-val{color:#60a5fa;}
 .b.b-boss .b-val{color:#f87171;font-size:11px;}
 
@@ -484,6 +484,11 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 const BOSS_POWER_BASE = 3000;
 const MAX_STAGES = 5;
 
+// Scaling multiplier per stage: ×10 each stage keeps carry-over power meaningful
+// while pushing enemy values into 4-5 digit territory on stage 2+.
+// (Stage 2 boss = 30,000 ; Stage 3 = 300,000 ; Stage 4 = 3,000,000 …)
+function stageEm(s){ return Math.pow(10, s - 1); }
+
 const STAGE_TOWER_META = [
   // stage 1 — 幽霊テーマ
   ["幽霊の関所","🌙","野獣の砦","🐗","魔導師の城","🔮","魔王の本丸","👑"],
@@ -498,7 +503,7 @@ const STAGE_TOWER_META = [
 ];
 
 function makeTowers(stage) {
-  const em = Math.pow(3, stage - 1);
+  const em = stageEm(stage);
   const m  = STAGE_TOWER_META[Math.min(stage - 1, STAGE_TOWER_META.length - 1)];
   return [
     {
@@ -612,7 +617,7 @@ function getBlockHeight(floor){
   if(floor.isBoss)           return 72;
   if(floor.type === "item")  return 40;
   // Normalize value to stage-1 scale so thresholds are consistent across stages
-  const em = Math.pow(3, gs.stage - 1);
+  const em = stageEm(gs.stage);
   const v  = floor.value / em;
   if(v >= 400) return 66;
   if(v >= 60)  return 58;
@@ -673,7 +678,7 @@ function buildAllTowers(){
       b.innerHTML =
         "<span class='b-emoji'>" + floor.emoji + "</span>" +
         "<span class='b-name'>"  + floor.name  + "</span>" +
-        "<span class='b-val'>"   + (floor.type === "enemy" ? "⚔️" + floor.value : floor.op + floor.value) + "</span>";
+        "<span class='b-val'>"   + (floor.type === "enemy" ? "⚔️" + floor.value.toLocaleString() : floor.op + floor.value) + "</span>";
 
       if(!done && !isLocked){
         const f  = floor;
@@ -747,7 +752,7 @@ function onBlockTap(ti, fi, el, floor){
 
   pushCalcToken(result.delta, floor.type === "item" ? "op" : "num");
   pushCalcToken("→", "op");
-  pushCalcToken(String(gs.power), "result");
+  pushCalcToken(gs.power.toLocaleString(), "result");
   updatePowerDisplay();
 }
 
@@ -971,7 +976,7 @@ function checkTowerAdvance(){
 // ======================================================
 function updatePowerDisplay(){
   const el = $("powerValue");
-  el.textContent = gs.power;
+  el.textContent = gs.power.toLocaleString();
   el.classList.remove("power-up");
   void el.offsetWidth;
   el.classList.add("power-up");
@@ -1124,10 +1129,10 @@ function showTowerFlash(name){
 // ======================================================
 function showGameover(floor){
   $("gameoverDesc").innerHTML =
-    "<strong>" + floor.name + "</strong>（力：" + floor.value + "）に負けた！<br>" +
-    "あなたの力 " + gs.power + " では届かなかった…<br>順番を変えれば勝てるかも！";
+    "<strong>" + floor.name + "</strong>（力：" + floor.value.toLocaleString() + "）に負けた！<br>" +
+    "あなたの力 " + gs.power.toLocaleString() + " では届かなかった…<br>順番を変えれば勝てるかも！";
   $("gameoverStats").innerHTML =
-    "現在の力：" + gs.power + "<br>倒した敵：" + gs.defeatedEnemies + "体<br>行動回数：" + gs.turnsTotal + "回";
+    "現在の力：" + gs.power.toLocaleString() + "<br>倒した敵：" + gs.defeatedEnemies + "体<br>行動回数：" + gs.turnsTotal + "回";
   const ov = $("transOverlay");
   ov.style.transition = "opacity .4s";
   ov.style.opacity = "1";
@@ -1141,18 +1146,19 @@ function showGameover(floor){
 }
 
 function showClear(){
-  const bossVal = Math.floor(BOSS_POWER_BASE * Math.pow(3, gs.stage - 1));
+  const bossVal = Math.floor(BOSS_POWER_BASE * stageEm(gs.stage));
   const diff    = gs.power - bossVal;
   const isLastStage = gs.stage >= MAX_STAGES;
   const nextStage   = gs.stage + 1;
+  const nextBossVal = !isLastStage ? Math.floor(BOSS_POWER_BASE * stageEm(nextStage)) : 0;
 
   $("clearTitle").textContent    = isLastStage ? "🏆 ALL CLEAR!" : "STAGE " + gs.stage + " CLEAR!";
   $("clearDesc").innerHTML       = isLastStage
     ? "全ステージを制覇した！<br>真の勇者の称号を得た！"
-    : "ステージ " + gs.stage + " の魔王を倒した！<br>次はさらなる強敵が待つ…";
+    : "ステージ " + gs.stage + " の魔王を倒した！<br>次の魔王の力は <strong style='color:#f87171'>" + nextBossVal.toLocaleString() + "</strong>！<br>引き継いだ力で挑め！";
   $("clearStats").innerHTML =
-    "パワー：" + gs.power + "<br>ステージ：" + gs.stage + "<br>撃破数：" + gs.defeatedEnemies + "体（累計：" + gs.totalDefeated + "体）<br>行動回数：" + gs.turnsTotal + "回<br>" +
-    "魔王の力：" + bossVal + "　vs　あなた：" + gs.power + "（差：" + (diff >= 0 ? "+" : "") + diff + "）";
+    "パワー：" + gs.power.toLocaleString() + "<br>ステージ：" + gs.stage + "<br>撃破数：" + gs.defeatedEnemies + "体（累計：" + gs.totalDefeated + "体）<br>行動回数：" + gs.turnsTotal + "回<br>" +
+    "魔王の力：" + bossVal.toLocaleString() + "　vs　あなた：" + gs.power.toLocaleString() + "（差：" + (diff >= 0 ? "+" : "") + diff.toLocaleString() + "）";
   $("clearNextBtn").textContent  = isLastStage ? "もう一度挑戦" : "ステージ " + nextStage + " へ進む！";
   $("clearNextBtn").onclick      = isLastStage ? restartGame : () => advanceStage(nextStage);
 
@@ -1184,7 +1190,7 @@ function advanceStage(newStage){
     power:carryPower,
     towerIndex:0,
     floorsDone:[],
-    calcTokens:[{label:String(carryPower), cls:"num"}],
+    calcTokens:[{label:carryPower.toLocaleString(), cls:"num"}],
     turnsTotal:0,
     defeatedEnemies:0,
     totalDefeated:carryTotal,

@@ -158,6 +158,21 @@ html,body{width:100%;height:100%;background:#040e1a;display:flex;align-items:cen
 
 /* === HINT FLASH === */
 @keyframes flash-border{0%,100%{border-color:rgba(160,220,255,.38);}50%{border-color:#facc15;}}
+
+/* === TUBE COMPLETE ANIMATION === */
+@keyframes tube-complete-bounce{
+  0%  {transform:translateY(0) scale(1);}
+  20% {transform:translateY(-14px) scale(1.08);}
+  45% {transform:translateY(-4px)  scale(1.03);}
+  65% {transform:translateY(-9px)  scale(1.06);}
+  82% {transform:translateY(-2px)  scale(1.01);}
+  100%{transform:translateY(0) scale(1);}
+}
+.tube.tube-complete-anim{
+  animation:tube-complete-bounce .7s ease forwards !important;
+  border-color:rgba(255,215,0,.95) !important;
+  box-shadow:0 0 28px rgba(255,215,0,.75),0 0 55px rgba(255,215,0,.35) !important;
+}
 </style>
 </head>
 <body>
@@ -290,6 +305,7 @@ let gs = {
   history:     [],
   initialTubes:[],
   animating:   false,
+  doneTubes:   new Set(),
 };
 
 /* ============================================================
@@ -329,21 +345,20 @@ function isWon() { return gs.tubes.every(isTubeDone); }
 /* ============================================================
    MOVE LOGIC
    ============================================================ */
+/* How many consecutive same-color cells sit at the top of a tube */
+function topRunLength(tube) {
+  if (!tube.length) return 0;
+  const top = tube[tube.length - 1];
+  let n = 0;
+  for (let i = tube.length - 1; i >= 0 && tube[i] === top; i--) n++;
+  return n;
+}
+
 function canMoveTo(from, to) {
   const f = gs.tubes[from], t = gs.tubes[to];
   if (!f.length)          return false; // src empty
-  if (t.length >= TUBE_CAP) return false; // dst full
-  if (t.length === 0)     return true;  // dst empty
-  return t[t.length-1] === f[f.length-1]; // top colors match
-}
-
-function doMove(from, to) {
-  if (!canMoveTo(from, to)) return false;
-  gs.history.push(gs.tubes.map(t => [...t]));
-  if (gs.history.length > MAX_UNDO) gs.history.shift();
-  gs.tubes[to].push(gs.tubes[from].pop());
-  gs.moves++;
-  return true;
+  const count = topRunLength(f);
+  return t.length + count <= TUBE_CAP;  // any color welcome, just needs space
 }
 
 function undoMove() {
@@ -351,6 +366,9 @@ function undoMove() {
   gs.tubes    = gs.history.pop();
   gs.moves    = Math.max(0, gs.moves - 1);
   gs.selected = -1;
+  // Recalculate which tubes are already done so we don't re-celebrate them
+  gs.doneTubes = new Set();
+  gs.tubes.forEach((tube, i) => { if (isTubeDone(tube) && tube.length > 0) gs.doneTubes.add(i); });
   renderTubes();
   updateHeader();
 }
@@ -410,16 +428,26 @@ function updateHeader() {
 /* ============================================================
    WATER DROP ANIMATION
    ============================================================ */
-function playWaterDrop(colorId, sx, sy, ex, ey, onDone) {
-  const c    = COLOR_BY_ID[colorId];
+function playWaterDrop(colorId, sx, sy, ex, ey, count, onDone) {
+  const c        = COLOR_BY_ID[colorId];
+  const dropSize = Math.min(26 + (count - 1) * 9, 52);
   const drop = document.createElement('div');
   drop.className    = 'water-drop';
-  drop.style.width  = '26px';
-  drop.style.height = '26px';
+  drop.style.width  = dropSize + 'px';
+  drop.style.height = dropSize + 'px';
   drop.style.background = dropGrad(c);
   drop.style.left = sx + 'px';
   drop.style.top  = sy + 'px';
   drop.style.transform = 'translate(-50%,-50%)';
+  if (count > 1) {
+    drop.style.display        = 'flex';
+    drop.style.alignItems     = 'center';
+    drop.style.justifyContent = 'center';
+    drop.style.fontSize       = '13px';
+    drop.style.fontWeight     = '900';
+    drop.style.color          = 'rgba(255,255,255,.92)';
+    drop.textContent = count;
+  }
   document.getElementById('app').appendChild(drop);
 
   const DURATION = 400; // ms
@@ -474,6 +502,53 @@ function spawnSplash(x, y, c) {
 }
 
 /* ============================================================
+   PER-TUBE COMPLETION
+   ============================================================ */
+function checkNewlyDone() {
+  for (let i = 0; i < gs.tubes.length; i++) {
+    const tube = gs.tubes[i];
+    if (isTubeDone(tube) && tube.length > 0 && !gs.doneTubes.has(i)) {
+      gs.doneTubes.add(i);
+      celebrateTube(i);
+    }
+  }
+}
+
+function celebrateTube(idx) {
+  const tubeEl = document.querySelector(`.tube[data-idx="${idx}"]`);
+  if (!tubeEl) return;
+  tubeEl.classList.add('tube-complete-anim');
+  setTimeout(() => tubeEl.classList.remove('tube-complete-anim'), 750);
+  spawnTubeParticles(idx);
+}
+
+function spawnTubeParticles(idx) {
+  const appEl  = document.getElementById('app');
+  const appRect = appEl.getBoundingClientRect();
+  const tubeEl = document.querySelector(`.tube[data-idx="${idx}"]`);
+  if (!tubeEl) return;
+  const rect = tubeEl.getBoundingClientRect();
+  const cx   = rect.left - appRect.left + rect.width  / 2;
+  const cy   = rect.top  - appRect.top  + rect.height / 2;
+  const burst = document.getElementById('star-burst');
+  const icons = ['✨','⭐','💫','🌟','🎉'];
+  for (let i = 0; i < 10; i++) {
+    const s = document.createElement('div');
+    s.className = 'star-particle';
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 28 + Math.random() * 65;
+    s.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+    s.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+    s.style.left           = cx + 'px';
+    s.style.top            = cy + 'px';
+    s.style.animationDelay = (Math.random() * .25) + 's';
+    s.textContent = icons[Math.floor(Math.random() * icons.length)];
+    burst.appendChild(s);
+    setTimeout(() => s.remove(), 1300);
+  }
+}
+
+/* ============================================================
    TAP HANDLER
    ============================================================ */
 function onTubeTap(idx) {
@@ -499,7 +574,7 @@ function onTubeTap(idx) {
     const fromIdx = gs.selected;
     const toIdx   = idx;
 
-    // Capture DOM rects BEFORE state change (transform included in rect)
+    // Capture DOM rects BEFORE any state change
     const appEl   = document.getElementById('app');
     const appRect = appEl.getBoundingClientRect();
     const srcEl   = document.querySelector(`.tube[data-idx="${fromIdx}"]`);
@@ -507,28 +582,36 @@ function onTubeTap(idx) {
     const srcRect = srcEl.getBoundingClientRect();
     const dstRect = dstEl.getBoundingClientRect();
 
+    const count   = topRunLength(gs.tubes[fromIdx]);
     const colorId = gs.tubes[fromIdx][gs.tubes[fromIdx].length - 1];
     const srcLen  = gs.tubes[fromIdx].length;
     const dstLen  = gs.tubes[toIdx].length;
 
-    // Liquid surface positions relative to #app
-    // Top of liquid = tube.top + (TUBE_CAP - n) * CELL_H + TUBE_TOP_OFFSET
-    // (column-reverse packs cells from bottom; TUBE_TOP_OFFSET is extra space above liquid)
+    // Animation positions
     const sx = srcRect.left - appRect.left + srcRect.width / 2;
-    const sy = srcRect.top  - appRect.top  + (TUBE_CAP - srcLen)     * CELL_H + TUBE_TOP_OFFSET;
+    const sy = srcRect.top  - appRect.top  + (TUBE_CAP - srcLen) * CELL_H + TUBE_TOP_OFFSET;
     const ex = dstRect.left - appRect.left + dstRect.width / 2;
-    const ey = dstRect.top  - appRect.top  + (TUBE_CAP - dstLen - 1) * CELL_H + TUBE_TOP_OFFSET;
+    const ey = dstRect.top  - appRect.top  + (TUBE_CAP - dstLen - count) * CELL_H + TUBE_TOP_OFFSET;
 
-    // Update state immediately so tubes re-render to final state
-    doMove(fromIdx, toIdx);
+    // Save history; remove group from source NOW
+    gs.history.push(gs.tubes.map(t => [...t]));
+    if (gs.history.length > MAX_UNDO) gs.history.shift();
+    gs.tubes[fromIdx].splice(gs.tubes[fromIdx].length - count, count);
+    gs.moves++;
     gs.selected = -1;
+
+    // Re-render: source updated, destination NOT yet (ball still in flight)
     renderTubes();
     updateHeader();
 
-    // Play water animation on top of already-updated UI
+    // Play water animation; destination updates only when animation ends
     gs.animating = true;
-    playWaterDrop(colorId, sx, sy, ex, ey, () => {
+    playWaterDrop(colorId, sx, sy, ex, ey, count, () => {
+      // Add group to destination after animation completes
+      for (let i = 0; i < count; i++) gs.tubes[toIdx].push(colorId);
       gs.animating = false;
+      renderTubes();
+      checkNewlyDone();
       if (isWon()) setTimeout(showClear, 150);
     });
 
@@ -620,6 +703,7 @@ function startLevel(lv) {
   gs.history      = [];
   gs.animating    = false;
   gs.hints        = 3;
+  gs.doneTubes    = new Set();
   gs.tubes        = generateLevel(lv);
   gs.initialTubes = gs.tubes.map(t => [...t]);
   document.getElementById('clear-overlay').style.display = 'none';
@@ -633,6 +717,7 @@ function restartLevel() {
   gs.moves    = 0;
   gs.selected = -1;
   gs.history  = [];
+  gs.doneTubes = new Set();
   document.getElementById('clear-overlay').style.display = 'none';
   renderTubes();
   updateHeader();

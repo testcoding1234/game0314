@@ -240,11 +240,13 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 #hero{
   position:absolute;
   bottom:14px;
-  font-size:28px;
   z-index:50;
   pointer-events:none;
   width:40px;
-  text-align:center;
+  height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
   transform:scaleX(-1);
   filter:drop-shadow(0 0 8px rgba(139,92,246,.9));
   transition:left .45s cubic-bezier(.22,.68,0,1.2);
@@ -320,7 +322,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1)}55%{opacity:1;transform:translateY(-44px) scale(1.2)}100%{opacity:0;transform:translateY(-80px) scale(.5)}}
 
 /* ====== CALC LOG ====== */
-#calcLog{height:36px;flex-shrink:0;background:rgba(0,0,18,.82);border-top:1px solid rgba(139,92,246,.2);display:flex;align-items:center;padding:0 12px;overflow-x:auto;scrollbar-width:none;gap:4px;white-space:nowrap;}
+#calcLog{height:36px;flex-shrink:0;background:rgba(0,0,18,.82);border-top:1px solid rgba(139,92,246,.2);display:flex;align-items:center;padding:0 12px;overflow:hidden;gap:4px;white-space:nowrap;}
 #calcLog::-webkit-scrollbar{display:none;}
 .calc-token{font-size:11px;font-weight:700;border-radius:6px;padding:2px 7px;}
 .calc-token.op{color:#a78bfa;background:rgba(139,92,246,.15);}
@@ -428,7 +430,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
     <div class="title-logo">🏰</div>
     <div class="title-main">勇者の塔</div>
     <div class="title-sub">HERO'S TOWER</div>
-    <div class="title-hero">⚔️</div>
+    <div class="title-hero"><img src="assets/images/sword.svg" width="72" height="72" alt="⚔️" style="filter:drop-shadow(0 0 14px #a78bfa);"></div>
     <div class="title-desc">塔を攻略して魔王を倒せ！<br>アイテムを駆使して力をつけろ！</div>
     <button class="title-start-btn" id="startBtn">ゲームスタート</button>
   </div>
@@ -437,7 +439,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   <div id="gameScreen">
     <div id="gameHeader">
       <div id="powerDisplay">
-        <span id="powerIcon">⚔️</span>
+        <img id="powerIcon" src="assets/images/sword.svg" width="18" height="18" alt="⚔️" style="vertical-align:middle;flex-shrink:0;">
         <span id="powerValue">10</span>
       </div>
       <span class="stage-badge" id="stageLabel">STAGE 1</span>
@@ -447,7 +449,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
     <!-- All 4 towers visible side-by-side, anchored to bottom -->
     <div id="gameArea">
       <!-- towers built by JS -->
-      <div id="hero">🧙</div>
+      <div id="hero"><img src="assets/images/hero.svg" width="36" height="36" alt="🧙" style="display:block;"></div>
     </div>
 
     <div id="calcLog"><span class="calc-token num">10</span></div>
@@ -635,7 +637,12 @@ function buildAllTowers(){
   // Re-create hero (cleared by innerHTML reset above)
   const heroEl = document.createElement("div");
   heroEl.id = "hero";
-  heroEl.textContent = "🧙";
+  const heroImg = document.createElement("img");
+  heroImg.src = "assets/images/hero.svg";
+  heroImg.width = 36; heroImg.height = 36;
+  heroImg.alt = "🧙";
+  heroImg.style.display = "block";
+  heroEl.appendChild(heroImg);
   area.appendChild(heroEl);
 
   TOWERS.forEach((tower, ti) => {
@@ -740,11 +747,13 @@ function onBlockTap(ti, fi, el, floor){
     spawnFloat(el, "+" + result.delta.replace("+",""), "#4ade80");
     darumaKnockOut(el, ti, floor.id, () => afterRemove(ti, floor));
     if(result.jackpot){
+      _sfx.play('coin');
       setTimeout(() => showJackpot(result.jackpotBonus), 80);
     } else if(result.combo >= 3){
       showComboBadge(el, result.combo);
     }
   } else {
+    _sfx.play('powerup');
     spawnFloat(el, result.delta, "#60a5fa");
     darumaAbsorb(el, ti, floor.id, () => afterRemove(ti, floor));
     if(result.critical){ setTimeout(() => showCritical(), 60); }
@@ -845,6 +854,7 @@ function spawnRockParticles(anchorEl){
 // HERO ANIMATIONS
 // ======================================================
 function animateHeroAttack(){
+  _sfx.play('whoosh');
   const hero = $("hero");
   if(!hero) return;
   hero.classList.remove("hero-attacking");
@@ -856,13 +866,13 @@ function animateHeroAttack(){
 function updateHeroPosition(towerIdx, animate){
   const hero = $("hero");
   if(!hero) return;
-  // Always stand to the left of the leftmost tower, facing right toward the towers
-  const col0 = $("tcol-0");
-  if(!col0)  return;
-  const colRect  = col0.getBoundingClientRect();
+  // Stand to the left of the current active tower (moves right as towers are cleared)
+  const col = $("tcol-" + towerIdx);
+  if(!col) return;
+  const colRect  = col.getBoundingClientRect();
   const areaRect = $("gameArea").getBoundingClientRect();
-  // Position hero so its right edge is ~4px from the leftmost tower's left edge
-  // 44px: hero is 40px wide + 4px gap before the first tower's left edge
+  // Position hero so its right edge is ~4px from the active tower's left edge
+  // 44px: hero is 40px wide + 4px gap before the tower's left edge
   const heroLeft = colRect.left - areaRect.left - 44;
   // 2px: minimum left offset to keep hero just inside the visible game area
   hero.style.left = Math.max(2, heroLeft) + "px";
@@ -908,9 +918,10 @@ function darumaAbsorb(blockEl, ti, fi, onDone){
 // ======================================================
 function afterRemove(ti, floor){
   updateProgress();
-  if(floor.type === "enemy") gs.totalDefeated++;
+  if(floor.type === "enemy") { gs.totalDefeated++; _sfx.play('hit'); }
 
   if(floor.isBoss){
+    _sfx.play('success');
     setTimeout(() => showClear(), 600);
     return;
   }
@@ -1098,7 +1109,18 @@ function renderCalcLog(){
     span.textContent = t.label;
     log.appendChild(span);
   });
-  log.scrollLeft = log.scrollWidth;
+  // If content overflows the container, reset to show only the last result on the left
+  if(log.scrollWidth > log.clientWidth){
+    const lastResult = [...gs.calcTokens].reverse().find(t => t.cls === "result");
+    gs.calcTokens = lastResult ? [lastResult] : [];
+    log.innerHTML = "";
+    if(lastResult){
+      const span = document.createElement("span");
+      span.className   = "calc-token " + lastResult.cls;
+      span.textContent = lastResult.label;
+      log.appendChild(span);
+    }
+  }
 }
 
 // ======================================================
@@ -1128,6 +1150,7 @@ function showTowerFlash(name){
 // GAME OVER / CLEAR
 // ======================================================
 function showGameover(floor){
+  _sfx.play('gameover');
   $("gameoverDesc").innerHTML =
     "<strong>" + floor.name + "</strong>（力：" + floor.value.toLocaleString() + "）に負けた！<br>" +
     "あなたの力 " + gs.power.toLocaleString() + " では届かなかった…<br>順番を変えれば勝てるかも！";
@@ -1217,6 +1240,7 @@ function advanceStage(newStage){
 // START / RESTART
 // ======================================================
 function startGame(){
+  _sfx.play('click');
   TOWERS       = makeTowers(1);
   TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="enemy").length, 0);
   gs = {
@@ -1264,6 +1288,54 @@ function restartGame(){ startGame(); }
 
 $("startBtn").addEventListener("click",    startGame);
 $("startBtn").addEventListener("touchend", e => { e.preventDefault(); startGame(); });
+
+// ======================================================
+// SOUND SYSTEM (Web Audio API)
+// ======================================================
+const _sfx = (() => {
+  let ctx = null;
+  const bufs = {};
+  const SOUNDS = ['click','hit','coin','success','gameover','powerup','whoosh'];
+
+  function getCtx(){
+    if(!ctx){
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    return ctx;
+  }
+
+  function load(name){
+    if(bufs[name] !== undefined) return;
+    bufs[name] = null;
+    const c = getCtx();
+    if(!c) return;
+    fetch('assets/sounds/' + name + '.wav')
+      .then(r => r.arrayBuffer())
+      .then(ab => c.decodeAudioData(ab))
+      .then(buf => { bufs[name] = buf; })
+      .catch(() => {});
+  }
+
+  function play(name){
+    const c = getCtx();
+    if(!c) return;
+    if(c.state === 'suspended') c.resume();
+    if(!bufs[name]) { load(name); return; }
+    try {
+      const src = c.createBufferSource();
+      src.buffer = bufs[name];
+      src.connect(c.destination);
+      src.start(0);
+    } catch(e){}
+  }
+
+  // Preload on first user interaction
+  function preload(){ SOUNDS.forEach(load); }
+  document.addEventListener('click',    preload, { once:true });
+  document.addEventListener('touchend', preload, { once:true });
+
+  return { play };
+})();
 </script>
 </body>
 </html>

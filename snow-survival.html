@@ -300,7 +300,7 @@ html,body{width:100%;height:100%;background:#000;display:flex;align-items:center
   <canvas id="bgCanvas" width="375" height="667"></canvas>
 
   <div id="header">
-    <div id="phaseLabel">🎮 スノーサバイバル</div>
+    <div id="phaseLabel"><img src="assets/images/snowflake.svg" width="16" height="16" alt="❄️" style="vertical-align:middle;margin-right:4px;opacity:0.85;"> スノーサバイバル</div>
     <div id="speedTimer"><span style="font-size:14px">⏱</span><span id="timerVal">60</span><span style="font-size:11px;color:#fca5a5">s</span></div>
     <div id="coinDisplay">
       <span style="font-size:16px">🪙</span>
@@ -886,6 +886,7 @@ function attackAnimal(id) {
   // チュートリアルStep0：動物タップで狩猟ガイドを閉じる
   if (tut.step === 0 && $tutOverlay.innerHTML) hideTutStep();
 
+  _sfx.play('click');
   ani.hp--;
   const el = document.getElementById(`ani-${id}`);
   if (!el) return;
@@ -914,6 +915,7 @@ function attackAnimal(id) {
 
 function killAnimal(ani, el) {
   updateCombo();
+  _sfx.play('hit');
   el.style.transition = 'all .45s ease-out';
   el.style.transform  = 'scale(0) rotate(45deg)';
   el.style.opacity    = '0';
@@ -1033,6 +1035,7 @@ function sellItem(itemId) {
   if (!item) return;
   // チュートリアルStep2：売却で販売ガイドを閉じる
   if (tut.step === 2 && $tutOverlay.innerHTML) hideTutStep();
+  _sfx.play('coin');
   const baseCoins = (ITEM_DEF[item.type] || {}).coins || 5;
   const maxLevel = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
   // +20% sell value per facility level above 1 (LV10≈2.8x, LV20≈4.8x base)
@@ -1631,7 +1634,7 @@ function startGameMode(mode) {
       if (!_modeChosen) setTimeout(() => showTutStep(0), 600);
     });
   } else {
-    document.getElementById('phaseLabel').textContent = '🎮 スノーサバイバル';
+    document.getElementById('phaseLabel').innerHTML = '<img src="assets/images/snowflake.svg" width="16" height="16" alt="❄️" style="vertical-align:middle;margin-right:4px;opacity:0.85;"> スノーサバイバル';
     document.getElementById('speedTimer').classList.remove('show');
     startHunting();
     // モード選択後はチュートリアルを表示しない
@@ -1687,6 +1690,7 @@ function endSpeedMode() {
   fl.className = 'timeup-flash';
   fl.textContent = '⏰ TIME UP!';
   $game.appendChild(fl);
+  _sfx.play('gameover');
   setTimeout(() => {
     if (fl.parentNode) fl.remove();
     setTimeout(() => showRanking(scoreSnapshot), RANKING_DISPLAY_DELAY);
@@ -1800,6 +1804,53 @@ function updateModeToolbarUI() {
 // 無限モードで即スタート（初回売却後にモード選択ポップアップ表示）
 updateLvUpButtons();
 startGameMode('infinite');
+
+// ======================================================
+// SOUND SYSTEM (Web Audio API)
+// ======================================================
+const _sfx = (() => {
+  let ctx = null;
+  const bufs = {};
+  const SOUNDS = ['click','hit','coin','gameover'];
+
+  function getCtx(){
+    if(!ctx){
+      try { ctx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){}
+    }
+    return ctx;
+  }
+
+  function load(name){
+    if(bufs[name] !== undefined) return;
+    bufs[name] = null;
+    const c = getCtx();
+    if(!c) return;
+    fetch('assets/sounds/' + name + '.wav')
+      .then(r => r.arrayBuffer())
+      .then(ab => c.decodeAudioData(ab))
+      .then(buf => { bufs[name] = buf; })
+      .catch(() => {});
+  }
+
+  function play(name){
+    const c = getCtx();
+    if(!c) return;
+    if(c.state === 'suspended') c.resume();
+    if(!bufs[name]) { load(name); return; }
+    try {
+      const src = c.createBufferSource();
+      src.buffer = bufs[name];
+      src.connect(c.destination);
+      src.start(0);
+    } catch(e){}
+  }
+
+  function preload(){ SOUNDS.forEach(load); }
+  document.addEventListener('click',    preload, { once:true });
+  document.addEventListener('touchend', preload, { once:true });
+
+  return { play };
+})();
 </script>
 </body>
 </html>

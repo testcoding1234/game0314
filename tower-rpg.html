@@ -45,7 +45,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   align-items:flex-end;
   justify-content:flex-start;
   gap:4px;
-  padding:8px 4px 0 48px;
+  padding:8px 4px 0 44px;
   position:relative;
   overflow:hidden;
   background:
@@ -68,7 +68,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   display:flex;
   flex-direction:column;
   align-items:center;
-  width:80px;
+  width:74px;
   flex-shrink:0;
 }
 .t-label{
@@ -80,7 +80,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  max-width:80px;
+  max-width:74px;
   height:16px;
   line-height:16px;
   margin-bottom:3px;
@@ -93,12 +93,12 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
   display:flex;
   flex-direction:column;
   gap:3px;
-  width:78px;
+  width:72px;
 }
 
 /* base / ground element */
 .t-base{
-  width:78px;
+  width:72px;
   height:10px;
   background:linear-gradient(90deg,rgba(139,92,246,.3),rgba(167,139,250,.5),rgba(139,92,246,.3));
   border-radius:0 0 4px 4px;
@@ -122,7 +122,7 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 
 /* ====== BLOCK ====== */
 .b{
-  width:78px;
+  width:72px;
   height:52px;
   flex-shrink:0;
   display:flex;
@@ -510,6 +510,14 @@ const MAX_STAGES = 5;
 // (Stage 2 boss = 30,000 ; Stage 3 = 300,000 ; Stage 4 = 3,000,000 …)
 function stageEm(s){ return Math.pow(10, s - 1); }
 
+// Compact Japanese number formatter for large enemy/power values.
+function fmtPow(n){
+  if(n >= 1e12) return (n/1e12).toFixed(1).replace(/\.0$/,'') + '兆';
+  if(n >= 1e8)  return (n/1e8).toFixed(1).replace(/\.0$/,'') + '億';
+  if(n >= 1e4)  return Math.round(n/1e4) + '万';
+  return n.toLocaleString();
+}
+
 const STAGE_TOWER_META = [
   // stage 1 — 幽霊テーマ
   ["幽霊の関所","🌙","野獣の砦","🐗","魔導師の城","🔮","魔王の本丸","👑"],
@@ -585,47 +593,278 @@ let TOTAL_ENEMIES = TOWERS.reduce((s,t) => s + t.floors.filter(f => f.type==="en
 // the per-stage puzzle balance.
 // ======================================================
 function makeHardTowers(stage) {
-  const em = stageEm(stage);
-  const m  = STAGE_TOWER_META[Math.min(stage - 1, STAGE_TOWER_META.length - 1)];
-  // Tower-0 item multiplier grows with stage so the unique-solution
-  // constraint holds even as enemy values scale by ×10 per stage.
-  const k0 = stage <= 1 ? 5 : stage <= 2 ? 7 : 8;
+  const m = STAGE_TOWER_META[Math.min(stage - 1, STAGE_TOWER_META.length - 1)];
+
+  if(stage === 1){
+    // -------------------------------------------------------
+    // STAGE 1 — start power: 10
+    // Floors are deliberately NOT arranged bottom-to-top so
+    // the player must think rather than just sweep upward.
+    // Key trap: the bottom block of towers 1/2/3 cannot be
+    // beaten with the power you arrive at, forcing the player
+    // to find the correct first move.
+    // Boss always sits at the very top (floors[0]) of tower 3.
+    // -------------------------------------------------------
+    // T0 solution: ウルフ(8)→18 → ×5→90 → ライオン(60)→150
+    // T1 solution: ゴブリン(40)→190 → 魔人(160)→350 → ×8→2800 → ドラゴン(2000)→4800
+    // T2 solution: 暗黒騎士(500)→5300 → {堕天使(5200)or大魔道士(5000)} → ×20 → 暗黒神(240000)→~550000
+    // T3 solution: 魔王の衛兵(25000)→575000 → 九尾(570000)→1145000 → 炎竜王(1100000)→2245000 → ×12 → 魔王(20M)✓
+    return [
+      {
+        id:0, name:m[0], emoji:m[1],
+        floors:[
+          { id:0, type:"enemy", emoji:"🦁", name:"ライオン",    value:60 },
+          { id:1, type:"enemy", emoji:"🐺", name:"ウルフ",      value:8  },
+          { id:2, type:"item",  emoji:"🌀", name:"魔法の渦",    op:"×", value:5 },
+          // Trap: ×5 first → 50→+8=58 → 60 FAIL
+        ]
+      },
+      {
+        id:1, name:m[2], emoji:m[3],
+        floors:[
+          { id:0, type:"enemy", emoji:"🐉", name:"ドラゴン",    value:2000 },
+          { id:1, type:"item",  emoji:"🌟", name:"勇者の証",    op:"×", value:8 },
+          { id:2, type:"enemy", emoji:"👺", name:"ゴブリン",    value:40  },
+          { id:3, type:"enemy", emoji:"👿", name:"魔人",        value:160 },
+          // Trap: 魔人(160) at bottom — arrive 150 < 160 FAIL
+        ]
+      },
+      {
+        id:2, name:m[4], emoji:m[5],
+        floors:[
+          { id:0, type:"enemy", emoji:"🌑", name:"暗黒神",      value:240000 },
+          { id:1, type:"item",  emoji:"💎", name:"神の結晶",    op:"×", value:20 },
+          { id:2, type:"enemy", emoji:"🧙", name:"大魔道士",    value:5000  },
+          { id:3, type:"enemy", emoji:"🗡️",  name:"暗黒騎士",   value:500   },
+          { id:4, type:"enemy", emoji:"👿", name:"堕天使",      value:5200  },
+          // Trap: 堕天使(5200) at bottom — arrive 4800 < 5200 FAIL
+        ]
+      },
+      {
+        id:3, name:m[6], emoji:m[7],
+        floors:[
+          { id:0, type:"enemy", emoji:"😈", name:"魔王",        value:20000000, isBoss:true },
+          { id:1, type:"item",  emoji:"⚡", name:"聖剣の真髄",  op:"×", value:12 },
+          { id:2, type:"enemy", emoji:"👹", name:"魔王の衛兵",  value:25000   },
+          { id:3, type:"enemy", emoji:"🐲", name:"炎竜王",      value:1100000 },
+          { id:4, type:"enemy", emoji:"🦊", name:"九尾の狐神",  value:570000  },
+          // Trap: 九尾(570K) at bottom — arrive 550K < 570K FAIL
+        ]
+      }
+    ];
+  }
+
+  if(stage === 2){
+    // -------------------------------------------------------
+    // STAGE 2 — start power: 10
+    // Hand-crafted values designed to be solvable from 10.
+    // T0 solution: プチデーモン(9)→19 → ×10→190 → 炎の番人(150)→340
+    // T1 solution: 大毒蛇(200)→540 → 毒トカゲ(450)→990 → ×8→7920 → 毒龍(7000)→14920
+    // T2 solution: 死霊(10K)→24920 → 死者(20K)→44920 → 骸骨兵(40K)→84920 → ×15→1273800 → 骸骨王(200K)→1473800
+    // T3 solution: 魔王の衛兵(1M)→2473800 → 九尾(2M)→4473800 → 炎竜王(4M)→8473800 → ×12→101.7M → 大魔神(80M)✓
+    // -------------------------------------------------------
+    return [
+      {
+        id:0, name:m[0], emoji:m[1],
+        floors:[
+          { id:0, type:"enemy", emoji:"🔥", name:"炎の番人",    value:150 },
+          { id:1, type:"enemy", emoji:"👺", name:"プチデーモン", value:9   },
+          { id:2, type:"item",  emoji:"🌋", name:"紅蓮の炎",    op:"×", value:10 },
+          // Trap: ×10 first → 100→+9=109 → 150 FAIL
+        ]
+      },
+      {
+        id:1, name:m[2], emoji:m[3],
+        floors:[
+          { id:0, type:"enemy", emoji:"🐲", name:"毒龍",        value:7000 },
+          { id:1, type:"item",  emoji:"🧪", name:"毒のエキス",  op:"×", value:8  },
+          { id:2, type:"enemy", emoji:"🐍", name:"大毒蛇",      value:200  },
+          { id:3, type:"enemy", emoji:"🦎", name:"毒トカゲ",    value:450  },
+          // Trap: 毒トカゲ(450) at bottom — arrive 340 < 450 FAIL
+        ]
+      },
+      {
+        id:2, name:m[4], emoji:m[5],
+        floors:[
+          { id:0, type:"enemy", emoji:"💀", name:"骸骨王",      value:450000 },
+          { id:1, type:"item",  emoji:"🦴", name:"死の欠片",    op:"×", value:15 },
+          { id:2, type:"enemy", emoji:"👻", name:"死霊",        value:10000  },
+          { id:3, type:"enemy", emoji:"🧟", name:"死者",        value:20000  },
+          { id:4, type:"enemy", emoji:"💀", name:"骸骨兵",      value:40000  },
+          // Trap: 骸骨兵(40K) at bottom — arrive 14920 < 40K FAIL; 死者(20K) also FAIL
+        ]
+      },
+      {
+        id:3, name:m[6], emoji:m[7],
+        floors:[
+          { id:0, type:"enemy", emoji:"👿", name:"大魔神",      value:80000000, isBoss:true },
+          { id:1, type:"item",  emoji:"⚡", name:"魔神の炎",    op:"×", value:12 },
+          { id:2, type:"enemy", emoji:"🐲", name:"炎竜王",      value:4000000  },
+          { id:3, type:"enemy", emoji:"👹", name:"魔王の衛兵",  value:1000000  },
+          { id:4, type:"enemy", emoji:"🦊", name:"九尾の妖狐",  value:2000000  },
+          // Trap: 九尾(2M) at bottom — arrive 1.47M < 2M FAIL
+        ]
+      }
+    ];
+  }
+
+  if(stage === 3){
+    // -------------------------------------------------------
+    // STAGE 3 — start power: 10
+    // T0: 小悪魔(9)→19 → ×15→285 → 奈落の番人(200)→485
+    // T1: 混沌の魔兵(300)→785 → 混沌の鬼(700)→1485 → ×12→17820 → 混沌竜(10K)→27820
+    // T2: 冥府の魔将(20K)→47820 → 冥府の騎士(30K)→77820 → 冥府の戦士(50K)→127820 → ×20→2556400 → 冥府の神(700K)→3256400
+    // T3: 魔界の衛兵(2M)→5256400 → 冥王の九尾(4M)→9256400 → ×50→462.8M → 大炎竜(100M)→562.8M → 魔神王(500M)✓
+    // -------------------------------------------------------
+    return [
+      {
+        id:0, name:m[0], emoji:m[1],
+        floors:[
+          { id:0, type:"enemy", emoji:"🌑", name:"奈落の番人",  value:200 },
+          { id:1, type:"enemy", emoji:"😈", name:"小悪魔",      value:9   },
+          { id:2, type:"item",  emoji:"🔮", name:"闇の水晶",    op:"×", value:15 },
+          // Trap: ×15 first → 150→+9=159 → 200 FAIL
+        ]
+      },
+      {
+        id:1, name:m[2], emoji:m[3],
+        floors:[
+          { id:0, type:"enemy", emoji:"🌀", name:"混沌竜",      value:10000 },
+          { id:1, type:"item",  emoji:"💫", name:"混沌の渦",    op:"×", value:12 },
+          { id:2, type:"enemy", emoji:"👿", name:"混沌の魔兵",  value:300   },
+          { id:3, type:"enemy", emoji:"👹", name:"混沌の鬼",    value:700   },
+          // Trap: 混沌の鬼(700) at bottom — arrive 485 < 700 FAIL
+        ]
+      },
+      {
+        id:2, name:m[4], emoji:m[5],
+        floors:[
+          { id:0, type:"enemy", emoji:"👁️",  name:"冥府の神",   value:1100000 },
+          { id:1, type:"item",  emoji:"💎", name:"冥府の宝石",  op:"×", value:20 },
+          { id:2, type:"enemy", emoji:"💀", name:"冥府の魔将",  value:20000  },
+          { id:3, type:"enemy", emoji:"🗡️",  name:"冥府の騎士", value:30000  },
+          { id:4, type:"enemy", emoji:"🌑", name:"冥府の戦士",  value:50000  },
+          // Trap: 冥府の戦士(50K) at bottom — arrive 27820 < 50K FAIL; 騎士(30K) also FAIL
+        ]
+      },
+      {
+        id:3, name:m[6], emoji:m[7],
+        floors:[
+          { id:0, type:"enemy", emoji:"☠️",  name:"魔神王",     value:500000000, isBoss:true },
+          { id:1, type:"enemy", emoji:"🐲", name:"大炎竜",      value:100000000 },
+          { id:2, type:"item",  emoji:"⚡", name:"神聖の真髄",  op:"×", value:50 },
+          { id:3, type:"enemy", emoji:"👹", name:"魔界の衛兵",  value:2000000   },
+          { id:4, type:"enemy", emoji:"🦊", name:"冥王の九尾",  value:4000000   },
+          // Trap: 冥王の九尾(4M) at bottom — arrive 3.25M < 4M FAIL
+          // ×50 must come AFTER both small enemies (using earlier leaves too little for boss)
+        ]
+      }
+    ];
+  }
+
+  if(stage === 4){
+    // -------------------------------------------------------
+    // STAGE 4 — start power: 10
+    // T0: 深淵の小鬼(9)→19 → ×20→380 → 深淵の番人(300)→680
+    // T1: 滅亡の魔兵(400)→1080 → 滅亡の鬼神(1000)→2080 → ×50→104000 → 滅亡の竜(80K)→184000
+    // T2: 天獄の魔将(100K)→284K → 天獄の騎士(200K)→484K → 天獄の黒騎士(400K)→884K → ×50→44.2M → 天獄の神(20M)→64.2M
+    // T3: 冥界の衛兵(40M)→104.2M → 九尾の神(80M)→184.2M → ×100→18.42B → 大炎竜王(400M)→18.82B → 覇者の魔王(10B)✓
+    // -------------------------------------------------------
+    return [
+      {
+        id:0, name:m[0], emoji:m[1],
+        floors:[
+          { id:0, type:"enemy", emoji:"🌊", name:"深淵の番人",  value:300 },
+          { id:1, type:"enemy", emoji:"👺", name:"深淵の小鬼",  value:9   },
+          { id:2, type:"item",  emoji:"🌊", name:"深淵の波動",  op:"×", value:20 },
+          // Trap: ×20 first → 200→+9=209 → 300 FAIL
+        ]
+      },
+      {
+        id:1, name:m[2], emoji:m[3],
+        floors:[
+          { id:0, type:"enemy", emoji:"⚡", name:"滅亡の竜",    value:80000  },
+          { id:1, type:"item",  emoji:"💡", name:"天空の光",    op:"×", value:50 },
+          { id:2, type:"enemy", emoji:"👿", name:"滅亡の魔兵",  value:400    },
+          { id:3, type:"enemy", emoji:"👹", name:"滅亡の鬼神",  value:1000   },
+          // Trap: 滅亡の鬼神(1000) at bottom — arrive 680 < 1000 FAIL
+        ]
+      },
+      {
+        id:2, name:m[4], emoji:m[5],
+        floors:[
+          { id:0, type:"enemy", emoji:"🌌", name:"天獄の神",    value:20000000  },
+          { id:1, type:"item",  emoji:"🔱", name:"天啓の石",    op:"×", value:50 },
+          { id:2, type:"enemy", emoji:"⚡", name:"天獄の魔将",  value:100000    },
+          { id:3, type:"enemy", emoji:"💀", name:"天獄の騎士",  value:200000    },
+          { id:4, type:"enemy", emoji:"🌑", name:"天獄の黒騎士",value:400000    },
+          // Trap: 黒騎士(400K) at bottom — arrive 184K < 400K FAIL; 騎士(200K) also FAIL
+        ]
+      },
+      {
+        id:3, name:m[6], emoji:m[7],
+        floors:[
+          { id:0, type:"enemy", emoji:"🔱", name:"覇者の魔王",  value:10000000000, isBoss:true },
+          { id:1, type:"enemy", emoji:"🐲", name:"大炎竜王",    value:400000000  },
+          { id:2, type:"item",  emoji:"⚡", name:"天の聖剣",    op:"×", value:100 },
+          { id:3, type:"enemy", emoji:"👹", name:"冥界の衛兵",  value:40000000   },
+          { id:4, type:"enemy", emoji:"🦊", name:"九尾の神",    value:80000000   },
+          // Trap: 九尾の神(80M) at bottom — arrive 64.2M < 80M FAIL
+          // ×100 must come after both enemies (item first → 6.42B < 10B FAIL)
+        ]
+      }
+    ];
+  }
+
+  // stage === 5
+  // -------------------------------------------------------
+  // STAGE 5 — start power: 10
+  // T0: 光の精霊(9)→19 → ×30→570 → 虚無の番人(500)→1070
+  // T1: 終焉の小悪魔(700)→1770 → 終焉の大鬼(1500)→3270 → ×80→261600 → 終焉の天龍(200K)→461600
+  // T2: 創世の魔将(200K)→661.6K → 創世の魔神兵(400K)→1061.6K → 創世の黒龍(600K)→1661.6K → ×80→132.9M → 創世の神(100M)→232.9M
+  // T3: 滅びの衛兵(150M)→382.9M → 虚無の九尾(300M)→682.9M → ×100→68.29B → 永遠の炎竜(3B)→71.29B → 究極魔帝(30B)✓
+  // -------------------------------------------------------
   return [
     {
       id:0, name:m[0], emoji:m[1],
       floors:[
-        { id:0, type:"enemy", emoji:"🦁", name:"ライオン",    value:Math.floor(60*em) },
-        { id:1, type:"item",  emoji:"🌀", name:"魔法の渦",    op:"×", value:k0 },
-        { id:2, type:"enemy", emoji:"🐺", name:"ウルフ",      value:Math.floor(8*em) },
+        { id:0, type:"enemy", emoji:"⚫", name:"虚無の番人",   value:500 },
+        { id:1, type:"enemy", emoji:"✨", name:"光の精霊",     value:9   },
+        { id:2, type:"item",  emoji:"⚫", name:"虚無の力",     op:"×", value:30 },
+        // Trap: ×30 first → 300→+9=309 → 500 FAIL
       ]
     },
     {
       id:1, name:m[2], emoji:m[3],
       floors:[
-        { id:0, type:"enemy", emoji:"🐉", name:"ドラゴン",    value:Math.floor(2000*em) },
-        { id:1, type:"item",  emoji:"🌟", name:"勇者の証",    op:"×", value:8 },
-        { id:2, type:"enemy", emoji:"👿", name:"魔人",        value:Math.floor(160*em) },
-        { id:3, type:"enemy", emoji:"👺", name:"ゴブリン",    value:Math.floor(40*em) },
+        { id:0, type:"enemy", emoji:"💧", name:"終焉の天龍",   value:200000 },
+        { id:1, type:"item",  emoji:"💫", name:"神の叡智",     op:"×", value:80 },
+        { id:2, type:"enemy", emoji:"👿", name:"終焉の小悪魔", value:700    },
+        { id:3, type:"enemy", emoji:"👹", name:"終焉の大鬼",   value:1500   },
+        // Trap: 終焉の大鬼(1500) at bottom — arrive 1070 < 1500 FAIL
       ]
     },
     {
       id:2, name:m[4], emoji:m[5],
       floors:[
-        { id:0, type:"enemy", emoji:"🌑", name:"暗黒神",      value:Math.floor(240000*em) },
-        { id:1, type:"item",  emoji:"💎", name:"神の結晶",    op:"×", value:20 },
-        { id:2, type:"enemy", emoji:"👿", name:"堕天使",      value:Math.floor(5200*em) },
-        { id:3, type:"enemy", emoji:"🧙", name:"大魔道士",    value:Math.floor(5000*em) },
-        { id:4, type:"enemy", emoji:"🗡️",  name:"暗黒騎士",   value:Math.floor(500*em) },
+        { id:0, type:"enemy", emoji:"✨", name:"創世の神",     value:100000000 },
+        { id:1, type:"item",  emoji:"💎", name:"創世の石",     op:"×", value:80 },
+        { id:2, type:"enemy", emoji:"💀", name:"創世の魔将",   value:200000    },
+        { id:3, type:"enemy", emoji:"🗡️",  name:"創世の魔神兵", value:400000    },
+        { id:4, type:"enemy", emoji:"🌑", name:"創世の黒龍",   value:600000    },
+        // Trap: 黒龍(600K) at bottom — arrive 461.6K < 600K FAIL
       ]
     },
     {
       id:3, name:m[6], emoji:m[7],
       floors:[
-        { id:0, type:"enemy", emoji:"😈", name:"魔王",        value:Math.floor(20000000*em), isBoss:true },
-        { id:1, type:"item",  emoji:"⚡", name:"聖剣の真髄",  op:"×", value:12 },
-        { id:2, type:"enemy", emoji:"🐲", name:"炎竜王",      value:Math.floor(1100000*em) },
-        { id:3, type:"enemy", emoji:"🦊", name:"九尾の狐神",  value:Math.floor(570000*em) },
-        { id:4, type:"enemy", emoji:"👹", name:"魔王の衛兵",  value:Math.floor(25000*em) },
+        { id:0, type:"enemy", emoji:"💠", name:"究極魔帝",     value:30000000000, isBoss:true },
+        { id:1, type:"enemy", emoji:"🐲", name:"永遠の炎竜",   value:3000000000  },
+        { id:2, type:"item",  emoji:"⚡", name:"全能の聖剣",   op:"×", value:100 },
+        { id:3, type:"enemy", emoji:"👹", name:"滅びの衛兵",   value:150000000   },
+        { id:4, type:"enemy", emoji:"🦊", name:"虚無の九尾",   value:300000000   },
+        // Trap: 虚無の九尾(300M) at bottom — arrive 232.9M < 300M FAIL
+        // ×100 must be used after both small enemies
       ]
     }
   ];
@@ -813,7 +1052,7 @@ function buildAllTowers(){
       b.innerHTML =
         "<span class='b-emoji'>" + floor.emoji + "</span>" +
         "<span class='b-name'>"  + floor.name  + "</span>" +
-        "<span class='b-val'>"   + (floor.type === "enemy" ? "⚔️" + floor.value.toLocaleString() : floor.op + floor.value) + "</span>";
+        "<span class='b-val'>"   + (floor.type === "enemy" ? "⚔️" + fmtPow(floor.value) : floor.op + floor.value) + "</span>";
 
       if(!done && !isLocked){
         const f  = floor;
@@ -893,7 +1132,7 @@ function onBlockTap(ti, fi, el, floor){
 
   pushCalcToken(result.delta, floor.type === "item" ? "op" : "num");
   pushCalcToken("→", "op");
-  pushCalcToken(gs.power.toLocaleString(), "result");
+  pushCalcToken(fmtPow(gs.power), "result");
   updatePowerDisplay();
 }
 
@@ -1061,7 +1300,7 @@ function afterRemove(ti, floor){
   // Check if all floors of THIS tower are done
   const tower   = TOWERS[ti];
   const allDone = tower.floors.every(f => gs.floorsDone.includes(ti + "-" + f.id));
-  if(allDone){
+  if(allDone && ti === gs.towerIndex){
     checkTowerAdvance();
   }
 }
@@ -1119,7 +1358,7 @@ function checkTowerAdvance(){
 // ======================================================
 function updatePowerDisplay(){
   const el = $("powerValue");
-  el.textContent = gs.power.toLocaleString();
+  el.textContent = fmtPow(gs.power);
   el.classList.remove("power-up");
   void el.offsetWidth;
   el.classList.add("power-up");
@@ -1284,10 +1523,10 @@ function showTowerFlash(name){
 function showGameover(floor){
   _sfx.play('gameover');
   $("gameoverDesc").innerHTML =
-    "<strong>" + floor.name + "</strong>（力：" + floor.value.toLocaleString() + "）に負けた！<br>" +
-    "あなたの力 " + gs.power.toLocaleString() + " では届かなかった…<br>順番を変えれば勝てるかも！";
+    "<strong>" + floor.name + "</strong>（力：" + fmtPow(floor.value) + "）に負けた！<br>" +
+    "あなたの力 " + fmtPow(gs.power) + " では届かなかった…<br>順番を変えれば勝てるかも！";
   $("gameoverStats").innerHTML =
-    "現在の力：" + gs.power.toLocaleString() + "<br>倒した敵：" + gs.defeatedEnemies + "体<br>行動回数：" + gs.turnsTotal + "回";
+    "現在の力：" + fmtPow(gs.power) + "<br>倒した敵：" + gs.defeatedEnemies + "体<br>行動回数：" + gs.turnsTotal + "回";
   const ov = $("transOverlay");
   ov.style.transition = "opacity .4s";
   ov.style.opacity = "1";
@@ -1321,11 +1560,11 @@ function showClear(){
     ? "全ステージを制覇した！<br>真の勇者の称号を得た！"
     : "ステージ " + gs.stage + " の魔王を倒した！<br>" +
       (gs.hardMode
-        ? "次の魔王の力は <strong style='color:#f87171'>" + nextBossVal.toLocaleString() + "</strong>！<br><span style='color:#fca5a5;font-size:12px'>⚡ ハードモード：次ステージは力10でスタート！</span>"
-        : "次の魔王の力は <strong style='color:#f87171'>" + nextBossVal.toLocaleString() + "</strong>！<br>引き継いだ力で挑め！");
+        ? "次の魔王の力は <strong style='color:#f87171'>" + fmtPow(nextBossVal) + "</strong>！<br><span style='color:#fca5a5;font-size:12px'>⚡ ハードモード：次ステージは力10でスタート！</span>"
+        : "次の魔王の力は <strong style='color:#f87171'>" + fmtPow(nextBossVal) + "</strong>！<br>引き継いだ力で挑め！");
   $("clearStats").innerHTML =
-    "パワー：" + gs.power.toLocaleString() + "<br>ステージ：" + gs.stage + "<br>撃破数：" + gs.defeatedEnemies + "体（累計：" + gs.totalDefeated + "体）<br>行動回数：" + gs.turnsTotal + "回<br>" +
-    "魔王の力：" + bossVal.toLocaleString() + "　vs　あなた：" + gs.power.toLocaleString() + "（差：" + (diff >= 0 ? "+" : "") + diff.toLocaleString() + "）";
+    "パワー：" + fmtPow(gs.power) + "<br>ステージ：" + gs.stage + "<br>撃破数：" + gs.defeatedEnemies + "体（累計：" + gs.totalDefeated + "体）<br>行動回数：" + gs.turnsTotal + "回<br>" +
+    "魔王の力：" + fmtPow(bossVal) + "　vs　あなた：" + fmtPow(gs.power) + "（差：" + (diff >= 0 ? "+" : "-") + fmtPow(Math.abs(diff)) + "）";
   $("clearNextBtn").textContent  = isLastStage ? "もう一度挑戦" : "ステージ " + nextStage + " へ進む！";
   $("clearNextBtn").onclick      = isLastStage ? restartGame : () => advanceStage(nextStage);
 
@@ -1360,7 +1599,7 @@ function advanceStage(newStage){
     power:carryPower,
     towerIndex:0,
     floorsDone:[],
-    calcTokens:[{label:carryPower.toLocaleString(), cls:"num"}],
+    calcTokens:[{label:fmtPow(carryPower), cls:"num"}],
     turnsTotal:0,
     defeatedEnemies:0,
     totalDefeated:carryTotal,

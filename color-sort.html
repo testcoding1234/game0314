@@ -270,9 +270,10 @@ const DROP_SPLASH_SCALE = 2.8;  // scale growth rate during splash
    LEVEL CONFIG
    ============================================================ */
 function getLevelConfig(lv) {
-  // Always 10 colors + 2 empty = 12 tubes.
-  // Difficulty increases via more shuffle iterations.
-  return { numColors: NUM_COLORS, extras: EXTRA_TUBES };
+  // Start with 4 colors and add 1 color every 2 levels, up to NUM_COLORS.
+  // Tube count grows from 6 (lv 1) → 12 (lv 13+) as you advance.
+  const numColors = Math.min(NUM_COLORS, 3 + Math.ceil(lv / 2));
+  return { numColors, extras: EXTRA_TUBES };
 }
 
 /* ============================================================
@@ -301,7 +302,7 @@ function generateLevel(lv) {
     ...Array.from({length: extras}, () => []),
   ];
   // More iterations for higher levels
-  const iters = numColors * TUBE_CAP * (SHUFFLE_FACTOR + Math.floor(lv / 2));
+  const iters = numColors * TUBE_CAP * (SHUFFLE_FACTOR + lv);
   for (let i = 0; i < iters; i++) {
     const srcs = all.map((t,i) => t.length > 0 ? i : -1).filter(x => x >= 0);
     if (!srcs.length) break;

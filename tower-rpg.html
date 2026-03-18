@@ -195,9 +195,9 @@ html,body{width:100%;height:100%;background:#0a0010;display:flex;align-items:cen
 .b-emoji{font-size:22px;line-height:1;pointer-events:none;}
 .b.b-boss .b-emoji{font-size:26px;}
 .b-name{font-size:7px;color:#94a3b8;line-height:1;pointer-events:none;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:center;}
-.b-val{font-size:11px;font-weight:900;color:#fbbf24;line-height:1.2;pointer-events:none;text-align:center;word-break:break-all;}
+.b-val{font-size:10px;font-weight:900;color:#fbbf24;line-height:1.2;pointer-events:none;text-align:center;word-break:break-all;}
 .b.b-item .b-val{color:#60a5fa;}
-.b.b-boss .b-val{color:#f87171;font-size:11px;}
+.b.b-boss .b-val{color:#f87171;font-size:10px;}
 
 /* ====== ROCK CRUSH ANIMATION ====== */
 /* Clone that shatters in place like a hard stone */
@@ -1052,7 +1052,7 @@ function buildAllTowers(){
       b.innerHTML =
         "<span class='b-emoji'>" + floor.emoji + "</span>" +
         "<span class='b-name'>"  + floor.name  + "</span>" +
-        "<span class='b-val'>"   + (floor.type === "enemy" ? "⚔️" + fmtPow(floor.value) : floor.op + floor.value) + "</span>";
+        "<span class='b-val'>"   + (floor.type === "enemy" ? floor.value.toLocaleString() : floor.op + floor.value) + "</span>";
 
       if(!done && !isLocked){
         const f  = floor;

@@ -34,7 +34,7 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
 .banner-snow{position:absolute;inset:0;pointer-events:none;overflow:hidden;}
 .snowflake{position:absolute;color:rgba(255,255,255,.5);font-size:10px;animation:snow-fall linear infinite;}
 @keyframes snow-fall{0%{transform:translateY(-10px) rotate(0deg);opacity:.8}100%{transform:translateY(165px) rotate(360deg);opacity:0}}
-/* NEW バッジ */
+/* バッジ */
 .banner-badge{position:absolute;top:10px;right:10px;background:linear-gradient(135deg,#f97316,#ef4444);color:#fff;font-size:10px;font-weight:900;padding:3px 8px;border-radius:10px;text-shadow:0 1px 2px rgba(0,0,0,.4);}
 /* 評価星 */
 .banner-stars{position:absolute;bottom:8px;left:10px;display:flex;gap:2px;font-size:13px;}
@@ -47,14 +47,31 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
 .banner-play-btn{background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;font-size:12px;font-weight:800;padding:7px 18px;border-radius:20px;border:none;cursor:pointer;box-shadow:0 3px 10px rgba(59,130,246,.4);transition:all .15s;}
 .banner-play-btn:active{transform:scale(.95);box-shadow:0 1px 4px rgba(59,130,246,.3);}
 
-/* ===== コミングスーン カード ===== */
-.game-coming{width:100%;border-radius:16px;overflow:hidden;background:rgba(10,18,40,.6);border:1.5px dashed rgba(56,189,248,.18);flex-shrink:0;}
-.coming-inner{padding:20px;display:flex;align-items:center;gap:14px;opacity:.55;}
-.coming-icon{font-size:40px;}
-.coming-text{display:flex;flex-direction:column;gap:3px;}
-.coming-name{font-size:14px;font-weight:800;color:#94a3b8;}
-.coming-label{font-size:10px;color:#475569;font-weight:600;letter-spacing:.08em;}
+/* ===== COMING SOON カード（フルサイズ・ロック） ===== */
+.game-banner.is-coming{cursor:default;border-color:rgba(56,189,248,.12);}
+.game-banner.is-coming:active{transform:none;border-color:rgba(56,189,248,.12);}
+/* サムネイルをぼかして暗くする */
+.game-banner.is-coming .banner-thumb-inner{filter:blur(3px);opacity:.35;}
+/* ロックオーバーレイ */
+.coming-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:rgba(4,8,20,.55);pointer-events:none;}
+.coming-lock{font-size:38px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.8));}
+.coming-soon-label{font-size:13px;font-weight:900;color:#7dd3fc;letter-spacing:.16em;text-shadow:0 0 12px rgba(125,211,252,.6);}
+/* 下部情報もグレーアウト */
+.game-banner.is-coming .banner-game-name{color:#4b5a6e;}
+.game-banner.is-coming .banner-game-genre{color:#2e3a4a;}
+.game-banner.is-coming .banner-play-btn{background:rgba(40,55,80,.7);color:#3d5066;box-shadow:none;cursor:default;pointer-events:none;}
 
+/* ===== BLIND カード（完全ミステリー） ===== */
+.game-banner.is-blind{cursor:default;border-color:rgba(56,189,248,.08);}
+.game-banner.is-blind:active{transform:none;}
+.blind-thumb{width:100%;height:100px;position:relative;overflow:hidden;background:linear-gradient(145deg,#070e1a 0%,#0a1525 100%);display:flex;align-items:center;justify-content:center;gap:10px;}
+.blind-qmarks{font-size:36px;letter-spacing:4px;opacity:.18;filter:blur(1px);}
+.blind-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;pointer-events:none;}
+.blind-lock{font-size:28px;opacity:.5;}
+.blind-label{font-size:10px;font-weight:900;color:#2e3a4a;letter-spacing:.14em;}
+.blind-info{padding:8px 14px 10px;display:flex;align-items:center;justify-content:space-between;}
+.blind-name{font-size:13px;font-weight:800;color:#263344;}
+.blind-genre{font-size:10px;color:#1e2d3a;}
 
 </style>
 </head>
@@ -69,111 +86,190 @@ html,body{width:100%;height:100%;background:#0a0f1e;display:flex;align-items:cen
     <div id="home-subtitle">ゲームを選んでプレイ！</div>
   </div>
 
-  <!-- ゲームリスト -->
-  <div id="game-list">
-
-    <!-- ★ 勇者の塔 バナーカード -->
-    <div class="game-banner" onclick="location.href='tower-rpg.html'">
-      <div class="banner-thumb" style="background:linear-gradient(145deg,#1a0630 0%,#2d0a5a 50%,#4a1080 100%);">
-        <div class="banner-thumb-inner">
-          <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
-            <img src="assets/images/hero.svg" width="52" height="52" alt="🧙" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-            <img src="assets/images/tower.svg" width="52" height="52" alt="🏰" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-            <img src="assets/images/boss.svg" width="52" height="52" alt="😈" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-          </div>
-          <div class="banner-thumb-title">勇者の塔</div>
-          <div class="banner-thumb-sub">数字で戦え！塔を制覇しろ！</div>
-        </div>
-        <div class="banner-badge" style="background:linear-gradient(135deg,#9333ea,#ec4899);">HOT</div>
-        <div class="banner-stars">⭐⭐⭐⭐⭐</div>
-      </div>
-      <div class="banner-info">
-        <div class="banner-info-left">
-          <div class="banner-game-name">勇者の塔</div>
-          <div class="banner-game-genre">RPG・計算バトル</div>
-        </div>
-        <button class="banner-play-btn" style="background:linear-gradient(135deg,#9333ea,#7c3aed);">▶ プレイ</button>
-      </div>
-    </div>
-
-    <!-- ★ スノーサバイバル バナーカード -->
-    <div class="game-banner" onclick="location.href='snow-survival.html'">
-      <div class="banner-thumb">
-        <!-- 雪アニメーション -->
-        <div class="banner-snow" id="bannerSnow"></div>
-        <div class="banner-thumb-inner">
-          <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
-            <img src="assets/images/snowflake.svg" width="46" height="46" alt="❄️" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-            <img src="assets/images/fire.svg" width="46" height="46" alt="🔥" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-            <img src="assets/images/axe.svg" width="46" height="46" alt="🪓" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-          </div>
-          <div class="banner-thumb-title">スノーサバイバル</div>
-          <div class="banner-thumb-sub">狩猟・加工・販売で生き残れ！</div>
-        </div>
-        <div class="banner-badge">NEW</div>
-        <div class="banner-stars">⭐⭐⭐⭐⭐</div>
-      </div>
-      <div class="banner-info">
-        <div class="banner-info-left">
-          <div class="banner-game-name">スノーサバイバル</div>
-          <div class="banner-game-genre">サバイバル・放置系</div>
-        </div>
-        <button class="banner-play-btn">▶ プレイ</button>
-      </div>
-    </div>
-
-    <!-- ★ カラーソート バナーカード -->
-    <div class="game-banner" onclick="location.href='color-sort.html'">
-      <div class="banner-thumb" style="background:linear-gradient(145deg,#0a1a10 0%,#0d2b3e 50%,#1a0d30 100%);">
-        <div class="banner-thumb-inner">
-          <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
-            <img src="assets/images/tube.svg" width="44" height="44" alt="🧪" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-            <img src="assets/images/star.svg" width="44" height="44" alt="⭐" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-            <img src="assets/images/coin.svg" width="44" height="44" alt="🪙" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
-          </div>
-          <div class="banner-thumb-title">カラーソート</div>
-          <div class="banner-thumb-sub">試験管の色を揃えろ！</div>
-        </div>
-        <div class="banner-badge" style="background:linear-gradient(135deg,#22c55e,#16a34a);">NEW</div>
-        <div class="banner-stars">⭐⭐⭐⭐⭐</div>
-      </div>
-      <div class="banner-info">
-        <div class="banner-info-left">
-          <div class="banner-game-name">カラーソート</div>
-          <div class="banner-game-genre">パズル・色合わせ</div>
-        </div>
-        <button class="banner-play-btn" style="background:linear-gradient(135deg,#22c55e,#16a34a);">▶ プレイ</button>
-      </div>
-    </div>
-
-    <!-- コミングスーン：農場ゲーム -->
-    <div class="game-coming">
-      <div class="coming-inner">
-        <div class="coming-icon">🌾</div>
-        <div class="coming-text">
-          <div class="coming-name">ハーベストファーム</div>
-          <div class="coming-label">COMING SOON</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- コミングスーン：お城ゲーム -->
-    <div class="game-coming">
-      <div class="coming-inner">
-        <div class="coming-icon">🏰</div>
-        <div class="coming-text">
-          <div class="coming-name">キングダムクラッシュ</div>
-          <div class="coming-label">COMING SOON</div>
-        </div>
-      </div>
-    </div>
+  <!-- ゲームリスト (JSで生成) -->
+  <div id="game-list"></div>
 
 </div>
 
 <script>
-// 雪パーティクル生成
+// ======================================================
+// GAME CATALOG
+// ステータス: "active" | "coming" | "blind"
+//   active  — プレイ可能
+//   coming  — サムネイルぼかし + COMING SOON 表示
+//   blind   — 完全ミステリー（タイトルも非表示）
+// ======================================================
+const GAMES = [
+  {
+    status: 'active',
+    url: 'tower-rpg.html',
+    thumbBg: 'linear-gradient(145deg,#1a0630 0%,#2d0a5a 50%,#4a1080 100%)',
+    thumbContent: `
+      <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
+        <img src="assets/images/hero.svg"  width="52" height="52" alt="🧙" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+        <img src="assets/images/tower.svg" width="52" height="52" alt="🏰" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+        <img src="assets/images/boss.svg"  width="52" height="52" alt="😈" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+      </div>
+      <div class="banner-thumb-title">勇者の塔</div>
+      <div class="banner-thumb-sub">数字で戦え！塔を制覇しろ！</div>`,
+    badge: 'HOT', badgeStyle: 'background:linear-gradient(135deg,#9333ea,#ec4899);',
+    stars: '⭐⭐⭐⭐⭐',
+    name: '勇者の塔',
+    genre: 'RPG・計算バトル',
+    btnStyle: 'background:linear-gradient(135deg,#9333ea,#7c3aed);',
+  },
+  {
+    status: 'active',
+    url: 'snow-survival.html',
+    thumbBg: 'linear-gradient(145deg,#08101e 0%,#0c1d36 50%,#142b42 100%)',
+    thumbContent: `
+      <div id="bannerSnow" class="banner-snow"></div>
+      <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
+        <img src="assets/images/snowflake.svg" width="46" height="46" alt="❄️" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+        <img src="assets/images/fire.svg"      width="46" height="46" alt="🔥" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+        <img src="assets/images/axe.svg"       width="46" height="46" alt="🪓" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+      </div>
+      <div class="banner-thumb-title">スノーサバイバル</div>
+      <div class="banner-thumb-sub">狩猟・加工・販売で生き残れ！</div>`,
+    badge: 'NEW', badgeStyle: '',
+    stars: '⭐⭐⭐⭐⭐',
+    name: 'スノーサバイバル',
+    genre: 'サバイバル・放置系',
+    btnStyle: '',
+  },
+  {
+    status: 'active',
+    url: 'color-sort.html',
+    thumbBg: 'linear-gradient(145deg,#0a1a10 0%,#0d2b3e 50%,#1a0d30 100%)',
+    thumbContent: `
+      <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
+        <img src="assets/images/tube.svg" width="44" height="44" alt="🧪" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+        <img src="assets/images/star.svg" width="44" height="44" alt="⭐" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+        <img src="assets/images/coin.svg" width="44" height="44" alt="🪙" style="filter:drop-shadow(0 4px 12px rgba(0,0,0,.6));">
+      </div>
+      <div class="banner-thumb-title">カラーソート</div>
+      <div class="banner-thumb-sub">試験管の色を揃えろ！</div>`,
+    badge: 'NEW', badgeStyle: 'background:linear-gradient(135deg,#22c55e,#16a34a);',
+    stars: '⭐⭐⭐⭐⭐',
+    name: 'カラーソート',
+    genre: 'パズル・色合わせ',
+    btnStyle: 'background:linear-gradient(135deg,#22c55e,#16a34a);',
+  },
+  {
+    status: 'coming',
+    thumbBg: 'linear-gradient(145deg,#0d1a0a 0%,#142b10 50%,#1a3a0d 100%)',
+    thumbContent: `
+      <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
+        <span style="font-size:48px;">🌾</span>
+        <span style="font-size:48px;">🐄</span>
+        <span style="font-size:48px;">🌻</span>
+      </div>
+      <div class="banner-thumb-title">ハーベストファーム</div>
+      <div class="banner-thumb-sub">農場を育てて大富豪に！</div>`,
+    stars: '⭐⭐⭐⭐',
+    name: 'ハーベストファーム',
+    genre: 'シミュレーション・農場',
+  },
+  {
+    status: 'coming',
+    thumbBg: 'linear-gradient(145deg,#1a0a00 0%,#2b1500 50%,#3a1f00 100%)',
+    thumbContent: `
+      <div class="banner-thumb-emoji" style="display:flex;gap:6px;">
+        <span style="font-size:48px;">🏰</span>
+        <span style="font-size:48px;">⚔️</span>
+        <span style="font-size:48px;">🛡️</span>
+      </div>
+      <div class="banner-thumb-title">キングダムクラッシュ</div>
+      <div class="banner-thumb-sub">王国を建て、敵を蹴散らせ！</div>`,
+    stars: '⭐⭐⭐⭐',
+    name: 'キングダムクラッシュ',
+    genre: 'ストラテジー・クラッシュ',
+  },
+  {
+    status: 'blind',
+  },
+  {
+    status: 'blind',
+  },
+];
+
+// ======================================================
+// カード生成
+// ======================================================
+const list = document.getElementById('game-list');
+
+GAMES.forEach((g, idx) => {
+  if (g.status === 'active') {
+    const card = document.createElement('div');
+    card.className = 'game-banner';
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.addEventListener('click', () => location.href = g.url);
+    card.addEventListener('keydown', e => { if(e.key==='Enter') location.href = g.url; });
+    card.innerHTML =
+      `<div class="banner-thumb" style="background:${g.thumbBg};">` +
+        `<div class="banner-thumb-inner">${g.thumbContent}</div>` +
+        (g.badge ? `<div class="banner-badge" style="${g.badgeStyle}">${g.badge}</div>` : '') +
+        (g.stars ? `<div class="banner-stars">${g.stars}</div>` : '') +
+      `</div>` +
+      `<div class="banner-info">` +
+        `<div class="banner-info-left">` +
+          `<div class="banner-game-name">${g.name}</div>` +
+          `<div class="banner-game-genre">${g.genre}</div>` +
+        `</div>` +
+        `<button class="banner-play-btn" style="${g.btnStyle||''}">▶ プレイ</button>` +
+      `</div>`;
+    list.appendChild(card);
+
+  } else if (g.status === 'coming') {
+    const card = document.createElement('div');
+    card.className = 'game-banner is-coming';
+    card.innerHTML =
+      `<div class="banner-thumb" style="background:${g.thumbBg};">` +
+        `<div class="banner-thumb-inner">${g.thumbContent}</div>` +
+        `<div class="coming-overlay">` +
+          `<div class="coming-lock">🔒</div>` +
+          `<div class="coming-soon-label">COMING SOON</div>` +
+        `</div>` +
+        (g.stars ? `<div class="banner-stars" style="opacity:.25;">${g.stars}</div>` : '') +
+      `</div>` +
+      `<div class="banner-info">` +
+        `<div class="banner-info-left">` +
+          `<div class="banner-game-name">${g.name}</div>` +
+          `<div class="banner-game-genre">${g.genre}</div>` +
+        `</div>` +
+        `<button class="banner-play-btn" disabled>🔒 準備中</button>` +
+      `</div>`;
+    list.appendChild(card);
+
+  } else if (g.status === 'blind') {
+    const card = document.createElement('div');
+    card.className = 'game-banner is-blind';
+    card.innerHTML =
+      `<div class="blind-thumb">` +
+        `<div class="blind-qmarks">？？？</div>` +
+        `<div class="blind-overlay">` +
+          `<div class="blind-lock">🔒</div>` +
+          `<div class="blind-label">??? COMING SOON ???</div>` +
+        `</div>` +
+      `</div>` +
+      `<div class="blind-info">` +
+        `<div>` +
+          `<div class="blind-name">？？？</div>` +
+          `<div class="blind-genre">近日公開予定</div>` +
+        `</div>` +
+        `<button class="banner-play-btn" disabled style="background:rgba(20,30,45,.7);color:#1e2d3a;box-shadow:none;pointer-events:none;">🔒</button>` +
+      `</div>`;
+    list.appendChild(card);
+  }
+});
+
+// ======================================================
+// 雪パーティクル生成（スノーサバイバルカード用）
+// ======================================================
 (function() {
   const container = document.getElementById('bannerSnow');
+  if (!container) return;
   const FLAKES = 18;
   for (let i = 0; i < FLAKES; i++) {
     const el = document.createElement('span');

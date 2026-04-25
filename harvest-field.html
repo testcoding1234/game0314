@@ -1,0 +1,1343 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>スノーハーベスト</title>
+<style>
+/* ===== リセット ===== */
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none;}
+html,body{width:100%;height:100%;background:#000;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
+
+/* ===== ゲームコンテナ ===== */
+#game{position:relative;width:375px;height:667px;max-height:100vh;max-height:100svh;overflow:hidden;background:linear-gradient(180deg,#08101e 0%,#0c1d36 50%,#142b42 100%);font-family:system-ui,-apple-system,sans-serif;color:#e2e8f0;}
+
+/* ===== 背景Canvas ===== */
+#bgCanvas{position:absolute;inset:0;pointer-events:none;z-index:0;}
+
+/* ===== ヘッダー (52px) ===== */
+#header{position:relative;z-index:10;height:52px;display:flex;justify-content:space-between;align-items:center;padding:0 10px 0 8px;background:rgba(4,10,24,0.88);border-bottom:1px solid rgba(125,211,252,0.2);}
+#phaseLabel{font-size:12px;font-weight:700;color:#7dd3fc;letter-spacing:.03em;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.home-btn{background:rgba(8,24,44,.82);border:1px solid rgba(125,211,252,.28);color:#7dd3fc;font-size:16px;padding:5px 9px;border-radius:8px;cursor:pointer;flex-shrink:0;line-height:1;}
+.home-btn:active{background:rgba(125,211,252,.18);}
+#coinDisplay{display:flex;align-items:center;gap:6px;background:rgba(249,115,22,.14);border:1px solid rgba(249,115,22,.5);border-radius:20px;padding:5px 12px;}
+#coinCount{font-size:18px;font-weight:900;color:#fbbf24;min-width:36px;text-align:right;}
+@keyframes coinBump{0%,100%{transform:scale(1)}50%{transform:scale(1.45);color:#fde68a;}}
+.coin-bump{animation:coinBump .3s ease;}
+
+/* ===== フィールド (478px) ===== */
+#field{position:relative;z-index:5;width:375px;height:478px;overflow:hidden;touch-action:none;cursor:crosshair;}
+
+/* ゾーン背景色 */
+#field::before{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(16,40,80,.0) 0%,rgba(16,40,80,.0) 52%,rgba(8,20,50,.45) 52%,rgba(8,20,50,.45) 80%,rgba(30,12,4,.4) 80%,rgba(30,12,4,.4) 100%);pointer-events:none;z-index:0;}
+
+/* ゾーン区切り線 */
+.zone-divider{position:absolute;left:0;right:0;height:1px;pointer-events:none;z-index:1;}
+
+/* ゾーンラベル */
+.zone-label{position:absolute;font-size:9px;font-weight:700;color:rgba(125,211,252,.28);letter-spacing:.07em;pointer-events:none;z-index:2;}
+
+/* ===== リソース ===== */
+.resource{position:absolute;z-index:20;text-align:center;pointer-events:none;}
+.res-emoji{font-size:42px;line-height:1;display:block;filter:drop-shadow(0 3px 7px rgba(0,0,0,.55));}
+.res-hp-wrap{position:absolute;top:-14px;left:50%;transform:translateX(-50%);width:44px;height:5px;background:rgba(0,0,0,.6);border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,.15);}
+.res-hp-fill{height:100%;background:linear-gradient(90deg,#4ade80,#86efac);border-radius:3px;transition:width .12s;}
+.res-hp-fill.low{background:linear-gradient(90deg,#f87171,#fca5a5);}
+@keyframes resShake{0%,100%{transform:translateX(0)}33%{transform:translateX(-4px)}66%{transform:translateX(4px)}}
+.resource.hit{animation:resShake .2s ease;}
+@keyframes resPop{from{opacity:0;transform:scale(0.3) rotate(-15deg)}to{opacity:1;transform:scale(1) rotate(0)}}
+.resource{animation:resPop .38s cubic-bezier(.34,1.56,.64,1) both;}
+@keyframes resDie{0%{opacity:1;transform:scale(1) rotate(0)}100%{opacity:0;transform:scale(0) rotate(40deg)}}
+.resource.dying{animation:resDie .38s ease-out forwards;}
+
+/* ===== キャラクター ===== */
+#charEl{position:absolute;z-index:30;font-size:40px;line-height:1;filter:drop-shadow(0 4px 10px rgba(0,0,0,.65));pointer-events:none;transform:translate(-50%,-50%);will-change:left,top;}
+/* キャリー満杯フラッシュ */
+.full-carry-flash{position:absolute;left:50%;bottom:20px;transform:translateX(-50%);z-index:310;background:rgba(239,68,68,.92);border-radius:14px;padding:6px 18px;font-size:13px;font-weight:800;color:#fff;pointer-events:none;white-space:nowrap;animation:pfAnim 1.2s ease forwards;}
+
+/* ===== 施設カード（フィールド内） ===== */
+.fac-card{position:absolute;z-index:22;width:82px;height:72px;background:rgba(10,18,40,.92);border:2px solid rgba(56,189,248,.32);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translate(-50%,-50%);cursor:pointer;transition:border-color .2s,box-shadow .2s;}
+.fac-card.near{border-color:#7dd3fc;box-shadow:0 0 14px rgba(125,211,252,.4);}
+.fac-card.busy{border-color:rgba(34,197,94,.6);}
+.fac-card.busy .fac-icon{animation:fcIconBusy .55s ease-in-out infinite alternate;}
+@keyframes fcIconBusy{from{transform:scale(1) rotate(0)}to{transform:scale(1.22) rotate(-10deg)}}
+.fac-worker{position:absolute;top:4px;left:4px;font-size:12px;opacity:0;}
+.fac-card.busy .fac-worker{opacity:1;animation:fcWkrBounce .45s ease-in-out infinite alternate;}
+@keyframes fcWkrBounce{from{transform:scale(1) rotate(-8deg)}to{transform:scale(1.2) rotate(8deg) translateY(-3px)}}
+.fac-icon{font-size:22px;line-height:1;}
+.fac-name{font-size:8px;font-weight:700;color:#94a3b8;letter-spacing:.04em;}
+.fac-lv{font-size:8px;font-weight:700;color:#fbbf24;background:rgba(251,191,36,.15);border-radius:5px;padding:1px 4px;}
+.fac-queue{font-size:7px;color:#7dd3fc;font-weight:700;min-height:9px;}
+.fac-prog-wrap{position:absolute;bottom:5px;left:8px;right:8px;height:3px;background:rgba(0,0,0,.4);border-radius:2px;overflow:hidden;}
+.fac-prog-bar{height:100%;background:linear-gradient(90deg,#22c55e,#86efac);border-radius:2px;width:0%;transition:width .1s linear;}
+
+/* ===== マーケットカード（フィールド内） ===== */
+#mktCard{position:absolute;z-index:22;width:92px;height:74px;background:rgba(30,12,4,.92);border:2px dashed rgba(249,115,22,.55);border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transform:translate(-50%,-50%);cursor:pointer;transition:border-color .2s,box-shadow .2s;}
+#mktCard.near{border-color:#fb923c;box-shadow:0 0 14px rgba(249,115,22,.4);}
+#mktCard.selling{animation:mktGlow .5s ease;}
+@keyframes mktGlow{0%,100%{box-shadow:none}50%{box-shadow:0 0 22px rgba(251,191,36,.72),inset 0 0 10px rgba(251,191,36,.15);}}
+.mkt-icon{font-size:26px;}
+.mkt-name{font-size:8px;font-weight:700;color:#fb923c;}
+.mkt-hint{font-size:7px;color:#78716c;}
+.mkt-worker{position:absolute;bottom:8px;right:7px;font-size:14px;}
+#mktCard.selling .mkt-worker{animation:mktWkrBounce .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes mktWkrBounce{0%{transform:scale(1)}40%{transform:scale(1.55) rotate(22deg)}100%{transform:scale(1)}}
+
+/* ===== スピードタイマー ===== */
+#speedTimer{position:absolute;top:8px;left:50%;transform:translateX(-50%);z-index:25;background:rgba(249,115,22,.22);border:2px solid rgba(249,115,22,.65);border-radius:20px;padding:4px 14px;display:none;align-items:center;gap:5px;}
+#speedTimer.show{display:flex;}
+#speedTimer.urgent{border-color:#ef4444;background:rgba(239,68,68,.28);animation:timerUrgent .4s ease-in-out infinite alternate;}
+@keyframes timerUrgent{from{box-shadow:none}to{box-shadow:0 0 14px rgba(239,68,68,.7);}}
+#timerVal{font-size:18px;font-weight:900;color:#fbbf24;min-width:24px;text-align:center;}
+
+/* ===== コンボ表示 ===== */
+#comboDisplay{position:absolute;right:8px;top:8px;z-index:25;pointer-events:none;opacity:0;transition:opacity .25s;text-align:right;}
+#comboDisplay.show{opacity:1;}
+#comboNum{font-size:26px;font-weight:900;color:#fbbf24;text-shadow:0 0 12px rgba(249,115,22,.9),2px 2px 0 #92400e;line-height:1;}
+#comboLabel{font-size:9px;font-weight:700;color:#fb923c;letter-spacing:.06em;}
+@keyframes comboPop{0%,100%{transform:scale(1)}40%{transform:scale(1.45)}}
+.combo-pop{animation:comboPop .18s ease;}
+
+/* ===== エフェクト共通 ===== */
+.dmg{position:absolute;pointer-events:none;z-index:200;font-size:20px;font-weight:900;color:#fbbf24;text-shadow:2px 2px 0 #92400e,0 0 12px rgba(251,191,36,.7);animation:dmgUp .85s ease-out forwards;}
+@keyframes dmgUp{0%{opacity:1;transform:translateY(0) scale(1)}50%{opacity:1;transform:translateY(-28px) scale(1.15)}100%{opacity:0;transform:translateY(-52px) scale(.7)}}
+.spark{position:absolute;width:6px;height:6px;border-radius:50%;pointer-events:none;z-index:150;animation:sparkFly .5s ease-out forwards;}
+@keyframes sparkFly{from{opacity:1;transform:scale(1) translate(0,0)}to{opacity:0;transform:scale(0) translate(var(--dx),var(--dy))}}
+.fly-coin{position:fixed;pointer-events:none;z-index:9999;font-size:18px;animation:fcAnim .72s cubic-bezier(.36,.07,.19,.97) forwards;}
+@keyframes fcAnim{0%{opacity:1;transform:scale(1.2) translate(0,0)}80%{opacity:1}100%{opacity:0;transform:scale(.25) translate(var(--dx),var(--dy))}}
+.fac-float{position:absolute;font-size:12px;font-weight:700;color:#7dd3fc;white-space:nowrap;pointer-events:none;z-index:300;transform:translateX(-50%);text-shadow:0 0 8px rgba(125,211,252,.5);animation:ffAnim 1.2s ease-out forwards;}
+@keyframes ffAnim{0%{opacity:1;transform:translateX(-50%) translateY(0)}100%{opacity:0;transform:translateX(-50%) translateY(-32px)}}
+.phase-flash{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:300;pointer-events:none;font-size:28px;font-weight:900;color:#fff;text-shadow:0 0 20px #7dd3fc,0 0 40px rgba(125,211,252,.5);white-space:nowrap;text-align:center;animation:pfAnim 1.4s ease forwards;}
+@keyframes pfAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.6)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}}
+.lvup-burst{position:absolute;z-index:350;pointer-events:none;font-size:26px;font-weight:900;color:#fbbf24;text-shadow:0 0 20px #f97316,2px 2px 0 #92400e;white-space:nowrap;text-align:center;transform:translateX(-50%);animation:lvBurstAnim 1.8s ease forwards;}
+@keyframes lvBurstAnim{0%{opacity:0;transform:translateX(-50%) scale(.4)}15%{opacity:1;transform:translateX(-50%) scale(1.3)}65%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(1.05)}}
+.lvup-spark{position:absolute;width:8px;height:8px;border-radius:50%;pointer-events:none;z-index:345;animation:lvSparkFly .7s ease-out forwards;}
+@keyframes lvSparkFly{from{opacity:1;transform:scale(1) translate(0,0)}to{opacity:0;transform:scale(0) translate(var(--dx),var(--dy))}}
+.unlock-banner{position:absolute;left:50%;top:200px;z-index:350;pointer-events:none;background:linear-gradient(135deg,rgba(5,150,105,.96),rgba(4,120,87,.96));border:2px solid #34d399;border-radius:14px;padding:10px 18px;text-align:center;white-space:nowrap;box-shadow:0 0 28px rgba(52,211,153,.5);animation:unlockBannerAnim 2.4s ease forwards;}
+@keyframes unlockBannerAnim{0%{opacity:0;transform:translateX(-50%) scale(.5) rotate(-5deg)}18%{opacity:1;transform:translateX(-50%) scale(1.08)}80%{opacity:1;transform:translateX(-50%) scale(1)}100%{opacity:0;transform:translateX(-50%) scale(.9)}}
+.unlock-banner-emoji{font-size:30px;line-height:1.1;display:block;}
+.unlock-banner-title{font-size:13px;font-weight:900;color:#fff;margin-top:2px;}
+.unlock-banner-sub{font-size:10px;color:rgba(255,255,255,.8);}
+
+/* ===== ヒントボタン ===== */
+#hintBtn{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);z-index:35;background:rgba(251,191,36,.92);border:none;border-radius:20px;padding:5px 16px;font-size:12px;font-weight:700;color:#1c1008;cursor:pointer;display:none;white-space:nowrap;}
+#hintBtn.visible{display:block;}
+#hintBtn:active{opacity:.8;}
+
+/* ===== インベントリバー (88px) ===== */
+#invBar{position:relative;z-index:8;height:88px;background:rgba(0,4,18,.72);border-top:1px solid rgba(125,211,252,.15);display:flex;flex-direction:column;}
+#carryRow{height:22px;display:flex;align-items:center;padding:0 10px;gap:6px;border-bottom:1px solid rgba(125,211,252,.07);}
+.carry-label{font-size:9px;font-weight:700;color:#475569;}
+#carryDots{display:flex;gap:3px;}
+.carry-dot{width:8px;height:8px;border-radius:50%;background:rgba(125,211,252,.12);border:1px solid rgba(125,211,252,.22);}
+.carry-dot.filled{background:rgba(56,189,248,.7);}
+.carry-dot.full{background:rgba(239,68,68,.75);border-color:rgba(239,68,68,.5);}
+#carryCount{font-size:9px;color:#7dd3fc;font-weight:700;}
+#invItems{height:66px;display:flex;align-items:center;padding:0 8px;gap:5px;overflow-x:auto;scrollbar-width:none;}
+#invItems::-webkit-scrollbar{display:none;}
+.inv-item{width:50px;height:50px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;border:2px solid rgba(255,255,255,.15);flex-shrink:0;}
+.inv-empty{border-style:dashed;opacity:.22;}
+.inv-item.meat{background:linear-gradient(135deg,#7f1d1d,#450a0a);border-color:rgba(220,38,38,.4);}
+.inv-item.skin{background:linear-gradient(135deg,#4d2600,#2c1601);border-color:rgba(146,64,14,.4);}
+.inv-item.bone{background:linear-gradient(135deg,#374151,#1f2937);border-color:rgba(107,114,128,.4);}
+.inv-item.food{background:linear-gradient(135deg,#052e16,#166534);border-color:rgba(34,197,94,.4);}
+.inv-item.coat{background:linear-gradient(135deg,#2e1065,#4c1d95);border-color:rgba(124,58,237,.4);}
+.inv-item.broth{background:linear-gradient(135deg,#1c1008,#78350f);border-color:rgba(217,119,6,.4);}
+.inv-item.crystal{background:linear-gradient(135deg,#0c4a6e,#0369a1);border-color:rgba(56,189,248,.4);}
+.inv-item.herb{background:linear-gradient(135deg,#14532d,#064e3b);border-color:rgba(52,211,153,.4);}
+.inv-item.jewel{background:linear-gradient(135deg,#4c1d95,#5b21b6);border-color:rgba(167,139,250,.4);}
+.inv-item.potion{background:linear-gradient(135deg,#0f172a,#155e75);border-color:rgba(34,211,238,.4);}
+@keyframes itemPop{from{transform:scale(0) rotate(-90deg);opacity:0}to{transform:scale(1) rotate(0);opacity:1}}
+.item-new{animation:itemPop .38s cubic-bezier(.34,1.56,.64,1) both;}
+
+/* ===== アクションバー (49px) ===== */
+#actionBar{position:relative;z-index:8;height:49px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;gap:8px;background:rgba(0,4,18,.82);border-top:1px solid rgba(125,211,252,.1);}
+#upgradeBtn{flex:1;padding:8px 0;background:linear-gradient(135deg,rgba(251,191,36,.2),rgba(249,115,22,.22));border:1px solid rgba(251,191,36,.42);border-radius:10px;color:#fbbf24;font-size:11px;font-weight:700;cursor:pointer;}
+#upgradeBtn:active{background:rgba(251,191,36,.3);}
+#modeTab{display:none;gap:4px;}
+.mtb-btn{padding:7px 10px;border-radius:10px;border:1px solid rgba(125,211,252,.25);background:rgba(8,18,44,.8);color:#94a3b8;font-size:10px;font-weight:700;cursor:pointer;}
+.mtb-btn.active{border-color:rgba(249,115,22,.65);color:#fb923c;background:rgba(249,115,22,.15);}
+.mtb-btn:active{opacity:.75;}
+
+/* ===== モード選択 ===== */
+#modeSelect{position:absolute;inset:0;z-index:600;background:linear-gradient(180deg,#06111e 0%,#0a1829 55%,#101f30 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px 22px;}
+#modeSelect.hidden{display:none;}
+.ms-logo{font-size:50px;line-height:1;text-align:center;filter:drop-shadow(0 0 14px rgba(125,211,252,.6));}
+.ms-title{font-size:25px;font-weight:900;color:#7dd3fc;text-shadow:0 0 22px rgba(125,211,252,.7);letter-spacing:.06em;text-align:center;}
+.ms-sub{font-size:12px;color:#94a3b8;text-align:center;line-height:1.6;}
+.ms-btn{width:100%;padding:14px;border-radius:16px;border:2px solid;display:flex;align-items:center;gap:12px;cursor:pointer;transition:transform .12s;}
+.ms-btn:active{transform:scale(.96);}
+.ms-btn-speed{background:linear-gradient(135deg,rgba(249,115,22,.22),rgba(234,88,12,.3));border-color:rgba(249,115,22,.65);}
+.ms-btn-inf{background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(59,130,246,.25));border-color:rgba(56,189,248,.5);}
+.ms-btn-icon{font-size:30px;width:42px;text-align:center;flex-shrink:0;}
+.ms-btn-info{flex:1;}
+.ms-btn-title{font-size:14px;font-weight:800;color:#e2e8f0;}
+.ms-btn-desc{font-size:10px;color:#94a3b8;margin-top:2px;}
+
+/* ===== モード選択ポップアップ ===== */
+#modeChoicePopup{position:absolute;inset:0;z-index:550;background:rgba(0,4,20,.92);backdrop-filter:blur(12px);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:20px;}
+#modeChoicePopup.open{display:flex;}
+.mcp-title{font-size:18px;font-weight:900;color:#7dd3fc;}
+.mcp-sub{font-size:11px;color:#94a3b8;text-align:center;}
+
+/* ===== アップグレードモーダル ===== */
+#upgradeModal{position:absolute;inset:0;z-index:400;background:rgba(0,4,20,.94);backdrop-filter:blur(14px);display:none;flex-direction:column;align-items:center;gap:10px;padding:16px 14px;overflow-y:auto;}
+#upgradeModal.open{display:flex;}
+.upg-title{font-size:20px;font-weight:900;color:#7dd3fc;letter-spacing:.06em;flex-shrink:0;}
+.upg-sec{width:100%;font-size:10px;font-weight:700;color:#64748b;letter-spacing:.1em;text-transform:uppercase;border-bottom:1px solid rgba(125,211,252,.1);padding-bottom:4px;flex-shrink:0;}
+.upg-card{width:100%;background:rgba(8,18,44,.9);border:1px solid rgba(125,211,252,.18);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.upg-icon{font-size:30px;width:38px;text-align:center;flex-shrink:0;}
+.upg-info{flex:1;}
+.upg-name{font-size:13px;font-weight:700;color:#e2e8f0;}
+.upg-desc{font-size:10px;color:#64748b;margin-top:2px;}
+.upg-lv{font-size:10px;font-weight:700;color:#fbbf24;margin-top:1px;}
+.upg-btn{padding:7px 10px;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:10px;color:#fff;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.3;transition:opacity .15s;flex-shrink:0;}
+.upg-btn:active{opacity:.75;}
+.upg-btn:disabled{opacity:.32;cursor:default;}
+.upg-btn-cost{font-size:9px;color:#fed7aa;}
+.upg-close{flex-shrink:0;padding:9px 28px;background:transparent;border:1.5px solid rgba(125,211,252,.35);border-radius:20px;color:#7dd3fc;font-size:12px;font-weight:600;cursor:pointer;}
+.upg-close:active{background:rgba(125,211,252,.1);}
+
+/* ===== チュートリアルオーバーレイ ===== */
+#tutOverlay{position:absolute;inset:0;z-index:460;pointer-events:none;}
+.tut-ring{position:absolute;border-radius:14px;border:3px solid #fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,.25),0 0 20px rgba(251,191,36,.45);pointer-events:none;animation:tutRing 1s ease-in-out infinite;}
+@keyframes tutRing{0%,100%{box-shadow:0 0 0 4px rgba(251,191,36,.25),0 0 20px rgba(251,191,36,.45)}50%{box-shadow:0 0 0 10px rgba(251,191,36,.4),0 0 32px rgba(251,191,36,.7)}}
+.tut-bubble{position:absolute;background:rgba(251,191,36,.97);border-radius:12px;padding:8px 32px 8px 13px;pointer-events:all;cursor:default;box-shadow:0 4px 14px rgba(0,0,0,.45);min-width:130px;max-width:210px;}
+.tut-bubble-text{font-size:13px;font-weight:800;color:#1c1008;line-height:1.3;}
+.tut-bubble-sub{font-size:10px;color:#4a2800;margin-top:2px;line-height:1.4;}
+.tut-close{position:absolute;top:5px;right:6px;background:rgba(0,0,0,.18);border:none;color:#1c1008;font-size:13px;font-weight:900;cursor:pointer;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;line-height:1;padding:0;}
+.tut-close:active{background:rgba(0,0,0,.35);}
+
+/* ===== プリスタートカウントダウン ===== */
+.prestart-count{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);z-index:350;font-size:70px;font-weight:900;color:#fff;text-shadow:0 0 30px rgba(125,211,252,.8);pointer-events:none;animation:psCntAnim .8s ease forwards;}
+.prestart-count.start-text{font-size:38px;}
+@keyframes psCntAnim{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}30%{opacity:1;transform:translate(-50%,-50%) scale(1.2)}60%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(.8)}}
+.timeup-flash{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);z-index:350;font-size:34px;font-weight:900;color:#ef4444;text-shadow:0 0 24px rgba(239,68,68,.8);white-space:nowrap;pointer-events:none;animation:pfAnim 1.4s ease forwards;}
+
+/* ===== ランキングオーバーレイ ===== */
+#rankingOverlay{position:absolute;inset:0;z-index:500;background:rgba(0,4,20,.96);backdrop-filter:blur(16px);display:none;flex-direction:column;align-items:center;padding:16px 14px;overflow-y:auto;gap:10px;}
+#rankingOverlay.open{display:flex;}
+.rk-badge{font-size:12px;font-weight:700;color:#94a3b8;letter-spacing:.1em;text-transform:uppercase;}
+.rk-title{font-size:20px;font-weight:900;color:#fbbf24;text-shadow:0 0 16px rgba(251,191,36,.6);text-align:center;line-height:1.3;}
+.rk-you-box{width:100%;background:linear-gradient(135deg,rgba(251,191,36,.18),rgba(249,115,22,.15));border:1px solid rgba(251,191,36,.45);border-radius:16px;padding:12px 16px;text-align:center;}
+.rk-you-label{font-size:10px;font-weight:700;color:#fb923c;letter-spacing:.1em;}
+.rk-you-score{font-size:42px;font-weight:900;color:#fbbf24;line-height:1.1;}
+.rk-you-unit{font-size:10px;color:#94a3b8;margin-top:2px;}
+.rk-near{font-size:12px;color:#e2e8f0;margin-top:6px;font-weight:600;}
+.rk-near span{color:#fbbf24;font-weight:900;}
+.rk-table{width:100%;border-collapse:collapse;}
+.rk-table th{font-size:9px;font-weight:700;color:#475569;letter-spacing:.06em;padding:4px 6px;text-align:left;}
+.rk-table th:last-child{text-align:right;}
+.rk-row td{font-size:12px;padding:5px 6px;color:#94a3b8;border-bottom:1px solid rgba(255,255,255,.04);}
+.rk-row td:last-child{text-align:right;}
+.rk-you-row td{color:#fbbf24;font-weight:800;background:rgba(251,191,36,.08);}
+.rk-rank{font-size:13px;font-weight:700;width:32px;}
+.rk-crown{font-size:14px;margin-right:2px;}
+.rk-tag{background:rgba(249,115,22,.3);border-radius:4px;padding:1px 4px;font-size:9px;font-weight:700;color:#fb923c;margin-left:4px;}
+.rk-dots{color:#475569;font-size:13px;text-align:center;padding:4px 0;}
+.rk-actions{width:100%;display:flex;flex-direction:column;gap:8px;}
+.rk-again{padding:12px;background:linear-gradient(135deg,#f97316,#ea580c);border:none;border-radius:14px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 3px 12px rgba(249,115,22,.45);}
+.rk-again:active{opacity:.8;}
+.rk-switch{padding:10px;background:linear-gradient(135deg,rgba(56,189,248,.18),rgba(59,130,246,.25));border:1.5px solid rgba(56,189,248,.45);border-radius:14px;color:#7dd3fc;font-size:13px;font-weight:700;cursor:pointer;}
+.rk-switch:active{opacity:.8;}
+</style>
+</head>
+<body>
+<div id="game">
+  <canvas id="bgCanvas" width="375" height="667"></canvas>
+
+  <!-- ヘッダー -->
+  <div id="header">
+    <button class="home-btn" onclick="location.href='index.html'">🏠</button>
+    <span id="phaseLabel">❄️ スノーハーベスト</span>
+    <div id="coinDisplay">🪙 <span id="coinCount">0</span></div>
+  </div>
+
+  <!-- メインフィールド -->
+  <div id="field">
+    <div id="speedTimer"><span>⚡</span><span id="timerVal">60</span></div>
+    <div id="comboDisplay">
+      <div id="comboNum">2×</div>
+      <div id="comboLabel">COMBO</div>
+    </div>
+    <div id="charEl">🧙</div>
+    <div id="tutOverlay"></div>
+    <button id="hintBtn" onclick="onHint()">💡 ヒント</button>
+  </div>
+
+  <!-- インベントリバー -->
+  <div id="invBar">
+    <div id="carryRow">
+      <span class="carry-label">所持</span>
+      <div id="carryDots"></div>
+      <span id="carryCount"></span>
+    </div>
+    <div id="invItems"></div>
+  </div>
+
+  <!-- アクションバー -->
+  <div id="actionBar">
+    <button id="upgradeBtn" onclick="openUpgrade()">⬆️ アップグレード</button>
+    <div id="modeTab">
+      <button class="mtb-btn" id="mtb-speed" onclick="switchMode('speed')">⚡ スピード</button>
+      <button class="mtb-btn" id="mtb-infinite" onclick="switchMode('infinite')">♾️ 無限</button>
+    </div>
+  </div>
+
+  <!-- モード選択画面 -->
+  <div id="modeSelect">
+    <div class="ms-logo">🧙❄️🌲</div>
+    <div class="ms-title">スノーハーベスト</div>
+    <div class="ms-sub">指でキャラを動かして素材を集め<br>施設で加工してマーケットで売ろう！</div>
+    <button class="ms-btn ms-btn-speed" onclick="selectMode('speed')">
+      <div class="ms-btn-icon">⚡</div>
+      <div class="ms-btn-info">
+        <div class="ms-btn-title">スピードモード</div>
+        <div class="ms-btn-desc">60秒でコインを稼ごう！</div>
+      </div>
+    </button>
+    <button class="ms-btn ms-btn-inf" onclick="selectMode('infinite')">
+      <div class="ms-btn-icon">♾️</div>
+      <div class="ms-btn-info">
+        <div class="ms-btn-title">エンドレスモード</div>
+        <div class="ms-btn-desc">のんびり経営を楽しもう</div>
+      </div>
+    </button>
+  </div>
+
+  <!-- モード選択ポップアップ（初回売却後） -->
+  <div id="modeChoicePopup">
+    <div class="mcp-title">🎮 モードを選ぼう！</div>
+    <div class="mcp-sub">好きなモードでプレイしよう</div>
+    <button class="ms-btn ms-btn-speed" style="width:100%;" onclick="chooseModeFromPopup('speed')">
+      <div class="ms-btn-icon">⚡</div>
+      <div class="ms-btn-info">
+        <div class="ms-btn-title">スピードモード</div>
+        <div class="ms-btn-desc">60秒スコアアタック</div>
+      </div>
+    </button>
+    <button class="ms-btn ms-btn-inf" style="width:100%;" onclick="chooseModeFromPopup('infinite')">
+      <div class="ms-btn-icon">♾️</div>
+      <div class="ms-btn-info">
+        <div class="ms-btn-title">エンドレスモード</div>
+        <div class="ms-btn-desc">のんびり経営</div>
+      </div>
+    </button>
+  </div>
+
+  <!-- アップグレードモーダル -->
+  <div id="upgradeModal">
+    <div class="upg-title">⬆️ アップグレード</div>
+
+    <div class="upg-sec">🧙 キャラクター</div>
+
+    <div class="upg-card">
+      <div class="upg-icon">👟</div>
+      <div class="upg-info">
+        <div class="upg-name">移動速度</div>
+        <div class="upg-desc">キャラの移動が速くなる</div>
+        <div class="upg-lv" id="ulv-speed">LV.1 → 2.5px/f</div>
+      </div>
+      <button class="upg-btn" id="ubtn-speed" onclick="buyCharUpgrade('speed')">
+        <span>⬆️ UP</span>
+        <span class="upg-btn-cost" id="ucost-speed">🪙50</span>
+      </button>
+    </div>
+
+    <div class="upg-card">
+      <div class="upg-icon">🎒</div>
+      <div class="upg-info">
+        <div class="upg-name">所持上限</div>
+        <div class="upg-desc">一度に持てる素材が増える</div>
+        <div class="upg-lv" id="ulv-carry">LV.1 → 4個</div>
+      </div>
+      <button class="upg-btn" id="ubtn-carry" onclick="buyCharUpgrade('carry')">
+        <span>⬆️ UP</span>
+        <span class="upg-btn-cost" id="ucost-carry">🪙40</span>
+      </button>
+    </div>
+
+    <div class="upg-card">
+      <div class="upg-icon">⚔️</div>
+      <div class="upg-info">
+        <div class="upg-name">採集力</div>
+        <div class="upg-desc">1回あたりのダメージが増える</div>
+        <div class="upg-lv" id="ulv-power">LV.1 → 1ヒット</div>
+      </div>
+      <button class="upg-btn" id="ubtn-power" onclick="buyCharUpgrade('power')">
+        <span>⬆️ UP</span>
+        <span class="upg-btn-cost" id="ucost-power">🪙45</span>
+      </button>
+    </div>
+
+    <div class="upg-sec">🏭 施設</div>
+
+    <div class="upg-card">
+      <div class="upg-icon">🍳</div>
+      <div class="upg-info">
+        <div class="upg-name">調理場</div>
+        <div class="upg-desc">加工速度アップ・新レシピ解放</div>
+        <div class="upg-lv" id="ulv-cooking">LV.1</div>
+      </div>
+      <button class="upg-btn" id="ubtn-cooking" onclick="buyFacUpgrade('cooking')">
+        <span>⬆️ UP</span>
+        <span class="upg-btn-cost" id="ucost-cooking">🪙30</span>
+      </button>
+    </div>
+
+    <div class="upg-card">
+      <div class="upg-icon">⚙️</div>
+      <div class="upg-info">
+        <div class="upg-name">加工場</div>
+        <div class="upg-desc">加工速度アップ・新レシピ解放</div>
+        <div class="upg-lv" id="ulv-workshop">LV.1</div>
+      </div>
+      <button class="upg-btn" id="ubtn-workshop" onclick="buyFacUpgrade('workshop')">
+        <span>⬆️ UP</span>
+        <span class="upg-btn-cost" id="ucost-workshop">🪙30</span>
+      </button>
+    </div>
+
+    <button class="upg-close" onclick="closeUpgrade()">閉じる</button>
+  </div>
+
+  <!-- ランキングオーバーレイ (speed mode) -->
+  <div id="rankingOverlay"></div>
+
+</div>
+
+<script>
+// ===== 定数 =====
+const GW = 375, GH = 667;
+const HEADER_H    = 52;
+const FIELD_H     = 478;
+const COL_RADIUS_RES = 42;   // キャラ⇔リソース衝突半径
+const COL_RADIUS_FAC = 50;   // キャラ⇔施設衝突半径
+const COL_RADIUS_MKT = 52;   // キャラ⇔マーケット衝突半径
+const COLLECT_COOLDOWN  = 650; // ms between auto-hits on a resource
+const FAC_TRIGGER_COOL  = 700; // ms between auto-sends to a facility
+const MKT_TRIGGER_COOL  = 700; // ms between auto-sells
+const RESOURCE_RESPAWN_MS = 3500;
+const RANKING_DISPLAY_DELAY = 1200;
+
+// ランキング設定
+const RANK_TOTAL_ENTRIES     = 12;
+const RANK_PLAYER_MIN        = 3;
+const RANK_PLAYER_MAX        = 7;
+const RANK_UPPER_SCORE_RATIO = 0.08;
+const RANK_UPPER_SCORE_RAND  = 15;
+const RANK_UPPER_SCORE_BASE  = 8;
+const RANK_LOWER_SCORE_RATIO = 0.07;
+const RANK_LOWER_SCORE_RAND  = 12;
+const RANK_LOWER_SCORE_BASE  = 5;
+
+// ===== アイテム定義（snow-survival から流用） =====
+const ITEM_DEF = {
+  meat:    { e: '🥩', name: '肉',         isProduct: false },
+  skin:    { e: '🪶', name: '毛皮',       isProduct: false },
+  bone:    { e: '🦴', name: '骨',         isProduct: false },
+  crystal: { e: '💎', name: '氷晶',       isProduct: false },
+  herb:    { e: '🌿', name: '薬草',       isProduct: false },
+  food:    { e: '🍖', name: '食料',       isProduct: true, coins: 15 },
+  coat:    { e: '🧥', name: '毛皮コート', isProduct: true, coins: 25 },
+  broth:   { e: '🍵', name: '骨スープ',  isProduct: true, coins: 8  },
+  jewel:   { e: '💍', name: '宝飾品',    isProduct: true, coins: 35 },
+  potion:  { e: '🧪', name: '薬',        isProduct: true, coins: 12 },
+};
+
+// ===== 施設レシピ（snow-survival から流用） =====
+const RECIPES = {
+  cooking:  [
+    { input: 'meat', output: 'food',   duration: 4000, minLevel: 1 },
+    { input: 'bone', output: 'broth',  duration: 2500, minLevel: 1 },
+    { input: 'herb', output: 'potion', duration: 2000, minLevel: 3 },
+  ],
+  workshop: [
+    { input: 'skin',    output: 'coat',  duration: 5000, minLevel: 1 },
+    { input: 'crystal', output: 'jewel', duration: 4000, minLevel: 3 },
+  ],
+};
+const FACILITY_TYPES = Object.keys(RECIPES);
+const MATERIAL_TO_FAC = FACILITY_TYPES.reduce((map, ft) => {
+  RECIPES[ft].forEach(r => { if (!map[r.input]) map[r.input] = ft; });
+  return map;
+}, {});
+
+// 施設アップグレード設定（snow-survival から流用）
+const FACILITY_UPGRADE_LEVELS = Array.from({ length: 49 }, (_, i) => ({
+  cost:      Math.round(30 * Math.pow(i + 1, 1.45)),
+  speedMult: Math.round(Math.pow(i + 1, 1.4) + 1),
+}));
+const UPGRADE_CONFIG = { cooking: FACILITY_UPGRADE_LEVELS, workshop: FACILITY_UPGRADE_LEVELS };
+
+// ===== キャラアップグレード定義 =====
+const CHAR_UPG = {
+  speed: { name: '移動速度', maxLv: 10, baseCost: 50, costMult: 1.55, base: 2.5, inc: 0.8,  fmt: v => `${v.toFixed(1)}px/f` },
+  carry: { name: '所持上限', maxLv:  8, baseCost: 40, costMult: 1.65, base: 4,   inc: 2,    fmt: v => `${v}個` },
+  power: { name: '採集力',   maxLv:  8, baseCost: 45, costMult: 1.60, base: 1,   inc: 1,    fmt: v => `${v}ヒット` },
+};
+
+// ===== リソース定義 =====
+const RESOURCE_DEFS = [
+  { type: 'bear',    e: '🐻', hp: 3, drops: ['meat','meat','skin'],        minFacLv: 1  },
+  { type: 'deer',    e: '🦌', hp: 2, drops: ['meat','skin'],               minFacLv: 1  },
+  { type: 'tree',    e: '🌲', hp: 2, drops: ['skin','skin'],               minFacLv: 1  },
+  { type: 'wolf',    e: '🐺', hp: 2, drops: ['meat','bone'],               minFacLv: 1  },
+  { type: 'owl',     e: '🦉', hp: 1, drops: ['herb','herb'],               minFacLv: 3  },
+  { type: 'crystal', e: '💎', hp: 2, drops: ['crystal','crystal'],         minFacLv: 3  },
+  { type: 'boar',    e: '🐗', hp: 3, drops: ['meat','meat','bone'],        minFacLv: 5  },
+  { type: 'eagle',   e: '🦅', hp: 2, drops: ['bone','skin'],               minFacLv: 5  },
+  { type: 'tiger',   e: '🐯', hp: 4, drops: ['skin','skin','crystal'],     minFacLv: 10 },
+  { type: 'snake',   e: '🐍', hp: 2, drops: ['bone','herb'],               minFacLv: 10 },
+  { type: 'mammoth', e: '🦣', hp: 5, drops: ['meat','bone','crystal'],     minFacLv: 15 },
+  { type: 'lion',    e: '🦁', hp: 5, drops: ['skin','crystal','herb'],     minFacLv: 20 },
+];
+
+// スポーンスロット（採集ゾーン内、top-left座標）
+const SPAWN_SLOTS = [
+  { x: 30,  y: 28  },
+  { x: 120, y: 20  },
+  { x: 218, y: 32  },
+  { x: 315, y: 24  },
+  { x: 62,  y: 112 },
+  { x: 178, y: 98  },
+  { x: 290, y: 108 },
+  { x: 34,  y: 192 },
+  { x: 148, y: 180 },
+  { x: 255, y: 188 },
+  { x: 338, y: 178 },
+];
+
+// 施設固定座標（フィールド内・中心座標）
+const FAC_POS = {
+  cooking:  { x: 95,  y: 322 },
+  workshop: { x: 280, y: 322 },
+};
+const MKT_POS = { x: 187, y: 428 };
+
+// ===== ゲーム状態 =====
+const gs = {
+  phase: 'PLAYING',
+  gameMode: null,
+  coins: 0, totalCoins: 0,
+  inventory: [],
+  facilities: {
+    cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
+    workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
+  },
+  char: { x: 187, y: 150, targetX: 187, targetY: 150, speed: 2.5, carry: 4, power: 1, speedLv: 1, carryLv: 1, powerLv: 1 },
+  resources: [],
+  nextId: 1,
+  speedTimeLeft: 60,
+  speedTimerInterval: null,
+  speedTutLocked: false,
+  firstSaleDone: false,
+  hintTimer: null,
+  combo: 0,
+  comboTimer: null,
+  colCooldowns: {},
+};
+let _modeChosen = false;
+const tut = { step: 0, shown: [false, false, false] };
+
+// ===== DOM参照 =====
+const $game      = document.getElementById('game');
+const $field     = document.getElementById('field');
+const $charEl    = document.getElementById('charEl');
+const $invItems  = document.getElementById('invItems');
+const $coinCount = document.getElementById('coinCount');
+const $tutOverlay= document.getElementById('tutOverlay');
+const $hintBtn   = document.getElementById('hintBtn');
+
+// ===== Canvas 雪パーティクル =====
+const $canvas = document.getElementById('bgCanvas');
+const ctx = $canvas.getContext('2d');
+const snow = Array.from({ length: 80 }, () => ({
+  x: Math.random() * GW, y: Math.random() * GH,
+  r: Math.random() * 2.8 + 0.6, vy: Math.random() * 0.8 + 0.2,
+  vx: Math.random() * 0.4 - 0.2, a: Math.random() * 0.5 + 0.25,
+}));
+(function animSnow() {
+  ctx.clearRect(0, 0, GW, GH);
+  snow.forEach(s => {
+    ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(200,228,248,${s.a})`; ctx.fill();
+    s.y += s.vy; s.x += s.vx;
+    if (s.y > GH) { s.y = -s.r; s.x = Math.random() * GW; }
+    if (s.x < 0 || s.x > GW) s.x = Math.random() * GW;
+  });
+  requestAnimationFrame(animSnow);
+})();
+
+// ===== サウンドシステム（snow-survival から流用） =====
+const _sfx = (() => {
+  let actx = null;
+  const bufs = {};
+  const SOUNDS = ['click', 'hit', 'coin', 'gameover'];
+  function getCtx() {
+    if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e) {} }
+    return actx;
+  }
+  function load(name) {
+    if (bufs[name] !== undefined) return;
+    bufs[name] = null;
+    const c = getCtx(); if (!c) return;
+    fetch('assets/sounds/' + name + '.wav')
+      .then(r => r.arrayBuffer()).then(ab => c.decodeAudioData(ab))
+      .then(buf => { bufs[name] = buf; }).catch(() => {});
+  }
+  function play(name) {
+    const c = getCtx(); if (!c) return;
+    if (c.state === 'suspended') c.resume();
+    if (!bufs[name]) { load(name); return; }
+    try { const src = c.createBufferSource(); src.buffer = bufs[name]; src.connect(c.destination); src.start(0); } catch(e) {}
+  }
+  function preload() { SOUNDS.forEach(load); }
+  document.addEventListener('click',    preload, { once: true });
+  document.addEventListener('touchend', preload, { once: true });
+  return { play };
+})();
+
+// ===== ユーティリティ =====
+function nid() { return gs.nextId++; }
+
+function flashText(text) {
+  const el = document.createElement('div');
+  el.className = 'phase-flash'; el.textContent = text;
+  $game.appendChild(el); setTimeout(() => el.remove(), 1400);
+}
+
+// フィールド上の浮かびテキスト（フィールド内x,y → ゲーム座標）
+function fieldFloat(fx, fy, text) {
+  const el = document.createElement('div');
+  el.className = 'fac-float'; el.textContent = text;
+  el.style.left = `${fx}px`; el.style.top = `${HEADER_H + fy}px`;
+  $game.appendChild(el); setTimeout(() => el.remove(), 1250);
+}
+
+function spawnDmg(fx, fy, text) {
+  const d = document.createElement('div');
+  d.className = 'dmg'; d.textContent = text;
+  d.style.left = `${fx}px`; d.style.top = `${HEADER_H + fy}px`;
+  $game.appendChild(d); setTimeout(() => d.remove(), 900);
+}
+
+function spawnSparks(fx, fy) {
+  const colors = ['#fbbf24', '#f97316', '#ef4444', '#7dd3fc', '#fff'];
+  for (let i = 0; i < 6; i++) {
+    const s = document.createElement('div'); s.className = 'spark';
+    const a = (i / 6) * Math.PI * 2; const d = 14 + Math.random() * 18;
+    s.style.background = colors[i % colors.length];
+    s.style.left = `${fx}px`; s.style.top = `${HEADER_H + fy}px`;
+    s.style.setProperty('--dx', `${Math.cos(a) * d}px`);
+    s.style.setProperty('--dy', `${Math.sin(a) * d}px`);
+    $game.appendChild(s); setTimeout(() => s.remove(), 520);
+  }
+}
+
+function spawnCoinAnim(count, fromEl) {
+  const fr = fromEl.getBoundingClientRect();
+  const tr = document.getElementById('coinDisplay').getBoundingClientRect();
+  const sx = fr.left + fr.width / 2, sy = fr.top + fr.height / 2;
+  const num = Math.min(count, 6);
+  for (let i = 0; i < num; i++) {
+    setTimeout(() => {
+      const c = document.createElement('div'); c.className = 'fly-coin'; c.textContent = '🪙';
+      c.style.left = `${sx + (Math.random() * 14 - 7)}px`;
+      c.style.top  = `${sy + (Math.random() * 14 - 7)}px`;
+      c.style.setProperty('--dx', `${tr.left + tr.width / 2 - sx}px`);
+      c.style.setProperty('--dy', `${tr.top + tr.height / 2 - sy}px`);
+      document.body.appendChild(c); setTimeout(() => c.remove(), 760);
+    }, i * 80);
+  }
+}
+
+function addCoins(n) {
+  gs.coins += n; gs.totalCoins += n;
+  $coinCount.textContent = gs.coins;
+  $coinCount.classList.remove('coin-bump'); void $coinCount.offsetWidth; $coinCount.classList.add('coin-bump');
+  updateUpgradeBtns();
+}
+
+function updateCombo() {
+  gs.combo++;
+  clearTimeout(gs.comboTimer);
+  const cd = document.getElementById('comboDisplay'), cn = document.getElementById('comboNum');
+  if (cd && cn && gs.combo >= 2) {
+    cn.textContent = `${gs.combo}×`; cd.classList.add('show');
+    cn.classList.remove('combo-pop'); void cn.offsetWidth; cn.classList.add('combo-pop');
+  }
+  gs.comboTimer = setTimeout(() => { gs.combo = 0; if (cd) cd.classList.remove('show'); }, 2800);
+}
+
+// ===== インベントリ =====
+function addItemToInv(type) {
+  if (gs.inventory.length >= gs.char.carry) { showFullCarry(); return; }
+  const id = nid(), def = ITEM_DEF[type]; if (!def) return;
+  gs.inventory.push({ id, type, isProduct: def.isProduct });
+  renderInv();
+  if (!def.isProduct && !tut.shown[1] && gs.phase !== 'ENDED') setTimeout(() => showTutStep(1), 400);
+  if (def.isProduct  && !tut.shown[2] && gs.phase !== 'ENDED') setTimeout(() => showTutStep(2), 400);
+}
+
+function addProductToInv(type) {
+  // 施設完成品はキャリー制限なし（製品は必ず追加）
+  const id = nid(), def = ITEM_DEF[type]; if (!def) return;
+  gs.inventory.push({ id, type, isProduct: true });
+  renderInv();
+  if (!tut.shown[2] && gs.phase !== 'ENDED') setTimeout(() => showTutStep(2), 400);
+}
+
+function removeItem(id) {
+  const idx = gs.inventory.findIndex(i => i.id === id);
+  if (idx !== -1) gs.inventory.splice(idx, 1);
+  renderInv();
+}
+
+function renderInv() {
+  $invItems.innerHTML = '';
+  gs.inventory.forEach(item => {
+    const def = ITEM_DEF[item.type]; if (!def) return;
+    const el = document.createElement('div');
+    el.className = `inv-item ${item.type} item-new`; el.textContent = def.e; el.title = def.name;
+    $invItems.appendChild(el);
+  });
+  const rawCount = gs.inventory.filter(i => !i.isProduct).length;
+  for (let i = rawCount + gs.inventory.filter(i => i.isProduct).length; i < gs.char.carry; i++) {
+    const el = document.createElement('div'); el.className = 'inv-item inv-empty';
+    $invItems.appendChild(el);
+  }
+  updateCarryDots();
+}
+
+function updateCarryDots() {
+  const dotsEl = document.getElementById('carryDots'); if (!dotsEl) return;
+  dotsEl.innerHTML = '';
+  const n = gs.char.carry, filled = gs.inventory.length, isFull = filled >= n;
+  for (let i = 0; i < n; i++) {
+    const d = document.createElement('div');
+    d.className = 'carry-dot' + (i < filled ? (isFull ? ' full' : ' filled') : '');
+    dotsEl.appendChild(d);
+  }
+  const cc = document.getElementById('carryCount');
+  if (cc) cc.textContent = `${filled}/${n}`;
+}
+
+function showFullCarry() {
+  if ($field.querySelector('.full-carry-flash')) return;
+  const el = document.createElement('div'); el.className = 'full-carry-flash';
+  el.textContent = '🎒 所持上限！施設 or マーケットへ！';
+  $field.appendChild(el); setTimeout(() => el.remove(), 1400);
+}
+
+// ===== フィールド構築 =====
+function buildField() {
+  // 既存のリソース・施設・マーケット・ゾーン要素を削除
+  $field.querySelectorAll('.resource,.fac-card,#mktCard,.zone-divider,.zone-label').forEach(el => el.remove());
+  gs.resources = [];
+  gs.colCooldowns = {};
+
+  // ゾーン区切り線
+  addDiv($field, 'zone-divider', { top: '253px', background: 'rgba(125,211,252,.14)' });
+  addDiv($field, 'zone-divider', { top: '395px', background: 'rgba(249,115,22,.14)' });
+
+  // ゾーンラベル
+  addDiv($field, 'zone-label', { top: '8px', left: '8px' }, '🌲 採集ゾーン');
+  addDiv($field, 'zone-label', { top: '262px', left: '8px' }, '🏭 施設ゾーン');
+  addDiv($field, 'zone-label', { top: '400px', left: '8px' }, '🏪 マーケット');
+
+  // 施設カード
+  FACILITY_TYPES.forEach(ft => {
+    const pos = FAC_POS[ft];
+    const el = document.createElement('div');
+    el.id = `fcard-${ft}`; el.className = 'fac-card';
+    el.style.left = `${pos.x}px`; el.style.top = `${pos.y}px`;
+    const icon = ft === 'cooking' ? '🍳' : '⚙️';
+    const name = ft === 'cooking' ? '調理場' : '加工場';
+    const worker = ft === 'cooking' ? '👨‍🍳' : '🔧';
+    el.innerHTML = `<span class="fac-worker">${worker}</span>
+      <div class="fac-icon">${icon}</div>
+      <div class="fac-name">${name}</div>
+      <div class="fac-lv" id="flv-${ft}">LV.1</div>
+      <div class="fac-queue" id="fqueue-${ft}"></div>
+      <div class="fac-prog-wrap"><div class="fac-prog-bar" id="fprog-${ft}"></div></div>`;
+    el.addEventListener('click', () => { if (!gs.speedTutLocked && gs.phase !== 'ENDED') openUpgrade(); });
+    $field.appendChild(el);
+  });
+
+  // マーケットカード
+  const mkt = document.createElement('div'); mkt.id = 'mktCard';
+  mkt.style.left = `${MKT_POS.x}px`; mkt.style.top = `${MKT_POS.y}px`;
+  mkt.innerHTML = `<div class="mkt-icon">🏪</div><div class="mkt-name">マーケット</div>
+    <div class="mkt-hint">製品を自動売却</div><span class="mkt-worker">💰</span>`;
+  $field.appendChild(mkt);
+}
+
+function addDiv(parent, className, styles, text) {
+  const el = document.createElement('div'); el.className = className;
+  Object.assign(el.style, styles);
+  if (text) el.textContent = text;
+  parent.appendChild(el); return el;
+}
+
+// ===== リソース管理 =====
+function spawnAllResources() {
+  $field.querySelectorAll('.resource').forEach(el => el.remove());
+  gs.resources = [];
+  const maxFacLv = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  const availDefs = RESOURCE_DEFS.filter(d => maxFacLv >= d.minFacLv);
+  const count = Math.min(SPAWN_SLOTS.length, 5 + Math.floor(maxFacLv / 3));
+  const slots = [...SPAWN_SLOTS].sort(() => Math.random() - 0.5).slice(0, count);
+  slots.forEach((slot, i) => {
+    const def = availDefs[Math.floor(Math.random() * availDefs.length)];
+    setTimeout(() => { if (gs.phase !== 'ENDED') spawnResource(def, slot.x, slot.y); }, i * 110);
+  });
+}
+
+function spawnResource(def, x, y) {
+  const id = nid();
+  const res = { id, type: def.type, e: def.e, hp: def.hp, maxHp: def.hp, drops: def.drops, alive: true, x, y };
+  gs.resources.push(res);
+  const el = document.createElement('div'); el.className = 'resource'; el.id = `res-${id}`;
+  el.style.left = `${x}px`; el.style.top = `${y}px`;
+  el.innerHTML = `<div class="res-hp-wrap"><div class="res-hp-fill" id="rhp-${id}" style="width:100%"></div></div>
+    <span class="res-emoji">${def.e}</span>`;
+  $field.appendChild(el);
+  return res;
+}
+
+function respawnResource(x, y) {
+  if (gs.phase === 'ENDED') return;
+  const maxFacLv = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  const availDefs = RESOURCE_DEFS.filter(d => maxFacLv >= d.minFacLv);
+  spawnResource(availDefs[Math.floor(Math.random() * availDefs.length)], x, y);
+}
+
+function hitResource(res) {
+  if (!res.alive || gs.phase === 'ENDED') return;
+  if (gs.inventory.length >= gs.char.carry) { showFullCarry(); return; }
+  const dmg = gs.char.power; res.hp -= dmg;
+  const el = document.getElementById(`res-${res.id}`);
+  if (el) { el.classList.remove('hit'); void el.offsetWidth; el.classList.add('hit'); setTimeout(() => el.classList.remove('hit'), 220); }
+  const cx = res.x + 21, cy = res.y + 16;
+  spawnDmg(cx + Math.random() * 12 - 6, cy - 8, dmg === 1 ? '-1' : `-${dmg}`);
+  spawnSparks(cx, cy + 8);
+  _sfx.play('hit');
+  const hpEl = document.getElementById(`rhp-${res.id}`);
+  const pct = Math.max(0, (res.hp / res.maxHp) * 100);
+  if (hpEl) { hpEl.style.width = `${pct}%`; if (pct <= 35) hpEl.classList.add('low'); }
+  if (res.hp <= 0) killResource(res, el);
+}
+
+function killResource(res, el) {
+  if (!res.alive) return; res.alive = false;
+  updateCombo(); _sfx.play('click');
+  const { x, y } = res;
+  if (el) { el.classList.add('dying'); setTimeout(() => el.remove(), 400); }
+  res.drops.forEach((mat, i) => {
+    setTimeout(() => { if (gs.phase !== 'ENDED') addItemToInv(mat); }, 320 + i * 100);
+  });
+  // 新種解放チェック
+  checkUnlocks();
+  setTimeout(() => respawnResource(x, y), RESOURCE_RESPAWN_MS + Math.random() * 1500);
+  const idx = gs.resources.indexOf(res); if (idx !== -1) gs.resources.splice(idx, 1);
+  delete gs.colCooldowns[res.id];
+}
+
+// ===== 新種解放バナー =====
+function checkUnlocks() {
+  const maxFacLv = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  // ここでは施設LVアップ時のみ表示（hitでは何もしない）
+}
+
+function showUnlockBanner(emojis, titleText, subText) {
+  const el = document.createElement('div'); el.className = 'unlock-banner';
+  el.innerHTML = `<span class="unlock-banner-emoji">${emojis}</span>
+    <div class="unlock-banner-title">${titleText}</div>
+    <div class="unlock-banner-sub">${subText}</div>`;
+  $game.appendChild(el); setTimeout(() => el.remove(), 2450);
+}
+
+// ===== 施設処理（snow-survival から流用・衝突トリガーに変更） =====
+function tryProcessAtFacility(facType) {
+  if (gs.phase === 'ENDED') return false;
+  const fac = gs.facilities[facType];
+  const recipes = RECIPES[facType] || [];
+  // インベントリから投入できる素材を探す
+  const item = gs.inventory.find(i => {
+    if (i.isProduct) return false;
+    const rec = recipes.find(r => r.input === i.type); if (!rec) return false;
+    return (rec.minLevel || 1) <= fac.level;
+  });
+  if (!item) return false;
+  if (tut.step === 1 && $tutOverlay.innerHTML) hideTutStep();
+  const recipe = recipes.find(r => r.input === item.type);
+  removeItem(item.id);
+  if (fac.busy) {
+    fac.queue.push(recipe); updateFacQueue(facType);
+    fieldFloat(FAC_POS[facType].x, FAC_POS[facType].y - 42, `⏳ 待機 (${fac.queue.length}件)`);
+    return true;
+  }
+  startFacProc(facType, recipe); return true;
+}
+
+function startFacProc(facType, recipe) {
+  const fac = gs.facilities[facType];
+  fac.busy = true;
+  const facEl = document.getElementById(`fcard-${facType}`);
+  if (facEl) facEl.classList.add('busy');
+  const badge = document.getElementById(`fqueue-${facType}`);
+  if (badge) {
+    const iD = ITEM_DEF[recipe.input], oD = ITEM_DEF[recipe.output];
+    badge.textContent = (iD && oD ? `${iD.e}→${oD.e}` : '') + (fac.queue.length > 0 ? ` ⏳×${fac.queue.length}` : '');
+  }
+  const dur = recipe.duration / fac.speedMult;
+  const prog = document.getElementById(`fprog-${facType}`);
+  let elapsed = 0;
+  const timer = setInterval(() => {
+    if (gs.facilities[facType] !== fac) { clearInterval(timer); return; }
+    elapsed += 60;
+    if (prog) prog.style.width = `${Math.min(100, (elapsed / dur) * 100)}%`;
+    if (elapsed >= dur) {
+      clearInterval(timer); fac.busy = false;
+      if (prog) prog.style.width = '0%';
+      if (facEl) facEl.classList.remove('busy');
+      addProductToInv(recipe.output);
+      fieldFloat(FAC_POS[facType].x, FAC_POS[facType].y - 42, `✅ ${ITEM_DEF[recipe.output].name}完成！`);
+      _sfx.play('coin');
+      if (fac.queue.length > 0) {
+        const next = fac.queue.shift(); updateFacQueue(facType);
+        setTimeout(() => startFacProc(facType, next), 100);
+      } else {
+        if (badge) badge.textContent = '';
+      }
+    }
+  }, 60);
+}
+
+function updateFacQueue(facType) {
+  const badge = document.getElementById(`fqueue-${facType}`); if (!badge) return;
+  const count = gs.facilities[facType].queue.length;
+  badge.textContent = count > 0 ? `⏳×${count}` : '';
+}
+
+// ===== 売却（衝突トリガー） =====
+function trySellAtMarket() {
+  if (gs.phase === 'ENDED') return false;
+  const products = gs.inventory.filter(i => i.isProduct);
+  if (products.length === 0) return false;
+  if (tut.step === 2 && $tutOverlay.innerHTML) hideTutStep();
+  const maxLv = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  let total = 0;
+  products.forEach(item => {
+    const base = (ITEM_DEF[item.type] || {}).coins || 5;
+    total += Math.max(base, Math.round(base * (1 + (maxLv - 1) * 0.2)));
+    const idx = gs.inventory.findIndex(i => i.id === item.id); if (idx !== -1) gs.inventory.splice(idx, 1);
+  });
+  renderInv(); _sfx.play('coin');
+  const mktEl = document.getElementById('mktCard');
+  if (mktEl) {
+    mktEl.classList.remove('selling'); void mktEl.offsetWidth; mktEl.classList.add('selling');
+    spawnCoinAnim(Math.ceil(total / 5), mktEl);
+    setTimeout(() => mktEl.classList.remove('selling'), 520);
+  }
+  fieldFloat(MKT_POS.x, MKT_POS.y - 46, `💰 +${total}コイン！`);
+  setTimeout(() => addCoins(total), 320);
+  if (!gs.firstSaleDone) {
+    gs.firstSaleDone = true;
+    if (!_modeChosen) setTimeout(() => showModeChoicePopup(), 900);
+  }
+  return true;
+}
+
+// ===== ゲームループ（requestAnimationFrame） =====
+let _raf = null;
+let _lastColTs = 0;
+const COL_THROTTLE = 180; // ms between collision checks
+
+function gameLoop(ts) {
+  if (gs.phase === 'ENDED') return;
+
+  // キャラ移動（lerp / 速度ベース）
+  const { char } = gs;
+  const dx = char.targetX - char.x, dy = char.targetY - char.y;
+  const dist = Math.hypot(dx, dy);
+  if (dist > 0.5) {
+    const spd = Math.min(char.speed, dist);
+    char.x += (dx / dist) * spd; char.y += (dy / dist) * spd;
+  }
+  $charEl.style.left = `${char.x}px`; $charEl.style.top = `${char.y}px`;
+
+  // 衝突判定（スロットリング）
+  if (ts - _lastColTs > COL_THROTTLE) {
+    _lastColTs = ts; checkCollisions(ts);
+  }
+  _raf = requestAnimationFrame(gameLoop);
+}
+
+function checkCollisions(ts) {
+  const { char } = gs;
+
+  // リソース衝突
+  gs.resources.forEach(res => {
+    if (!res.alive) return;
+    if (gs.inventory.length >= char.carry) return;
+    const cx = res.x + 21, cy = res.y + 21;
+    if (Math.hypot(char.x - cx, char.y - cy) < COL_RADIUS_RES) {
+      const last = gs.colCooldowns[res.id] || 0;
+      if (ts - last > COLLECT_COOLDOWN) { gs.colCooldowns[res.id] = ts; hitResource(res); }
+    }
+  });
+
+  // 施設衝突（素材の自動投入）
+  FACILITY_TYPES.forEach(ft => {
+    const pos = FAC_POS[ft];
+    if (Math.hypot(char.x - pos.x, char.y - pos.y) < COL_RADIUS_FAC) {
+      const last = gs.colCooldowns[`fac_${ft}`] || 0;
+      if (ts - last > FAC_TRIGGER_COOL) {
+        const ok = tryProcessAtFacility(ft);
+        if (ok) gs.colCooldowns[`fac_${ft}`] = ts;
+      }
+    }
+  });
+
+  // マーケット衝突（製品の自動売却）
+  if (Math.hypot(char.x - MKT_POS.x, char.y - MKT_POS.y) < COL_RADIUS_MKT) {
+    const last = gs.colCooldowns['market'] || 0;
+    if (ts - last > MKT_TRIGGER_COOL) {
+      const ok = trySellAtMarket();
+      if (ok) gs.colCooldowns['market'] = ts;
+    }
+  }
+
+  // 近接ハイライト更新
+  FACILITY_TYPES.forEach(ft => {
+    const el = document.getElementById(`fcard-${ft}`); if (!el) return;
+    el.classList.toggle('near', Math.hypot(char.x - FAC_POS[ft].x, char.y - FAC_POS[ft].y) < COL_RADIUS_FAC);
+  });
+  const mktEl = document.getElementById('mktCard');
+  if (mktEl) mktEl.classList.toggle('near', Math.hypot(char.x - MKT_POS.x, char.y - MKT_POS.y) < COL_RADIUS_MKT);
+}
+
+// ===== キャラクター移動入力 =====
+let _ptrActive = false;
+function onFieldDown(e) {
+  if (gs.phase === 'ENDED' || gs.speedTutLocked) return;
+  _ptrActive = true;
+  moveCharTo(e);
+  if (tut.step === 0 && $tutOverlay.innerHTML) hideTutStep();
+}
+function onFieldMove(e) {
+  if (!_ptrActive || gs.phase === 'ENDED' || gs.speedTutLocked) return;
+  e.preventDefault(); moveCharTo(e);
+}
+function onFieldUp() { _ptrActive = false; }
+function moveCharTo(e) {
+  const rect = $field.getBoundingClientRect();
+  const cx = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+  const cy = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+  gs.char.targetX = Math.max(22, Math.min(GW - 22, cx));
+  gs.char.targetY = Math.max(22, Math.min(FIELD_H - 22, cy));
+}
+$field.addEventListener('mousedown',  onFieldDown);
+$field.addEventListener('touchstart', onFieldDown,  { passive: false });
+$field.addEventListener('mousemove',  onFieldMove);
+$field.addEventListener('touchmove',  onFieldMove,  { passive: false });
+$field.addEventListener('mouseup',    onFieldUp);
+$field.addEventListener('touchend',   onFieldUp);
+
+// ===== チュートリアル =====
+const TUT_STEPS = [
+  { title: '👆 キャラを動かそう！', sub: 'フィールドをタップ or ドラッグ\nキャラが動いて素材に近づくと自動採集！' },
+  { title: '🏭 施設に近づこう！',   sub: '素材を持ったまま施設に近づくと\n自動で投入・加工が始まる！' },
+  { title: '💰 マーケットで売ろう！', sub: '製品ができたらマーケットへ近づくだけ\n自動で売却してコインゲット！' },
+];
+
+function showTutStep(step) {
+  if (step >= TUT_STEPS.length || tut.shown[step]) return;
+  tut.step = step; tut.shown[step] = true;
+  const s = TUT_STEPS[step];
+  $tutOverlay.innerHTML = '';
+  // ハイライト領域（$game座標）
+  let rx, ry, rw, rh;
+  if (step === 0) { rx = 85; ry = HEADER_H + 50; rw = 200; rh = 170; }
+  else if (step === 1) { rx = FAC_POS.cooking.x - 48; ry = HEADER_H + FAC_POS.cooking.y - 42; rw = 205; rh = 84; }
+  else { rx = MKT_POS.x - 56; ry = HEADER_H + MKT_POS.y - 44; rw = 112; rh = 88; }
+  const ring = document.createElement('div'); ring.className = 'tut-ring';
+  ring.style.cssText = `left:${rx - 5}px;top:${ry - 5}px;width:${rw + 10}px;height:${rh + 10}px;`;
+  $tutOverlay.appendChild(ring);
+  const bTop = Math.min(ry + rh + 14, GH - 118);
+  const bLeft = Math.max(6, Math.min(rx, GW - 220));
+  const bubble = document.createElement('div'); bubble.className = 'tut-bubble';
+  bubble.style.cssText = `left:${bLeft}px;top:${bTop}px;`;
+  bubble.innerHTML = `<button class="tut-close" onclick="hideTutStep()">✕</button>
+    <div class="tut-bubble-text">${s.title}</div>
+    <div class="tut-bubble-sub">${s.sub.replace(/\n/g,'<br>')}</div>`;
+  $tutOverlay.appendChild(bubble);
+}
+function hideTutStep() { $tutOverlay.innerHTML = ''; }
+function onHint() { flashText('💡 素材 → 施設 → マーケット！'); $hintBtn.classList.remove('visible'); }
+
+// ===== アップグレード =====
+function openUpgrade()  { updateUpgradeBtns(); document.getElementById('upgradeModal').classList.add('open'); }
+function closeUpgrade() { document.getElementById('upgradeModal').classList.remove('open'); }
+
+function buyCharUpgrade(type) {
+  if (gs.speedTutLocked || gs.phase === 'ENDED') return;
+  const cfg = CHAR_UPG[type]; const curLv = gs.char[`${type}Lv`];
+  if (curLv >= cfg.maxLv) return;
+  const cost = Math.round(cfg.baseCost * Math.pow(cfg.costMult, curLv - 1));
+  if (gs.coins < cost) return;
+  gs.coins -= cost; $coinCount.textContent = gs.coins;
+  gs.char[`${type}Lv`]++;
+  const newVal = cfg.base + cfg.inc * (gs.char[`${type}Lv`] - 1);
+  gs.char[type] = (type === 'carry') ? Math.round(newVal) : newVal;
+  _sfx.play('hit');
+  flashText(`⬆️ ${cfg.name} LV.${gs.char[`${type}Lv`]}!`);
+  if (type === 'carry') renderInv();
+  updateUpgradeBtns();
+}
+
+function buyFacUpgrade(facType) {
+  if (gs.speedTutLocked || gs.phase === 'ENDED') return;
+  const fac = gs.facilities[facType];
+  const cfg = (UPGRADE_CONFIG[facType] || [])[fac.level - 1];
+  if (!cfg) { fieldFloat(FAC_POS[facType].x, FAC_POS[facType].y - 42, '🏆 最大LV！'); return; }
+  if (gs.coins < cfg.cost) return;
+  gs.coins -= cfg.cost; $coinCount.textContent = gs.coins;
+  const prevMax = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  fac.level++; fac.speedMult = cfg.speedMult;
+  const lvEl = document.getElementById(`flv-${facType}`); if (lvEl) lvEl.textContent = `LV.${fac.level}`;
+  const facEl = document.getElementById(`fcard-${facType}`);
+  if (facEl) { facEl.style.borderColor = '#fbbf24'; setTimeout(() => facEl.style.borderColor = '', 1200); }
+  fieldFloat(FAC_POS[facType].x, FAC_POS[facType].y - 42, `⬆️ LV.${fac.level} UP!`);
+  showLvUpBurst(FAC_POS[facType].x, FAC_POS[facType].y);
+  const newMax = Math.max(gs.facilities.cooking.level, gs.facilities.workshop.level);
+  if (newMax > prevMax) {
+    const unlocked = RESOURCE_DEFS.filter(d => d.minFacLv === newMax);
+    if (unlocked.length) showUnlockBanner(unlocked.map(d => d.e).join(' '), '🆕 新素材が解放！', `施設 LV.${newMax} 達成ボーナス`);
+  }
+  _sfx.play('hit');
+  updateUpgradeBtns();
+}
+
+function updateUpgradeBtns() {
+  ['speed', 'carry', 'power'].forEach(type => {
+    const cfg = CHAR_UPG[type]; const curLv = gs.char[`${type}Lv`];
+    const cost = curLv < cfg.maxLv ? Math.round(cfg.baseCost * Math.pow(cfg.costMult, curLv - 1)) : null;
+    const curVal = cfg.base + cfg.inc * (curLv - 1);
+    const lvEl = document.getElementById(`ulv-${type}`);
+    const btn  = document.getElementById(`ubtn-${type}`);
+    const cEl  = document.getElementById(`ucost-${type}`);
+    if (lvEl) lvEl.textContent = `LV.${curLv} → ${cfg.fmt(curVal)}`;
+    if (btn)  btn.disabled = cost === null || gs.coins < cost;
+    if (btn && cost === null) btn.innerHTML = '<span>🏆 MAX</span>';
+    if (cEl && cost !== null) cEl.textContent = `🪙${cost}`;
+  });
+  FACILITY_TYPES.forEach(ft => {
+    const fac = gs.facilities[ft];
+    const cfg = (UPGRADE_CONFIG[ft] || [])[fac.level - 1];
+    const btn  = document.getElementById(`ubtn-${ft}`);
+    const lvEl = document.getElementById(`ulv-${ft}`);
+    const cEl  = document.getElementById(`ucost-${ft}`);
+    if (lvEl) lvEl.textContent = `LV.${fac.level}`;
+    if (btn)  btn.disabled = !cfg || gs.coins < cfg.cost;
+    if (btn && !cfg) btn.innerHTML = '<span>🏆 MAX</span>';
+    if (cEl) cEl.textContent = cfg ? `🪙${cfg.cost}` : 'MAX';
+  });
+}
+
+function showLvUpBurst(fx, fy) {
+  const burst = document.createElement('div'); burst.className = 'lvup-burst';
+  burst.textContent = '⬆️ LEVEL UP!'; burst.style.left = `${fx}px`; burst.style.top = `${HEADER_H + fy - 20}px`;
+  $game.appendChild(burst); setTimeout(() => burst.remove(), 1850);
+  const colors = ['#fbbf24','#f97316','#fb923c','#fde68a','#fff','#a78bfa'];
+  for (let i = 0; i < 14; i++) {
+    const s = document.createElement('div'); s.className = 'lvup-spark';
+    const a = (i / 14) * Math.PI * 2; const d = 36 + Math.random() * 48;
+    s.style.background = colors[i % colors.length];
+    s.style.left = `${fx}px`; s.style.top = `${HEADER_H + fy}px`;
+    s.style.setProperty('--dx', `${Math.cos(a) * d}px`); s.style.setProperty('--dy', `${Math.sin(a) * d}px`);
+    $game.appendChild(s); setTimeout(() => s.remove(), 730);
+  }
+}
+
+// ===== モード選択 =====
+function selectMode(mode) {
+  document.getElementById('modeSelect').classList.add('hidden');
+  startGameMode(mode);
+}
+
+function showModeChoicePopup() {
+  if (gs.phase === 'ENDED') return;
+  document.getElementById('modeChoicePopup').classList.add('open');
+}
+
+function chooseModeFromPopup(mode) {
+  document.getElementById('modeChoicePopup').classList.remove('open');
+  _modeChosen = true;
+  document.getElementById('modeTab').style.display = 'flex';
+  if (mode === 'speed') startGameMode('speed');
+  else updateModeTabUI();
+}
+
+function switchMode(mode) {
+  if (gs.gameMode === mode) return;
+  startGameMode(mode);
+}
+
+function updateModeTabUI() {
+  ['speed', 'infinite'].forEach(m => {
+    const btn = document.getElementById(`mtb-${m}`); if (btn) btn.classList.toggle('active', gs.gameMode === m);
+  });
+}
+
+// ===== ゲームリセット / 開始 =====
+function resetGameState(mode) {
+  if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+  clearInterval(gs.speedTimerInterval); gs.speedTimerInterval = null;
+  clearTimeout(gs.hintTimer); clearTimeout(gs.comboTimer);
+  gs.phase = 'PLAYING'; gs.gameMode = mode;
+  gs.coins = 0; gs.totalCoins = 0; gs.inventory = [];
+  gs.facilities = {
+    cooking:  { level: 1, busy: false, speedMult: 1, queue: [] },
+    workshop: { level: 1, busy: false, speedMult: 1, queue: [] },
+  };
+  gs.char = { x: 187, y: 150, targetX: 187, targetY: 150, speed: 2.5, carry: 4, power: 1, speedLv: 1, carryLv: 1, powerLv: 1 };
+  gs.resources = []; gs.nextId = 1; gs.speedTimeLeft = 60;
+  gs.speedTutLocked = false; gs.firstSaleDone = false; gs.combo = 0; gs.colCooldowns = {};
+}
+
+function resetGameUI() {
+  $coinCount.textContent = '0';
+  $tutOverlay.innerHTML = '';
+  document.getElementById('comboDisplay').classList.remove('show');
+  document.getElementById('modeChoicePopup').classList.remove('open');
+  document.getElementById('rankingOverlay').classList.remove('open');
+  document.getElementById('upgradeModal').classList.remove('open');
+  const st = document.getElementById('speedTimer');
+  st.classList.remove('show', 'urgent'); document.getElementById('timerVal').textContent = '60';
+  $charEl.style.left = '187px'; $charEl.style.top = '150px';
+  buildField(); renderInv(); updateUpgradeBtns();
+  document.getElementById('modeTab').style.display = _modeChosen ? 'flex' : 'none';
+  updateModeTabUI();
+}
+
+function startGameMode(mode) {
+  resetGameState(mode); resetGameUI();
+  tut.step = 0; if (!_modeChosen) tut.shown.fill(false);
+  spawnAllResources();
+  if (mode === 'speed') {
+    document.getElementById('phaseLabel').textContent = '⚡ スピードモード';
+    document.getElementById('speedTimer').classList.add('show');
+    gs.speedTutLocked = true;
+    showPreStartCountdown(() => {
+      gs.speedTutLocked = false; startSpeedTimer();
+      if (!_modeChosen) setTimeout(() => showTutStep(0), 600);
+    });
+  } else {
+    document.getElementById('phaseLabel').textContent = '❄️ スノーハーベスト';
+    if (!_modeChosen) setTimeout(() => showTutStep(0), 800);
+  }
+  _raf = requestAnimationFrame(gameLoop);
+}
+
+// ===== スピードモード =====
+function showPreStartCountdown(cb) {
+  const counts = [{ text: '3', dur: 800 }, { text: '2', dur: 800 }, { text: '1', dur: 800 }, { text: 'START!', dur: 900 }];
+  let i = 0, el = null;
+  const tick = () => {
+    if (el && el.parentNode) el.remove();
+    if (i >= counts.length) { cb(); return; }
+    el = document.createElement('div');
+    el.className = 'prestart-count' + (i === counts.length - 1 ? ' start-text' : '');
+    el.textContent = counts[i].text; $game.appendChild(el);
+    const dur = counts[i++].dur; setTimeout(tick, dur);
+  };
+  tick();
+}
+
+function startSpeedTimer() {
+  clearInterval(gs.speedTimerInterval);
+  gs.speedTimerInterval = setInterval(() => {
+    gs.speedTimeLeft--;
+    const timerEl = document.getElementById('speedTimer'), valEl = document.getElementById('timerVal');
+    valEl.textContent = gs.speedTimeLeft;
+    if (gs.speedTimeLeft <= 10) timerEl.classList.add('urgent');
+    if (gs.speedTimeLeft <= 0) { clearInterval(gs.speedTimerInterval); gs.speedTimerInterval = null; endSpeedMode(); }
+  }, 1000);
+}
+
+function endSpeedMode() {
+  if (gs.phase === 'ENDED') return; gs.phase = 'ENDED';
+  if (_raf) { cancelAnimationFrame(_raf); _raf = null; }
+  const fl = document.createElement('div'); fl.className = 'timeup-flash'; fl.textContent = '⏰ TIME UP!';
+  $game.appendChild(fl); _sfx.play('gameover');
+  setTimeout(() => { if (fl.parentNode) fl.remove(); setTimeout(() => showRanking(gs.totalCoins), RANKING_DISPLAY_DELAY); }, 1600);
+}
+
+// ===== ランキング（snow-survival から流用・HTMLを合わせて再構成） =====
+function showRanking(score) {
+  const overlay = document.getElementById('rankingOverlay');
+  const fakeNames = ['アイスハンター','スノーウルフ','タイガーキング','ポーラーベア','ブリザード','フロストクイーン',
+    'ノーザンライト','アークティック','ドラゴンハンター','シルバーウィング','ダークファルコン','ストームライダー'];
+  const playerRank = RANK_PLAYER_MIN + Math.floor(Math.random() * (RANK_PLAYER_MAX - RANK_PLAYER_MIN + 1));
+  const entries = [];
+  for (let i = 1; i <= RANK_TOTAL_ENTRIES; i++) {
+    if (i === playerRank) { entries.push({ rank: i, name: 'あなた', score, isYou: true }); continue; }
+    let fs;
+    if (i < playerRank) {
+      const gap = (playerRank - i) * (Math.floor(score * RANK_UPPER_SCORE_RATIO) + Math.floor(Math.random() * RANK_UPPER_SCORE_RAND) + RANK_UPPER_SCORE_BASE);
+      fs = score + gap;
+    } else {
+      const gap = (i - playerRank) * (Math.floor(score * RANK_LOWER_SCORE_RATIO) + Math.floor(Math.random() * RANK_LOWER_SCORE_RAND) + RANK_LOWER_SCORE_BASE);
+      fs = Math.max(0, score - gap);
+    }
+    entries.push({ rank: i, name: fakeNames[(i <= playerRank ? i - 1 : i - 2) % fakeNames.length], score: fs, isYou: false });
+  }
+  const medals = { 1: '🥇', 2: '🥈', 3: '🥉' };
+  const showTo = Math.min(RANK_TOTAL_ENTRIES, playerRank + 2);
+  let rows = '';
+  entries.slice(0, showTo).forEach(e => {
+    const medal = medals[e.rank] ? `<span class="rk-crown">${medals[e.rank]}</span>` : '';
+    const tag = !e.isYou && e.rank <= 2 ? '<span class="rk-tag">最強</span>' : '';
+    rows += `<tr class="rk-row${e.isYou ? ' rk-you-row' : ''}">
+      <td class="rk-rank">${medal}${e.rank}</td>
+      <td>${e.name}${tag}</td>
+      <td>${e.score}🪙</td></tr>`;
+  });
+  const above = entries.find(e => e.rank === playerRank - 1);
+  const gapMsg = above && score > 0
+    ? `あと <span>${above.score - score}🪙</span> で${playerRank - 1}位だった！`
+    : (score === 0 ? 'まずはコインを稼ごう！' : 'ランクイン達成！');
+  overlay.innerHTML = `
+    <div class="rk-actions">
+      <button class="rk-again" onclick="retrySpeedMode()">🔥 もう1回挑戦！</button>
+      <button class="rk-switch" onclick="retryInfinite()">♾️ エンドレスモードでプレイ</button>
+      <button class="home-btn" onclick="location.href='index.html'" style="font-size:13px;padding:9px 14px;width:100%;text-align:center;border-radius:12px;">🏠 ホームへ戻る</button>
+    </div>
+    <div class="rk-badge">🏆 スピードランキング</div>
+    <div class="rk-title">あなたの順位<br>${playerRank}位 / ${RANK_TOTAL_ENTRIES}人中</div>
+    <div class="rk-you-box">
+      <div class="rk-you-label">YOUR SCORE</div>
+      <div class="rk-you-score">${score}</div>
+      <div class="rk-you-unit">🪙 累計獲得コイン</div>
+      <div class="rk-near">${gapMsg}</div>
+    </div>
+    <table class="rk-table">
+      <thead><tr><th>順位</th><th>プレイヤー</th><th style="text-align:right">スコア</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="rk-dots">・・・</div>`;
+  overlay.classList.add('open');
+  setTimeout(() => {
+    const you = overlay.querySelector('.rk-you-row');
+    if (you) you.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 300);
+}
+
+function retrySpeedMode()  { document.getElementById('rankingOverlay').classList.remove('open'); _modeChosen = true; startGameMode('speed'); }
+function retryInfinite()   { document.getElementById('rankingOverlay').classList.remove('open'); _modeChosen = true; startGameMode('infinite'); }
+</script>
+</body>
+</html>

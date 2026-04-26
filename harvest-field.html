@@ -916,7 +916,7 @@ function drawBarn() {
     ctx.fillStyle = '#ffe060';
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ここで売る', bx, by-58);
+    ctx.fillText('ここで換金', bx, by-58);
     ctx.restore();
   }
   // Foundation
@@ -1796,7 +1796,7 @@ function drawHUD() {
     ctx.fillText(`👹 敵 ×${liveEnemies}  ATK CD: ${G.playerAtkCD>0?G.playerAtkCD.toFixed(1):'Ready'}`,14,71);
   }
 
-  // Buyer count indicator  
+  // Buyer count indicator
   const waitingBuyers = G.buyers.filter(b=>b.state==='waiting').length;
   if (waitingBuyers > 0 || G.lootBag.length > 0) {
     const buyerColor = waitingBuyers > 0 && G.lootBag.length > 0 ? '#ffe082' : '#a0d080';

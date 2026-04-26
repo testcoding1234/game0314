@@ -54,7 +54,7 @@ const ctx = canvas.getContext('2d');
 const W = 375, H = 667;
 
 // ─── roundRect polyfill ──────────────────────────────────────
-if (!CanvasRenderingContext2D.prototype.roundRect) {
+if (!('roundRect' in CanvasRenderingContext2D.prototype)) {
   CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r){
     r = Math.min(r, w/2, h/2);
     this.moveTo(x+r,y);
@@ -81,6 +81,10 @@ const JOY_CX       = 72;  // default joystick center X
 const JOY_CY       = 598; // default joystick center Y
 const MAX_ITEMS    = 20;  // max items on field
 const SPAWN_BASE   = 3.8; // seconds between spawns
+const GREENHOUSE_SPEED_MULT = 0.48; // spawn interval multiplier when greenhouse is built
+const MAX_FRAME_TIME = 0.06;        // delta-time cap to avoid spiral-of-death on lag
+const MAX_SPAWN_ATTEMPTS = 30;      // max placement tries when spawning an item
+const SHOP_BTN_R = 36;             // shop button radius (matches drawn arc)
 
 // ─── Item types ──────────────────────────────────────────────
 const ITEMS = [
@@ -146,7 +150,7 @@ function createPlayer() {
 // ─── Item helpers ────────────────────────────────────────────
 function spawnItem(forceOk) {
   const margin = 60;
-  for (let t=0; t<30; t++) {
+  for (let t=0; t<MAX_SPAWN_ATTEMPTS; t++) {
     const x = margin + Math.random() * (W - margin*2);
     const y = FIELD_TOP + 20 + Math.random() * (FIELD_BOTTOM - FIELD_TOP - 80);
     if (dist2(x,y,BARN.x,BARN.y) < 75*75) continue;
@@ -372,8 +376,8 @@ canvas.addEventListener('pointerdown', e=>{
   const px = (e.clientX - r.left)*scX;
   const py = (e.clientY - r.top)*scY;
 
-  // Shop button hit area (bottom-right)
-  if (px>W-82 && py>H-72) { openShop(); return; }
+  // Shop button hit area (bottom-right) — radius SHOP_BTN_R
+  if (px>W-(SHOP_BTN_R*2+10) && py>H-(SHOP_BTN_R*2+10)) { openShop(); return; }
   // Home button (top-left)
   if (px<50 && py<52) { window.location.href='index.html'; return; }
   // Joystick zone (bottom-left 45%)
@@ -437,7 +441,7 @@ function buyShop(item) {
       break;
     case 'greenhouse':
       G.buildings.greenhouse = true;
-      G.spawnInterval = SPAWN_BASE * 0.48;
+      G.spawnInterval = SPAWN_BASE * GREENHOUSE_SPEED_MULT;
       showMsg('🏡 温室完成！作物が早く育ちます');
       break;
     case 'storehouse':
@@ -997,7 +1001,7 @@ function showMsg(text) { G.msg = { text, t: 2.2 }; }
 
 // ─── Main loop ────────────────────────────────────────────────
 function loop(ts) {
-  const dt = Math.min((ts-lastT)/1000, 0.06);
+  const dt = Math.min((ts-lastT)/1000, MAX_FRAME_TIME);
   lastT = ts;
   if (!G.shopOpen) update(dt);
   render();

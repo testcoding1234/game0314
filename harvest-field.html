@@ -12,8 +12,11 @@ canvas{display:block;touch-action:none;}
 /* ===== Shop overlay ===== */
 #shop{display:none;position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.72);align-items:center;justify-content:center;}
 #shop.open{display:flex;}
-#shop-panel{background:linear-gradient(160deg,#1a2a0a,#2c4a14);border:2.5px solid #a0d050;border-radius:18px;padding:18px 16px 14px;width:310px;max-height:520px;overflow-y:auto;color:#f0ffe0;}
-#shop-panel h2{text-align:center;font-size:1.25em;color:#c8f060;margin-bottom:12px;text-shadow:0 0 12px #80c020;}
+#shop-panel{background:linear-gradient(160deg,#1a2a0a,#2c4a14);border:2.5px solid #a0d050;border-radius:18px;padding:18px 16px 14px;width:318px;max-height:540px;overflow-y:auto;color:#f0ffe0;}
+#shop-panel h2{text-align:center;font-size:1.25em;color:#c8f060;margin-bottom:10px;text-shadow:0 0 12px #80c020;}
+.shop-tabs{display:flex;gap:6px;margin-bottom:10px;}
+.shop-tab{flex:1;padding:8px 4px;border:1.5px solid rgba(160,208,80,.35);border-radius:9px;text-align:center;cursor:pointer;font-size:.82em;color:#a0d080;transition:all .15s;}
+.shop-tab.active{background:rgba(160,208,80,.22);color:#c8f060;border-color:#a0d050;}
 .si{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.08);border:1.5px solid rgba(160,208,80,.4);border-radius:12px;padding:11px 10px;margin:6px 0;cursor:pointer;transition:background .15s,border-color .15s;}
 .si:active{background:rgba(160,208,80,.2);}
 .si.done{opacity:.45;cursor:default;}
@@ -31,7 +34,11 @@ canvas{display:block;touch-action:none;}
   <canvas id="c" width="375" height="667"></canvas>
   <div id="shop">
     <div id="shop-panel">
-      <h2>✨ プレミアムショップ</h2>
+      <h2>✨ ショップ</h2>
+      <div class="shop-tabs">
+        <div class="shop-tab active" id="tab-farm" onclick="setShopTab('farm')">🌾 農業</div>
+        <div class="shop-tab" id="tab-combat" onclick="setShopTab('combat')">⚔️ 討伐</div>
+      </div>
       <div id="shop-items"></div>
       <div id="shop-gold"></div>
       <button id="shop-close">とじる</button>
@@ -41,8 +48,7 @@ canvas{display:block;touch-action:none;}
 
 <script>
 // ============================================================
-// HARVEST FIELD — built from scratch
-// Inspired by Whiteout Survival ad-game mechanics
+// HARVEST FIELD — Farming + Combat Edition
 // ============================================================
 (function(){
 'use strict';
@@ -73,43 +79,98 @@ if (!('roundRect' in CanvasRenderingContext2D.prototype)) {
 // ─── Constants ───────────────────────────────────────────────
 const PLAYER_SPD   = 195;
 const WORKER_SPD   = 130;
-const COLL_R       = 42;  // auto-collect radius
-const BARN_R       = 58;  // deposit radius
-const JOY_R        = 52;  // joystick outer radius
-const JOY_KNOB     = 20;  // joystick knob radius
-const JOY_CX       = 72;  // default joystick center X
-const JOY_CY       = 598; // default joystick center Y
-const MAX_ITEMS    = 20;  // max items on field
-const SPAWN_BASE   = 3.8; // seconds between spawns
-const GREENHOUSE_SPEED_MULT = 0.48; // spawn interval multiplier when greenhouse is built
-const MAX_FRAME_TIME = 0.06;        // delta-time cap to avoid spiral-of-death on lag
-const MAX_SPAWN_ATTEMPTS = 30;      // max placement tries when spawning an item
-const SHOP_BTN_R = 36;             // shop button radius (matches drawn arc)
+const COLL_R       = 42;
+const BARN_R       = 58;
+const MARKET_R     = 55;   // market interact radius
+const JOY_R        = 52;
+const JOY_KNOB     = 20;
+const JOY_CX       = 72;
+const JOY_CY       = 598;
+const MAX_ITEMS    = 20;
+const SPAWN_BASE   = 3.8;
+const GREENHOUSE_SPEED_MULT = 0.48;
+const MAX_FRAME_TIME = 0.06;
+const MAX_SPAWN_ATTEMPTS = 30;
+const SHOP_BTN_R = 36;
 
-// ─── Item types ──────────────────────────────────────────────
+// Combat constants
+const ATK_COOLDOWN_BASE = 0.85; // seconds between player attacks
+const MAX_ENEMIES  = 10;
+const ENEMY_SPAWN_BASE = 9;    // seconds between enemy spawns
+const MAX_LOOT_ON_FIELD = 12;
+const TURRET_RANGE = 90;
+const TURRET_ATK_CD = 1.4;
+const BUYER_INTERVAL = 14;     // seconds between buyer spawns
+const MAX_BUYERS = 5;
+
+// ─── Positions ───────────────────────────────────────────────
+const BARN   = { x: 295, y: 100 };
+const MARKET = { x: 78,  y: 105 };
+const FIELD_TOP    = 55;
+const FIELD_BOTTOM = 585;
+const FOREST_Y     = 380; // y below which is "forest" when expanded
+
+// ─── Crop items ───────────────────────────────────────────────
 const ITEMS = [
-  {id:'wheat',  label:'小麦', val:5 },
-  {id:'carrot', label:'ニンジン', val:7 },
-  {id:'tomato', label:'トマト',  val:8 },
-  {id:'corn',   label:'トウモロコシ', val:10},
-  {id:'cabbage',label:'キャベツ', val:6 },
+  {id:'wheat',  label:'小麦',       val:5 },
+  {id:'carrot', label:'ニンジン',   val:7 },
+  {id:'tomato', label:'トマト',     val:8 },
+  {id:'corn',   label:'トウモロコシ',val:10},
+  {id:'cabbage',label:'キャベツ',   val:6 },
+];
+
+// ─── Enemy types ─────────────────────────────────────────────
+const ENEMY_TYPES = [
+  {id:'slime',  name:'スライム', maxHp:30,  spd:50,  loot:{id:'slime_jelly', name:'スライムゼリー', val:20}, r:14, color:'#a5d6a7', shine:'#c8e6c9', expanded:false},
+  {id:'bat',    name:'コウモリ', maxHp:20,  spd:95,  loot:{id:'bat_wing',    name:'コウモリの翼',   val:18}, r:12, color:'#ce93d8', shine:'#e1bee7', expanded:false},
+  {id:'goblin', name:'ゴブリン', maxHp:80,  spd:65,  loot:{id:'goblin_tooth',name:'ゴブリンの牙',   val:45}, r:16, color:'#ffb74d', shine:'#ffe0b2', expanded:false},
+  {id:'wolf',   name:'オオカミ', maxHp:150, spd:88,  loot:{id:'wolf_fur',    name:'オオカミの毛皮', val:75}, r:18, color:'#90a4ae', shine:'#cfd8dc', expanded:true},
+  {id:'dragon', name:'ドラゴン', maxHp:350, spd:50,  loot:{id:'dragon_scale',name:'ドラゴンの鱗',   val:200},r:24, color:'#ef9a9a', shine:'#ffcdd2', expanded:true},
 ];
 
 // ─── Shop catalogue ──────────────────────────────────────────
-const SHOP = [
+const SHOP_FARM = [
   {id:'worker',     name:'農夫を雇う',   desc:'自動で収穫してくれる農夫',      icon:'👨‍🌾', cost:80,  repeat:true  },
   {id:'greenhouse', name:'温室を建てる', desc:'作物再生が2倍速になる',          icon:'🏡', cost:150, repeat:false },
   {id:'storehouse', name:'倉庫を建てる', desc:'バックパック容量を+4増やす',     icon:'🏚', cost:120, repeat:false },
   {id:'scarecrow',  name:'かかしを立てる',desc:'フィールドの作物量が増える',    icon:'🎃', cost:100, repeat:false },
 ];
+const SHOP_COMBAT = [
+  {id:'sword',    name:'鉄の剣を鍛える',   desc:'攻撃力+25アップ',                    icon:'⚔️', cost:100, repeat:true  },
+  {id:'sword2',   name:'鋼の剣を入手',     desc:'攻撃力+60アップ（一度のみ）',        icon:'🗡️', cost:280, repeat:false },
+  {id:'bow',      name:'弓を入手',         desc:'攻撃範囲が1.5倍に拡大',              icon:'🏹', cost:200, repeat:false },
+  {id:'turret',   name:'自動砲台を設置',   desc:'自動で敵を攻撃する機械を追加',       icon:'🤖', cost:350, repeat:true  },
+  {id:'expand',   name:'フィールドを拡張', desc:'森が現れ強い敵（オオカミ/ドラゴン）が出現',icon:'🗺️',cost:600,repeat:false},
+  {id:'loot_bag', name:'大きな袋を購入',   desc:'討伐袋の容量+3増加',                 icon:'🎒', cost:150, repeat:true  },
+];
 
-// ─── Field layout ────────────────────────────────────────────
-// Barn position (top-right)
-const BARN = { x: 295, y: 100 };
-// Play field top boundary (below HUD)
-const FIELD_TOP    = 55;
-// Play field bottom boundary (above joystick HUD)
-const FIELD_BOTTOM = 585;
+// Current shop tab
+let shopTab = 'farm';
+window.setShopTab = function(tab) {
+  shopTab = tab;
+  document.getElementById('tab-farm').className   = 'shop-tab' + (tab==='farm'   ? ' active' : '');
+  document.getElementById('tab-combat').className = 'shop-tab' + (tab==='combat' ? ' active' : '');
+  renderShop();
+};
+
+// ─── irasutoya image loading ──────────────────────────────────
+const IMGS = {};
+function loadImg(key, url) {
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload  = () => { IMGS[key] = img; };
+  img.onerror = () => { /* fallback to canvas drawing */ };
+  img.src = url;
+}
+// いらすとや (irasutoya) — freely available illustrations
+loadImg('player',  'https://1.bp.blogspot.com/-_L5kDiRNVvY/XBomryCJV3I/AAAAAAABQMg/pFz3XqGvApIFVvO-z3BTBpkNFqY1smVGQCLcBGAs/s200/farming_nouka_man.png');
+loadImg('slime',   'https://1.bp.blogspot.com/-kUnmfJH6vQM/VCNhNBNpI1I/AAAAAAAAmoU/IXJdWl1DXWM/s200/monster_slime.png');
+loadImg('bat',     'https://3.bp.blogspot.com/-VDRmXBJnAy4/VQ3HhJxhunI/AAAAAAAAtwk/gy0h0sXWRpQ/s200/monster_koumori.png');
+loadImg('goblin',  'https://4.bp.blogspot.com/-jWaqk5p0BxY/VQ3HVXN5yaI/AAAAAAAAtv4/x6nYBtlTxWo/s200/monster_goblin.png');
+loadImg('wolf',    'https://2.bp.blogspot.com/-FKPnlgAL-Vc/Wg6Kv_CDXCI/AAAAAAABHqA/7kXK8p3s3EAB0EVvwHjmHIamHMQr2d3ZgCLcBGAs/s200/animal_ookami.png');
+loadImg('dragon',  'https://4.bp.blogspot.com/-kXDVBTsXv7I/VQ3HFLEn1ZI/AAAAAAAAtwA/UDjvQTEtcKQ/s200/monster_dragon_chibi.png');
+loadImg('buyer',   'https://2.bp.blogspot.com/-muPgaRCJ0pE/WduvNPDNsqI/AAAAAAABHx0/IMhJZ-F7x5ELaODMl62ItIW6wGy-ov8hgCLcBGAs/s200/shopping_bag_woman.png');
+loadImg('worker',  'https://1.bp.blogspot.com/-iLEVY9J4N-s/XBomri2kW0I/AAAAAAABQMc/P8g-j8vNHDoXFnekVwJ7AkW3pOj2X83bQCLcBGAs/s200/farming_nouka_woman.png');
 
 // ─── Game state ──────────────────────────────────────────────
 let G = {};
@@ -122,14 +183,36 @@ function initGame() {
     spawnInterval: SPAWN_BASE,
     player: createPlayer(),
     workers: [],
-    buildings: {},   // greenhouse, storehouse, scarecrow
+    buildings: {},
     items: [],
-    flyItems: [],    // flying-to-backpack animations
-    goldPops: [],    // +gold pop text animations
-    collectPops: [], // item pop text when collecting
+    flyItems: [],
+    goldPops: [],
+    collectPops: [],
     shopOpen: false,
-    msg: null,       // { text, t } timed HUD message
+    msg: null,
     joystick: { active:false, ox:JOY_CX, oy:JOY_CY, cx:JOY_CX, cy:JOY_CY },
+
+    // Combat
+    enemies: [],
+    lootItems: [],
+    lootBag: [],
+    maxLootBag: 4,
+    playerAtk: 20,
+    playerAtkRange: 62,
+    playerAtkCD: 0,
+    atkFlashes: [],
+    dmgPops: [],
+    turrets: [],
+
+    // Enemies
+    enemySpawnTimer: 0,
+    enemySpawnInterval: ENEMY_SPAWN_BASE,
+    fieldExpanded: false,
+
+    // Market / Buyers
+    buyers: [],
+    buyerTimer: BUYER_INTERVAL * 0.3, // first buyer spawns quickly
+    marketSellCD: 0,
   };
   spawnInitialItems();
 }
@@ -138,7 +221,7 @@ function createPlayer() {
   return {
     x: W/2, y: H/2,
     vx:0, vy:0,
-    dir:1,         // 1=right -1=left
+    dir:1,
     walkT:0, walkF:0,
     backpack: [],
     maxBP: 6,
@@ -147,13 +230,14 @@ function createPlayer() {
   };
 }
 
-// ─── Item helpers ────────────────────────────────────────────
+// ─── Crop helpers ────────────────────────────────────────────
 function spawnItem(forceOk) {
   const margin = 60;
   for (let t=0; t<MAX_SPAWN_ATTEMPTS; t++) {
     const x = margin + Math.random() * (W - margin*2);
     const y = FIELD_TOP + 20 + Math.random() * (FIELD_BOTTOM - FIELD_TOP - 80);
     if (dist2(x,y,BARN.x,BARN.y) < 75*75) continue;
+    if (dist2(x,y,MARKET.x,MARKET.y) < 65*65) continue;
     if (!forceOk && G.items.some(i=>!i.col && dist2(i.x,i.y,x,y)<32*32)) continue;
     const type = ITEMS[Math.floor(Math.random()*ITEMS.length)];
     G.items.push({ x, y, type, col:false, scale:0, bob: Math.random()*Math.PI*2 });
@@ -165,7 +249,6 @@ function spawnInitialItems() {
   for (let i=0;i<18;i++) spawnItem(true);
 }
 
-// ─── Collect & deposit ───────────────────────────────────────
 function tryCollect(collector) {
   if (collector.backpack.length >= collector.maxBP) return;
   for (const item of G.items) {
@@ -174,7 +257,6 @@ function tryCollect(collector) {
       item.col = true;
       collector.backpack.push(item.type.id);
       collector.collectFlash = 1;
-      // Flying animation
       const bpOff = collector.dir === 1 ? -13 : 13;
       G.flyItems.push({
         type: item.type,
@@ -203,6 +285,197 @@ function deposit(collector) {
   G.goldPops.push({x:BARN.x,y:BARN.y-55,text:`+${total}💰`,alpha:1,vy:-55});
   collector.backpack = [];
   if (collector === G.player) showMsg(`💰 +${total} コイン！`);
+}
+
+// ─── Loot helpers ────────────────────────────────────────────
+function tryCollectLoot() {
+  if (G.lootBag.length >= G.maxLootBag) return;
+  for (const li of G.lootItems) {
+    if (li.picked) continue;
+    if (dist2(li.x,li.y,G.player.x,G.player.y) < COLL_R*COLL_R) {
+      li.picked = true;
+      G.lootBag.push(li.loot);
+      G.collectPops.push({x:li.x,y:li.y-16,text:li.loot.name,alpha:1,vy:-40});
+      if (G.lootBag.length >= G.maxLootBag) break;
+    }
+  }
+}
+
+function tryMarketSell() {
+  if (!G.lootBag.length) return;
+  if (G.marketSellCD > 0) return;
+  if (G.buyers.length === 0) return;
+  // Find first buyer at market
+  const buyer = G.buyers.find(b => b.state === 'waiting');
+  if (!buyer) return;
+  let total = 0;
+  G.lootBag.forEach(l => total += l.val);
+  G.gold += total;
+  G.goldPops.push({x:MARKET.x,y:MARKET.y-55,text:`+${total}💰`,alpha:1,vy:-55});
+  G.collectPops.push({x:MARKET.x,y:MARKET.y-35,text:`${G.lootBag.map(l=>l.name).join('・')}を売却！`,alpha:1,vy:-28});
+  G.lootBag = [];
+  buyer.state = 'leaving';
+  buyer.leaveDir = 1;
+  G.marketSellCD = 1.0;
+  showMsg(`💰 +${total} コイン（討伐品売却）！`);
+}
+
+// ─── Enemy system ────────────────────────────────────────────
+function spawnEnemy() {
+  const available = ENEMY_TYPES.filter(t => !t.expanded || G.fieldExpanded);
+  const type = available[Math.floor(Math.random()*available.length)];
+  const side = Math.floor(Math.random()*4);
+  let x, y;
+  if (side === 0) { x = Math.random()*W; y = FIELD_TOP + 5; }
+  else if (side === 1) { x = W - 10; y = FIELD_TOP + Math.random()*(FIELD_BOTTOM-FIELD_TOP); }
+  else if (side === 2) { x = Math.random()*W; y = FIELD_BOTTOM - 10; }
+  else { x = 10; y = FIELD_TOP + Math.random()*(FIELD_BOTTOM-FIELD_TOP); }
+
+  G.enemies.push({
+    type,
+    x, y,
+    hp: type.maxHp,
+    vx: 0, vy: 0,
+    dir: 1,
+    walkT: 0, walkF: 0,
+    hitFlash: 0,
+    deathAnim: -1,
+    wanderTimer: 0,
+    wanderVx: 0, wanderVy: 0,
+    scale: 0,
+  });
+}
+
+function updateEnemy(e, dt) {
+  if (e.deathAnim >= 0) return;
+  e.scale = Math.min(1, e.scale + dt*4);
+  e.hitFlash = Math.max(0, e.hitFlash - dt*5);
+  e.walkT += dt;
+  if (e.walkT > 0.2) { e.walkT=0; e.walkF=(e.walkF+1)%4; }
+
+  // Chase player if close, otherwise wander
+  const d = Math.sqrt(dist2(e.x,e.y,G.player.x,G.player.y));
+  if (d < 180) {
+    const nx = (G.player.x-e.x)/d;
+    const ny = (G.player.y-e.y)/d;
+    e.vx = nx * e.type.spd;
+    e.vy = ny * e.type.spd;
+  } else {
+    e.wanderTimer -= dt;
+    if (e.wanderTimer <= 0) {
+      const angle = Math.random()*Math.PI*2;
+      e.wanderVx = Math.cos(angle)*e.type.spd*0.5;
+      e.wanderVy = Math.sin(angle)*e.type.spd*0.5;
+      e.wanderTimer = 1.5 + Math.random()*1.5;
+    }
+    e.vx = e.wanderVx;
+    e.vy = e.wanderVy;
+  }
+  e.x += e.vx*dt;
+  e.y += e.vy*dt;
+  e.x = clamp(e.x, 20, W-20);
+  e.y = clamp(e.y, FIELD_TOP+5, FIELD_BOTTOM-20);
+  if (e.vx < -2) e.dir = -1;
+  else if (e.vx > 2) e.dir = 1;
+}
+
+function doPlayerAttack() {
+  if (G.playerAtkCD > 0) return;
+  let best = null, bestD = G.playerAtkRange*G.playerAtkRange;
+  for (const e of G.enemies) {
+    if (e.deathAnim >= 0) continue;
+    const d = dist2(G.player.x,G.player.y,e.x,e.y);
+    if (d < bestD) { bestD=d; best=e; }
+  }
+  if (!best) return;
+  G.playerAtkCD = ATK_COOLDOWN_BASE;
+  hitEnemy(best, G.playerAtk);
+  // Visual: attack flash
+  G.atkFlashes.push({x:best.x,y:best.y,r:best.type.r,t:1});
+}
+
+function doTurretAttacks(dt) {
+  for (const t of G.turrets) {
+    t.cd = Math.max(0, t.cd - dt);
+    if (t.cd > 0) continue;
+    let best = null, bestD = TURRET_RANGE*TURRET_RANGE;
+    for (const e of G.enemies) {
+      if (e.deathAnim >= 0) continue;
+      const d = dist2(t.x,t.y,e.x,e.y);
+      if (d < bestD) { bestD=d; best=e; }
+    }
+    if (!best) continue;
+    t.cd = TURRET_ATK_CD;
+    t.aimX = best.x; t.aimY = best.y;
+    t.beamT = 0.3;
+    hitEnemy(best, t.atk);
+  }
+}
+
+function hitEnemy(e, dmg) {
+  e.hp -= dmg;
+  e.hitFlash = 1;
+  G.dmgPops.push({x:e.x,y:e.y-e.type.r-10,text:`-${dmg}`,alpha:1,vy:-45,color:'#ff5252'});
+  if (e.hp <= 0) killEnemy(e);
+}
+
+function killEnemy(e) {
+  e.deathAnim = 1;
+  // Drop loot
+  const lootType = e.type.loot;
+  const n = G.lootItems.filter(l=>!l.picked).length;
+  if (n < MAX_LOOT_ON_FIELD) {
+    G.lootItems.push({
+      x: e.x + (Math.random()-0.5)*30,
+      y: e.y + (Math.random()-0.5)*20,
+      loot: lootType,
+      picked: false,
+      scale: 0,
+      bob: Math.random()*Math.PI*2,
+    });
+  }
+  G.goldPops.push({x:e.x,y:e.y-30,text:`✨ ${e.type.name}を討伐！`,alpha:1,vy:-30});
+}
+
+// ─── Buyer system ────────────────────────────────────────────
+function spawnBuyer() {
+  if (G.buyers.length >= MAX_BUYERS) return;
+  const queueIdx = G.buyers.filter(b=>b.state!=='leaving').length;
+  const targetX = MARKET.x + 55 + queueIdx * 36;
+  const targetY = MARKET.y + 22;
+  G.buyers.push({
+    x: -20 + Math.random()*40,
+    y: H * 0.7 + Math.random()*50,
+    targetX, targetY,
+    state: 'walking', // walking → waiting → leaving
+    dir: 1,
+    walkT: 0, walkF: 0,
+    animA: 0,
+    leaveDir: 1,
+    color: `hsl(${Math.random()*360},55%,65%)`,
+  });
+}
+
+function updateBuyer(b, dt) {
+  b.animA = Math.min(1, b.animA + dt*2.5);
+  b.walkT += dt;
+  if (b.walkT > 0.2) { b.walkT=0; b.walkF=(b.walkF+1)%4; }
+
+  if (b.state === 'walking') {
+    const d = Math.sqrt(dist2(b.x,b.y,b.targetX,b.targetY));
+    if (d < 8) {
+      b.x = b.targetX; b.y = b.targetY;
+      b.state = 'waiting';
+    } else {
+      const nx = (b.targetX-b.x)/d, ny = (b.targetY-b.y)/d;
+      b.x += nx * 80 * dt;
+      b.y += ny * 80 * dt;
+      b.dir = nx > 0 ? 1 : -1;
+    }
+  } else if (b.state === 'leaving') {
+    b.x += b.leaveDir * 90 * dt;
+    b.y -= 20 * dt;
+  }
 }
 
 // ─── Worker AI ───────────────────────────────────────────────
@@ -238,8 +511,7 @@ function updateWorker(w, dt) {
   }
 
   if (w.backpack.length >= w.maxBP) {
-    w.state = 'return';
-    w.target = null;
+    w.state = 'return'; w.target = null;
   }
   if (w.state === 'idle' || w.state === 'seek') {
     let best=null, bestD=Infinity;
@@ -250,12 +522,10 @@ function updateWorker(w, dt) {
       if (d < bestD) { bestD=d; best=item; }
     }
     if (best) {
-      w.target = best;
-      w.state = 'seek';
+      w.target = best; w.state = 'seek';
       const d = Math.sqrt(dist2(best.x,best.y,w.x,w.y));
       if (d < COLL_R) {
-        tryCollect(w);
-        w.target=null; w.state='idle'; w.vx=0; w.vy=0;
+        tryCollect(w); w.target=null; w.state='idle'; w.vx=0; w.vy=0;
       } else {
         w.vx = ((best.x-w.x)/d)*WORKER_SPD;
         w.vy = ((best.y-w.y)/d)*WORKER_SPD;
@@ -280,7 +550,7 @@ function updateWorker(w, dt) {
   w.y = clamp(w.y,FIELD_TOP+10,FIELD_BOTTOM-20);
 }
 
-// ─── Update ──────────────────────────────────────────────────
+// ─── Main Update ─────────────────────────────────────────────
 let lastT = 0;
 function update(dt) {
   G.time += dt;
@@ -290,25 +560,24 @@ function update(dt) {
   G.player.vx = joy.x * PLAYER_SPD;
   G.player.vy = joy.y * PLAYER_SPD;
 
-  // Move player
   G.player.x += G.player.vx * dt;
   G.player.y += G.player.vy * dt;
   G.player.x = clamp(G.player.x, 18, W-18);
   G.player.y = clamp(G.player.y, FIELD_TOP+15, FIELD_BOTTOM-18);
 
-  // Direction
   if (G.player.vx > 5) G.player.dir = 1;
   else if (G.player.vx < -5) G.player.dir = -1;
 
-  // Walk animation
   if (Math.abs(G.player.vx)>5||Math.abs(G.player.vy)>5) {
     G.player.walkT += dt;
     if (G.player.walkT > 0.15) { G.player.walkT=0; G.player.walkF=(G.player.walkF+1)%4; }
   } else { G.player.walkF=0; }
   G.player.collectFlash = Math.max(0, G.player.collectFlash - dt*3);
   if (G.player.depositCD > 0) G.player.depositCD -= dt;
+  if (G.playerAtkCD > 0) G.playerAtkCD -= dt;
+  if (G.marketSellCD > 0) G.marketSellCD -= dt;
 
-  // Collect
+  // Farming: collect crops
   tryCollect(G.player);
 
   // Deposit at barn
@@ -318,7 +587,21 @@ function update(dt) {
     G.player.depositCD = 1.5;
   }
 
-  // Spawn items
+  // Combat: collect loot from ground
+  tryCollectLoot();
+
+  // Sell loot at market
+  if (dist2(G.player.x,G.player.y,MARKET.x,MARKET.y) < MARKET_R*MARKET_R) {
+    tryMarketSell();
+  }
+
+  // Player auto-attack
+  doPlayerAttack();
+
+  // Turret auto-attack
+  doTurretAttacks(dt);
+
+  // Spawn crops
   G.spawnTimer += dt;
   const activeN = G.items.filter(i=>!i.col).length;
   const maxN = G.buildings.scarecrow ? 28 : MAX_ITEMS;
@@ -326,15 +609,50 @@ function update(dt) {
     G.spawnTimer = 0;
     spawnItem(false);
   }
-  // Item spawn scale & bob
   G.items.forEach(i=>{ if (!i.col && i.scale<1) i.scale=Math.min(1,i.scale+dt*5); });
-  // Remove long-collected items to keep array lean
   if (G.items.filter(i=>i.col).length > 15) G.items = G.items.filter(i=>!i.col);
+
+  // Spawn enemies
+  G.enemySpawnTimer += dt;
+  if (G.enemySpawnTimer >= G.enemySpawnInterval && G.enemies.filter(e=>e.deathAnim<0).length < MAX_ENEMIES) {
+    G.enemySpawnTimer = 0;
+    G.enemySpawnInterval = ENEMY_SPAWN_BASE * (1 - Math.min(0.5, G.time/600));
+    spawnEnemy();
+  }
+  G.enemies.forEach(e=>{
+    if (e.deathAnim >= 0) {
+      e.deathAnim -= dt*3;
+    } else {
+      updateEnemy(e, dt);
+    }
+  });
+  G.enemies = G.enemies.filter(e=>e.deathAnim === -1 || e.deathAnim > 0);
+
+  // Loot items on field
+  G.lootItems.forEach(l=>{ if (!l.picked && l.scale<1) l.scale=Math.min(1,l.scale+dt*5); });
+  if (G.lootItems.filter(l=>l.picked).length > 8) G.lootItems = G.lootItems.filter(l=>!l.picked);
+
+  // Spawn buyers
+  G.buyerTimer += dt;
+  if (G.buyerTimer >= BUYER_INTERVAL) {
+    G.buyerTimer = 0;
+    spawnBuyer();
+  }
+  G.buyers.forEach(b=>updateBuyer(b,dt));
+  G.buyers = G.buyers.filter(b=>b.state!=='leaving'||b.x<W+60);
+  // Reindex waiting buyers positions
+  let qi = 0;
+  for (const b of G.buyers) {
+    if (b.state === 'waiting') {
+      b.targetX = MARKET.x + 55 + qi * 36;
+      b.targetY = MARKET.y + 22;
+      qi++;
+    }
+  }
 
   // Flying item animations
   G.flyItems.forEach(fi=>{
     if (fi.done) return;
-    // Update target to follow backpack position
     fi.tx = fi.ref.x + (fi.ref.dir===1?-13:13);
     fi.ty = fi.ref.y - 18;
     fi.p = Math.min(1, fi.p + dt*2.4);
@@ -349,6 +667,17 @@ function update(dt) {
   // Collect pops
   G.collectPops.forEach(p=>{ p.y+=p.vy*dt; p.alpha-=dt*1.6; });
   G.collectPops = G.collectPops.filter(p=>p.alpha>0);
+
+  // Dmg pops
+  G.dmgPops.forEach(p=>{ p.y+=p.vy*dt; p.alpha-=dt*2; });
+  G.dmgPops = G.dmgPops.filter(p=>p.alpha>0);
+
+  // Atk flashes
+  G.atkFlashes.forEach(f=>{ f.t-=dt*4; });
+  G.atkFlashes = G.atkFlashes.filter(f=>f.t>0);
+
+  // Turret beams
+  G.turrets.forEach(t=>{ if(t.beamT>0) t.beamT-=dt; });
 
   // Workers
   G.workers.forEach(w=>updateWorker(w,dt));
@@ -367,7 +696,7 @@ function getJoyVec() {
   return {x:dx/JOY_R, y:dy/JOY_R};
 }
 
-// Pointer events on canvas
+// Pointer events
 canvas.addEventListener('pointerdown', e=>{
   e.preventDefault();
   const r = canvas.getBoundingClientRect();
@@ -376,11 +705,8 @@ canvas.addEventListener('pointerdown', e=>{
   const px = (e.clientX - r.left)*scX;
   const py = (e.clientY - r.top)*scY;
 
-  // Shop button hit area (bottom-right) — radius SHOP_BTN_R
   if (px>W-(SHOP_BTN_R*2+10) && py>H-(SHOP_BTN_R*2+10)) { openShop(); return; }
-  // Home button (top-left)
   if (px<50 && py<52) { window.location.href='index.html'; return; }
-  // Joystick zone (bottom-left 45%)
   if (px < W*0.48 && py > H*0.72) {
     G.joystick.active = true;
     G.joystick.ox = px; G.joystick.oy = py;
@@ -417,7 +743,8 @@ document.getElementById('shop-close').addEventListener('click', closeShop);
 function renderShop() {
   const el = document.getElementById('shop-items');
   el.innerHTML = '';
-  SHOP.forEach(item=>{
+  const list = shopTab === 'farm' ? SHOP_FARM : SHOP_COMBAT;
+  list.forEach(item=>{
     const bought = !item.repeat && G.buildings[item.id];
     const div = document.createElement('div');
     div.className = 'si' + (bought?' done':'');
@@ -454,21 +781,56 @@ function buyShop(item) {
       for (let i=0;i<9;i++) spawnItem(false);
       showMsg('🎃 かかし設置！作物が増えました');
       break;
+    case 'sword':
+      G.playerAtk += 25;
+      showMsg(`⚔️ 攻撃力が${G.playerAtk}に上がった！`);
+      break;
+    case 'sword2':
+      G.buildings.sword2 = true;
+      G.playerAtk += 60;
+      showMsg(`🗡️ 鋼の剣！攻撃力が${G.playerAtk}になった！`);
+      break;
+    case 'bow':
+      G.buildings.bow = true;
+      G.playerAtkRange = Math.round(G.playerAtkRange * 1.5);
+      showMsg(`🏹 弓を入手！攻撃範囲が拡大！`);
+      break;
+    case 'turret': {
+      const tPositions = [
+        {x:W*0.5, y:H*0.4}, {x:W*0.25, y:H*0.55}, {x:W*0.75, y:H*0.55},
+        {x:W*0.4, y:H*0.7}, {x:W*0.6, y:H*0.7},
+      ];
+      const idx = G.turrets.length % tPositions.length;
+      G.turrets.push({
+        x: tPositions[idx].x + (Math.random()-0.5)*30,
+        y: tPositions[idx].y + (Math.random()-0.5)*20,
+        atk: 18, cd: 0, beamT: 0, aimX:0, aimY:0,
+      });
+      showMsg(`🤖 砲台を設置！（${G.turrets.length}基）`);
+      break;
+    }
+    case 'expand':
+      G.buildings.expand = true;
+      G.fieldExpanded = true;
+      showMsg('🗺️ フィールド拡張！森が出現しました！');
+      break;
+    case 'loot_bag':
+      G.maxLootBag += 3;
+      showMsg(`🎒 討伐袋が拡張！容量${G.maxLootBag}に`);
+      break;
   }
   closeShop();
 }
 
 // ─── Drawing helpers ─────────────────────────────────────────
-function dist2(ax,ay,bx,by) {
-  return (ax-bx)**2+(ay-by)**2;
-}
+function dist2(ax,ay,bx,by) { return (ax-bx)**2+(ay-by)**2; }
 function clamp(v,mn,mx) { return v<mn?mn:v>mx?mx:v; }
 function lerp(a,b,t) { return a+(b-a)*t; }
 function easeIO(t) { return t<0.5?2*t*t:-1+(4-2*t)*t; }
 
 // ─── Draw: field background ───────────────────────────────────
 function drawBg() {
-  // Sky gradient at top
+  // Base sky/grass gradient
   const sky = ctx.createLinearGradient(0,0,0,H);
   sky.addColorStop(0,'#e8f5e9');
   sky.addColorStop(0.08,'#c8e6c9');
@@ -476,8 +838,41 @@ function drawBg() {
   ctx.fillStyle = sky;
   ctx.fillRect(0,0,W,H);
 
-  // Darker field rows
-  ctx.globalAlpha = 0.12;
+  // Forest zone (if expanded)
+  if (G.fieldExpanded) {
+    const fg = ctx.createLinearGradient(0,FOREST_Y,0,H);
+    fg.addColorStop(0,'rgba(27,60,15,0)');
+    fg.addColorStop(0.3,'rgba(20,50,10,0.55)');
+    fg.addColorStop(1,'rgba(15,35,8,0.72)');
+    ctx.fillStyle = fg;
+    ctx.fillRect(0,FOREST_Y,W,H-FOREST_Y);
+
+    // Tree silhouettes
+    ctx.fillStyle = 'rgba(15,40,10,0.55)';
+    const trees = [[20,FOREST_Y+35],[55,FOREST_Y+15],[100,FOREST_Y+45],[145,FOREST_Y+20],
+                   [200,FOREST_Y+40],[240,FOREST_Y+10],[285,FOREST_Y+38],[330,FOREST_Y+25],[360,FOREST_Y+42]];
+    trees.forEach(([tx,ty])=>{
+      ctx.beginPath();
+      ctx.moveTo(tx,ty); ctx.lineTo(tx-18,ty+42); ctx.lineTo(tx+18,ty+42);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(tx,ty-18); ctx.lineTo(tx-14,ty+16); ctx.lineTo(tx+14,ty+16);
+      ctx.closePath(); ctx.fill();
+    });
+
+    // "FOREST" label
+    ctx.save();
+    ctx.globalAlpha = 0.45;
+    ctx.fillStyle = '#a5d6a7';
+    ctx.font = 'bold 11px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠️ DANGER ZONE — 危険な森', W/2, FOREST_Y+62);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // Field row stripes
+  ctx.globalAlpha = 0.10;
   for (let y=FIELD_TOP+8; y<FIELD_BOTTOM; y+=32) {
     ctx.fillStyle = '#1b5e20';
     ctx.fillRect(0,y,W,14);
@@ -490,10 +885,16 @@ function drawBg() {
   ctx.lineWidth = 16;
   ctx.globalAlpha = 0.55;
   ctx.lineCap = 'round';
-  ctx.setLineDash([]);
   ctx.beginPath();
   ctx.moveTo(W/2-10, H/2);
   ctx.bezierCurveTo(W*0.7,H*0.35, W*0.82,H*0.25, BARN.x, BARN.y+30);
+  ctx.stroke();
+  // Dirt path to market
+  ctx.strokeStyle = '#bcaaa4';
+  ctx.lineWidth = 12;
+  ctx.beginPath();
+  ctx.moveTo(W/2-10, H/2);
+  ctx.bezierCurveTo(W*0.3,H*0.35, W*0.18,H*0.25, MARKET.x, MARKET.y+28);
   ctx.stroke();
   ctx.globalAlpha = 1;
   ctx.restore();
@@ -502,8 +903,6 @@ function drawBg() {
 // ─── Draw: barn ───────────────────────────────────────────────
 function drawBarn() {
   const bx=BARN.x, by=BARN.y;
-
-  // Deposit glow ring when player is near
   const d = Math.sqrt(dist2(G.player.x,G.player.y,bx,by));
   if (d < BARN_R*2) {
     ctx.save();
@@ -513,58 +912,471 @@ function drawBarn() {
     ctx.beginPath(); ctx.arc(bx,by+15,BARN_R,0,Math.PI*2); ctx.stroke();
     ctx.globalAlpha = 1;
     ctx.restore();
-    // "預ける" label
     ctx.save();
     ctx.fillStyle = '#ffe060';
     ctx.font = 'bold 13px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('ここで預ける', bx, by-58);
+    ctx.fillText('ここで換金', bx, by-58);
     ctx.restore();
   }
-
   // Foundation
-  ctx.fillStyle = '#795548';
-  ctx.fillRect(bx-42,by-8,84,52);
-  // Walls
-  ctx.fillStyle = '#b71c1c';
-  ctx.fillRect(bx-38,by-36,76,44);
-  // White trim
-  ctx.fillStyle = '#ffcdd2';
-  ctx.fillRect(bx-38,by-38,76,4);
+  ctx.fillStyle = '#795548'; ctx.fillRect(bx-42,by-8,84,52);
+  ctx.fillStyle = '#b71c1c'; ctx.fillRect(bx-38,by-36,76,44);
+  ctx.fillStyle = '#ffcdd2'; ctx.fillRect(bx-38,by-38,76,4);
   // Roof
   ctx.fillStyle = '#6d4c41';
   ctx.beginPath();
   ctx.moveTo(bx-50,by-32); ctx.lineTo(bx,by-72); ctx.lineTo(bx+50,by-32);
   ctx.closePath(); ctx.fill();
-  // Roof edge trim
-  ctx.strokeStyle = '#4e342e';
-  ctx.lineWidth=2; ctx.beginPath();
+  ctx.strokeStyle = '#4e342e'; ctx.lineWidth=2;
+  ctx.beginPath();
   ctx.moveTo(bx-50,by-32); ctx.lineTo(bx,by-72); ctx.lineTo(bx+50,by-32);
   ctx.stroke();
   // Door
-  ctx.fillStyle = '#3e2723';
-  ctx.fillRect(bx-12,by+4,24,40);
-  // Door X
+  ctx.fillStyle = '#3e2723'; ctx.fillRect(bx-12,by+4,24,40);
   ctx.strokeStyle = '#795548'; ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(bx-12,by+4);ctx.lineTo(bx+12,by+44);ctx.stroke();
   ctx.beginPath();ctx.moveTo(bx+12,by+4);ctx.lineTo(bx-12,by+44);ctx.stroke();
-  // Window
-  ctx.fillStyle = '#fff9c4';
-  ctx.fillRect(bx-28,by-26,16,14);
-  ctx.fillRect(bx+12,by-26,16,14);
+  // Windows
+  ctx.fillStyle = '#fff9c4'; ctx.fillRect(bx-28,by-26,16,14); ctx.fillRect(bx+12,by-26,16,14);
   ctx.strokeStyle='#795548'; ctx.lineWidth=1.5;
-  ctx.strokeRect(bx-28,by-26,16,14);
-  ctx.strokeRect(bx+12,by-26,16,14);
-  // Barn label
+  ctx.strokeRect(bx-28,by-26,16,14); ctx.strokeRect(bx+12,by-26,16,14);
   ctx.fillStyle='#fff9c4'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
   ctx.fillText('BARN',bx,by-42);
 
-  // Buildings (premium)
-  if (G.buildings.greenhouse) drawGreenhouse(bx-120, by+5);
+  if (G.buildings.greenhouse) drawGreenhouse(bx-110, by+5);
   if (G.buildings.storehouse) drawStorehouse(bx+70, by+5);
   if (G.buildings.scarecrow)  drawScarecrow(bx-210, by-10);
 }
 
+// ─── Draw: market stall ───────────────────────────────────────
+function drawMarket() {
+  const mx=MARKET.x, my=MARKET.y;
+  const d = Math.sqrt(dist2(G.player.x,G.player.y,mx,my));
+  if (d < MARKET_R*2) {
+    ctx.save();
+    ctx.globalAlpha = 0.35 * (1-d/(MARKET_R*2));
+    ctx.strokeStyle = '#ffd54f';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(mx,my+15,MARKET_R,0,Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    ctx.save();
+    ctx.fillStyle = '#ffd54f';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'center';
+    const hint = G.lootBag.length > 0 ? '討伐品を売る！' : (G.buyers.length>0 ? '買取待ち中…' : '買い手を待ってます');
+    ctx.fillText(hint, mx, my-58);
+    ctx.restore();
+  }
+
+  // Stall base / counter
+  ctx.fillStyle = '#5d4037';
+  ctx.beginPath(); ctx.roundRect(mx-38,my-10,76,50,4); ctx.fill();
+  ctx.fillStyle = '#795548';
+  ctx.beginPath(); ctx.roundRect(mx-40,my-16,80,12,3); ctx.fill();
+  // Awning
+  ctx.fillStyle = '#e53935';
+  ctx.beginPath();
+  ctx.moveTo(mx-48,my-16); ctx.lineTo(mx,my-52); ctx.lineTo(mx+48,my-16);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffcdd2';
+  for (let i=-3;i<=3;i++) {
+    ctx.beginPath();
+    ctx.moveTo(mx+i*13,my-16);
+    ctx.lineTo(mx+i*13-6,my-4);
+    ctx.lineTo(mx+i*13+6,my-4);
+    ctx.closePath(); ctx.fill();
+  }
+  // Sign
+  ctx.fillStyle='#fff9c4'; ctx.font='bold 10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('🏪 マーケット', mx, my-30);
+  ctx.fillStyle='#ffecb3'; ctx.font='9px sans-serif';
+  ctx.fillText('討伐品買取', mx, my-20);
+
+  // Items on counter
+  const displayLoot = ['⚗️','🦷','🪶','🐺','🐉'];
+  displayLoot.forEach((ic,i)=>{
+    ctx.font = '12px sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText(ic, mx-24+i*12, my+12);
+  });
+
+  // Buyer queue
+  G.buyers.forEach(b=>{
+    if (b.state === 'leaving') return;
+    ctx.save();
+    ctx.globalAlpha = b.animA;
+    drawBuyerMini(b);
+    ctx.restore();
+  });
+
+  // Leaving buyers still drawn
+  G.buyers.forEach(b=>{
+    if (b.state !== 'leaving') return;
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, 0.7-(1-(b.x/(W+60))));
+    drawBuyerMini(b);
+    ctx.restore();
+  });
+}
+
+function drawBuyerMini(b) {
+  const x=b.x, y=b.y;
+  const img = IMGS['buyer'];
+  if (img) {
+    ctx.save();
+    ctx.translate(x,y);
+    if (b.dir < 0) { ctx.scale(-1,1); }
+    ctx.drawImage(img, -16, -36, 32, 42);
+    ctx.restore();
+  } else {
+    // Canvas fallback: cute small person
+    ctx.save();
+    ctx.translate(x,y);
+    // Shadow
+    ctx.fillStyle='rgba(0,0,0,0.18)';
+    ctx.beginPath(); ctx.ellipse(0,2,9,3,0,0,Math.PI*2); ctx.fill();
+    // Body
+    ctx.fillStyle = b.color;
+    ctx.beginPath(); ctx.roundRect(-8,-26,16,20,4); ctx.fill();
+    // Head
+    ctx.fillStyle='#ffcc80';
+    ctx.beginPath(); ctx.arc(0,-32,8,0,Math.PI*2); ctx.fill();
+    // Hair
+    ctx.fillStyle='#5d4037';
+    ctx.beginPath(); ctx.arc(0,-38,8,Math.PI,0); ctx.fill();
+    // Bag
+    ctx.fillStyle='#f57c00';
+    ctx.beginPath(); ctx.roundRect(6*b.dir,-24,10,12,2); ctx.fill();
+    // Legs
+    ctx.fillStyle='#1565c0';
+    ctx.fillRect(-6,-6,5,12); ctx.fillRect(1,-6,5,12);
+    ctx.restore();
+  }
+}
+
+// ─── Draw: enemies ────────────────────────────────────────────
+function drawEnemy(e) {
+  if (e.deathAnim >= 0 && e.deathAnim < 0.001) return;
+  const s = e.scale * (e.deathAnim >= 0 ? e.deathAnim : 1);
+  const img = IMGS[e.type.id];
+  const bob = Math.sin(G.time*3 + e.x) * 2;
+  ctx.save();
+  ctx.translate(e.x, e.y + bob);
+  if (s < 1) ctx.scale(s,s);
+
+  if (img) {
+    // Draw irasutoya image
+    const iw = e.type.r*3.5, ih = e.type.r*3.5;
+    if (e.dir < 0) { ctx.scale(-1,1); }
+    if (e.hitFlash > 0) {
+      ctx.globalAlpha = 0.5 + e.hitFlash*0.5;
+    }
+    ctx.drawImage(img, -iw/2, -ih, iw, ih);
+  } else {
+    // Canvas fallback — cute chibi monster
+    drawEnemyCanvas(e, bob);
+  }
+
+  // HP bar (always drawn)
+  if (e.deathAnim < 0) {
+    const barW = e.type.r*2.5;
+    const hpRatio = e.hp / e.type.maxHp;
+    ctx.globalAlpha = 0.9;
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath(); ctx.roundRect(-barW/2, -e.type.r*2.2-8, barW, 5, 2); ctx.fill();
+    ctx.fillStyle = hpRatio > 0.5 ? '#69f0ae' : hpRatio > 0.25 ? '#ffeb3b' : '#ff5252';
+    ctx.beginPath(); ctx.roundRect(-barW/2, -e.type.r*2.2-8, barW*hpRatio, 5, 2); ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
+
+function drawEnemyCanvas(e) {
+  const r = e.type.r;
+  const f = e.walkF;
+  const swing = Math.sin(f*Math.PI*0.5)*6;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.18)';
+  ctx.beginPath(); ctx.ellipse(0, r+4, r*1.2, r*0.4, 0, 0, Math.PI*2); ctx.fill();
+
+  // Hit flash overlay
+  if (e.hitFlash > 0) {
+    ctx.save();
+    ctx.globalAlpha = e.hitFlash * 0.7;
+    ctx.fillStyle = '#fff';
+    ctx.beginPath(); ctx.arc(0,-r*0.5,r*1.4,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  switch(e.type.id) {
+    case 'slime': {
+      // Green blob with eyes
+      const g = ctx.createRadialGradient(-r*0.3,-r*0.6,r*0.1,0,0,r*1.3);
+      g.addColorStop(0, e.type.shine);
+      g.addColorStop(1, e.type.color);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.ellipse(0,-r*0.3+swing*0.3, r*1.1, r*0.85+Math.abs(swing)*0.1, 0, 0, Math.PI*2);
+      ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.15)'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.ellipse(0,-r*0.3, r*1.1, r*0.85, 0, 0, Math.PI*2); ctx.stroke();
+      // Eyes
+      ctx.fillStyle='#1a237e';
+      ctx.beginPath(); ctx.ellipse(-r*0.35,-r*0.45,r*0.18,r*0.22,0,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse( r*0.35,-r*0.45,r*0.18,r*0.22,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(-r*0.28,-r*0.52,r*0.08,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc( r*0.42,-r*0.52,r*0.08,0,Math.PI*2); ctx.fill();
+      // Mouth
+      ctx.strokeStyle='#1a237e'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(0,-r*0.2,r*0.25,0.1*Math.PI,0.9*Math.PI); ctx.stroke();
+      break;
+    }
+    case 'bat': {
+      const g = ctx.createRadialGradient(0,-r*0.3,0,0,0,r*1.5);
+      g.addColorStop(0, e.type.shine); g.addColorStop(1, e.type.color);
+      // Wings
+      ctx.fillStyle = e.type.color;
+      ctx.save(); ctx.rotate(swing*0.08);
+      ctx.beginPath(); ctx.ellipse(-r*1.2,-r*0.4,r*0.9,r*0.45,Math.PI*0.15,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.save(); ctx.rotate(-swing*0.08);
+      ctx.beginPath(); ctx.ellipse( r*1.2,-r*0.4,r*0.9,r*0.45,-Math.PI*0.15,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      // Body
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.ellipse(0,-r*0.3,r*0.7,r*0.8,0,0,Math.PI*2); ctx.fill();
+      // Ears
+      ctx.fillStyle=e.type.color;
+      ctx.beginPath(); ctx.moveTo(-r*0.4,-r); ctx.lineTo(-r*0.2,-r*1.6); ctx.lineTo(0,-r); ctx.fill();
+      ctx.beginPath(); ctx.moveTo( r*0.4,-r); ctx.lineTo( r*0.2,-r*1.6); ctx.lineTo(0,-r); ctx.fill();
+      // Eyes
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(-r*0.25,-r*0.4,r*0.2,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc( r*0.25,-r*0.4,r*0.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#e91e63';
+      ctx.beginPath(); ctx.arc(-r*0.25,-r*0.38,r*0.11,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc( r*0.25,-r*0.38,r*0.11,0,Math.PI*2); ctx.fill();
+      break;
+    }
+    case 'goblin': {
+      // Body
+      const g = ctx.createRadialGradient(-r*0.3,-r*0.5,r*0.1,0,0,r*1.5);
+      g.addColorStop(0,e.type.shine); g.addColorStop(1,e.type.color);
+      ctx.fillStyle=g;
+      // Legs
+      ctx.fillStyle='#bf360c';
+      ctx.save(); ctx.translate(-r*0.4,0); ctx.rotate(swing*0.06);
+      ctx.fillRect(-r*0.25,0,r*0.5,r*0.8); ctx.restore();
+      ctx.save(); ctx.translate( r*0.4,0); ctx.rotate(-swing*0.06);
+      ctx.fillRect(-r*0.25,0,r*0.5,r*0.8); ctx.restore();
+      // Body
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.roundRect(-r,-r*1.6,r*2,r*1.6,r*0.3); ctx.fill();
+      // Arms with club
+      ctx.fillStyle=e.type.color;
+      ctx.save(); ctx.translate(-r*1.1,-r*0.9); ctx.rotate(swing*0.1);
+      ctx.fillRect(-r*0.2,0,r*0.4,r*0.9);
+      ctx.fillStyle='#8d6e63'; ctx.beginPath(); ctx.arc(0,r*0.9,r*0.4,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.fillStyle=e.type.color;
+      ctx.save(); ctx.translate(r*1.1,-r*0.9); ctx.rotate(-swing*0.05);
+      ctx.fillRect(-r*0.2,0,r*0.4,r*0.9); ctx.restore();
+      // Head
+      ctx.fillStyle=e.type.color;
+      ctx.beginPath(); ctx.arc(0,-r*1.8,r*0.9,0,Math.PI*2); ctx.fill();
+      // Ears
+      ctx.fillStyle=e.type.shine;
+      ctx.beginPath(); ctx.ellipse(-r*0.9,-r*1.8,r*0.28,r*0.45,0.3,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.ellipse( r*0.9,-r*1.8,r*0.28,r*0.45,-0.3,0,Math.PI*2); ctx.fill();
+      // Eyes
+      ctx.fillStyle='#212121';
+      ctx.beginPath(); ctx.arc(-r*0.3,-r*1.85,r*0.18,0,Math.PI*2); ctx.fill();
+      ctx.beginPath(); ctx.arc( r*0.3,-r*1.85,r*0.18,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.arc(-r*0.22,-r*1.9,r*0.08,0,Math.PI*2); ctx.fill();
+      // Mouth / fangs
+      ctx.strokeStyle='#212121'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(0,-r*1.65,r*0.35,0,Math.PI); ctx.stroke();
+      ctx.fillStyle='#fff';
+      ctx.beginPath(); ctx.moveTo(-r*0.25,-r*1.65); ctx.lineTo(-r*0.18,-r*1.45); ctx.lineTo(-r*0.1,-r*1.65); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(r*0.1,-r*1.65); ctx.lineTo(r*0.18,-r*1.45); ctx.lineTo(r*0.25,-r*1.65); ctx.fill();
+      break;
+    }
+    case 'wolf': {
+      const g = ctx.createRadialGradient(0,-r,r*0.2,0,0,r*1.8);
+      g.addColorStop(0,e.type.shine); g.addColorStop(1,e.type.color);
+      ctx.fillStyle=g;
+      // Tail
+      ctx.save(); ctx.translate(e.dir*r*0.8, -r*0.2);
+      ctx.rotate(e.dir*(Math.PI*0.3+swing*0.04));
+      ctx.fillStyle=e.type.color;
+      ctx.beginPath(); ctx.ellipse(0,-r*0.5,r*0.3,r*0.8,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle=e.type.shine;
+      ctx.beginPath(); ctx.arc(0,-r*1.1,r*0.22,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      // Legs
+      ctx.fillStyle=e.type.color;
+      const legSwing = Math.sin(G.time*8)*r*0.2;
+      ctx.save(); ctx.translate(-r*0.5,0);
+      ctx.fillRect(-r*0.22,legSwing*0.5,r*0.44,r*0.9); ctx.restore();
+      ctx.save(); ctx.translate(r*0.5,0);
+      ctx.fillRect(-r*0.22,-legSwing*0.5,r*0.44,r*0.9); ctx.restore();
+      // Body
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.ellipse(0,-r*0.5,r,r*0.75,0,0,Math.PI*2); ctx.fill();
+      // Head
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.ellipse(e.dir*r*0.5,-r*1.1,r*0.7,r*0.6,e.dir*0.2,0,Math.PI*2); ctx.fill();
+      // Ears
+      ctx.fillStyle=e.type.color;
+      ctx.beginPath(); ctx.moveTo(e.dir*r*0.05,-r*1.5); ctx.lineTo(e.dir*r*0.25,-r*1.9); ctx.lineTo(e.dir*r*0.55,-r*1.55); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(e.dir*r*0.5,-r*1.5); ctx.lineTo(e.dir*r*0.7,-r*1.85); ctx.lineTo(e.dir*r*0.95,-r*1.52); ctx.fill();
+      // Snout
+      ctx.fillStyle=e.type.shine;
+      ctx.beginPath(); ctx.ellipse(e.dir*r*1.0,-r*0.9,r*0.38,r*0.25,0,0,Math.PI*2); ctx.fill();
+      // Eye
+      ctx.fillStyle='#ffd54f';
+      ctx.beginPath(); ctx.arc(e.dir*r*0.8,-r*1.15,r*0.2,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#212121';
+      ctx.beginPath(); ctx.arc(e.dir*r*0.84,-r*1.15,r*0.11,0,Math.PI*2); ctx.fill();
+      break;
+    }
+    case 'dragon': {
+      const g = ctx.createRadialGradient(0,-r,r*0.2,0,0,r*2.2);
+      g.addColorStop(0,e.type.shine); g.addColorStop(1,e.type.color);
+      // Wings
+      ctx.fillStyle='rgba(200,60,60,0.6)';
+      ctx.save(); ctx.translate(-r,  -r*0.8);
+      ctx.rotate(-0.4+swing*0.04);
+      ctx.beginPath(); ctx.ellipse(0,0,r*1.3,r*0.55,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      ctx.save(); ctx.translate(r, -r*0.8);
+      ctx.rotate( 0.4-swing*0.04);
+      ctx.beginPath(); ctx.ellipse(0,0,r*1.3,r*0.55,0,0,Math.PI*2); ctx.fill();
+      ctx.restore();
+      // Tail
+      ctx.strokeStyle=e.type.color; ctx.lineWidth=r*0.5;
+      ctx.lineCap='round';
+      ctx.beginPath();
+      ctx.moveTo(-e.dir*r*0.5,0);
+      ctx.bezierCurveTo(-e.dir*r*1.5,r*0.4,-e.dir*r*2,r*0.8,-e.dir*r*1.6,r*1.6);
+      ctx.stroke();
+      // Body
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.ellipse(0,-r*0.4,r*1.0,r*0.9,0,0,Math.PI*2); ctx.fill();
+      // Legs
+      ctx.fillStyle=e.type.color;
+      ctx.save(); ctx.translate(-r*0.6,0); ctx.rotate(swing*0.05);
+      ctx.fillRect(-r*0.28,0,r*0.55,r*0.9); ctx.restore();
+      ctx.save(); ctx.translate( r*0.6,0); ctx.rotate(-swing*0.05);
+      ctx.fillRect(-r*0.28,0,r*0.55,r*0.9); ctx.restore();
+      // Neck + head
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.ellipse(e.dir*r*0.3,-r*1.3,r*0.6,r*0.55,e.dir*0.25,0,Math.PI*2); ctx.fill();
+      // Horns
+      ctx.fillStyle='#ffd54f';
+      ctx.beginPath(); ctx.moveTo(e.dir*r*0.1,-r*1.75); ctx.lineTo(e.dir*r*0.25,-r*2.2); ctx.lineTo(e.dir*r*0.4,-r*1.75); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(e.dir*r*0.45,-r*1.7); ctx.lineTo(e.dir*r*0.58,-r*2.1); ctx.lineTo(e.dir*r*0.7,-r*1.72); ctx.fill();
+      // Eye
+      ctx.fillStyle='#ffd54f';
+      ctx.beginPath(); ctx.ellipse(e.dir*r*0.5,-r*1.3,r*0.22,r*0.18,0,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#1a237e';
+      ctx.beginPath(); ctx.ellipse(e.dir*r*0.54,-r*1.3,r*0.12,r*0.14,0,0,Math.PI*2); ctx.fill();
+      // Nostril fire breath occasionally
+      if (Math.sin(G.time*4+e.x) > 0.8) {
+        ctx.globalAlpha=0.7;
+        ctx.fillStyle='#ff9800';
+        ctx.beginPath(); ctx.arc(e.dir*r*0.85,-r*1.1,r*0.3,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle='#fff176';
+        ctx.beginPath(); ctx.arc(e.dir*r*1.0,-r*1.1,r*0.18,0,Math.PI*2); ctx.fill();
+        ctx.globalAlpha=1;
+      }
+      break;
+    }
+  }
+}
+
+// ─── Draw: turrets ────────────────────────────────────────────
+function drawTurret(t) {
+  const {x,y} = t;
+  // Base
+  ctx.fillStyle='#546e7a';
+  ctx.beginPath(); ctx.roundRect(x-12,y-8,24,16,4); ctx.fill();
+  ctx.fillStyle='#78909c';
+  ctx.beginPath(); ctx.roundRect(x-10,y-10,20,14,3); ctx.fill();
+  // Turret body
+  ctx.fillStyle='#455a64';
+  ctx.beginPath(); ctx.arc(x,y-4,9,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#90a4ae';
+  ctx.beginPath(); ctx.arc(x-2,y-6,4,0,Math.PI*2); ctx.fill();
+
+  // Aim barrel
+  if (t.beamT > 0) {
+    const angle = Math.atan2(t.aimY-y, t.aimX-x);
+    ctx.save();
+    ctx.translate(x,y-4);
+    ctx.rotate(angle);
+    ctx.fillStyle='#607d8b';
+    ctx.fillRect(0,-3,18,6);
+    // Beam
+    ctx.globalAlpha = t.beamT*2.5;
+    ctx.strokeStyle='#40c4ff';
+    ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(18,0);
+    const dist = Math.sqrt(dist2(x,y,t.aimX,t.aimY));
+    ctx.lineTo(dist,0);
+    ctx.stroke();
+    ctx.globalAlpha=1;
+    ctx.restore();
+  } else {
+    ctx.fillStyle='#607d8b';
+    ctx.fillRect(x,y-6,18,5);
+  }
+
+  // Label
+  ctx.fillStyle='rgba(0,200,255,0.8)'; ctx.font='8px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('🤖', x, y-18);
+}
+
+// ─── Draw: loot items on field ───────────────────────────────
+function drawLootItem(li) {
+  if (li.picked) return;
+  const bob = Math.sin(G.time*2.5+li.x*0.1)*3;
+  ctx.save();
+  ctx.translate(li.x, li.y+bob);
+  ctx.scale(li.scale, li.scale);
+
+  // Glow
+  ctx.globalAlpha=0.3;
+  ctx.fillStyle='#fff176';
+  ctx.beginPath(); ctx.arc(0,0,14,0,Math.PI*2); ctx.fill();
+  ctx.globalAlpha=1;
+
+  // Shadow
+  ctx.fillStyle='rgba(0,0,0,0.2)';
+  ctx.beginPath(); ctx.ellipse(0,12,10,3,0,0,Math.PI*2); ctx.fill();
+
+  // Icon
+  ctx.font='18px sans-serif'; ctx.textAlign='center';
+  const icons = {slime_jelly:'⚗️',bat_wing:'🪶',goblin_tooth:'🦷',wolf_fur:'🐺',dragon_scale:'🐉'};
+  ctx.fillText(icons[li.loot.id]||'💎', 0, 6);
+
+  // Value badge
+  ctx.fillStyle='rgba(0,0,0,0.55)';
+  ctx.beginPath(); ctx.roundRect(-14,9,28,12,4); ctx.fill();
+  ctx.fillStyle='#ffd54f'; ctx.font='bold 8px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`💰${li.loot.val}`, 0, 18);
+
+  ctx.restore();
+}
+
+// ─── Draw: buildings ─────────────────────────────────────────
 function drawGreenhouse(x,y) {
   ctx.strokeStyle='#4caf50'; ctx.lineWidth=2;
   ctx.fillStyle='rgba(100,220,150,0.25)';
@@ -575,8 +1387,7 @@ function drawGreenhouse(x,y) {
   ctx.fillText('温室',x,y+15);
 }
 function drawStorehouse(x,y) {
-  ctx.fillStyle='#5d4037';
-  ctx.fillRect(x-20,y-22,40,32);
+  ctx.fillStyle='#5d4037'; ctx.fillRect(x-20,y-22,40,32);
   ctx.fillStyle='#3e2723';
   ctx.beginPath(); ctx.moveTo(x-26,y-20); ctx.lineTo(x,y-42); ctx.lineTo(x+26,y-20); ctx.closePath(); ctx.fill();
   ctx.fillStyle='#2c1810'; ctx.fillRect(x-7,y+6,14,4);
@@ -591,15 +1402,14 @@ function drawScarecrow(x,y) {
   ctx.stroke();
   ctx.fillStyle='#f9a825';
   ctx.beginPath(); ctx.arc(x,y-48,9,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='#4e342e';
-  ctx.fillRect(x-11,y-58,22,5); ctx.fillRect(x-7,y-64,14,11);
+  ctx.fillStyle='#4e342e'; ctx.fillRect(x-11,y-58,22,5); ctx.fillRect(x-7,y-64,14,11);
   ctx.strokeStyle='#333'; ctx.lineWidth=1.5;
   ctx.beginPath(); ctx.arc(x,y-46,4,0.15*Math.PI,0.85*Math.PI); ctx.stroke();
   ctx.fillStyle='#558b2f'; ctx.font='9px sans-serif'; ctx.textAlign='center';
   ctx.fillText('かかし',x,y+14);
 }
 
-// ─── Draw: item shapes ────────────────────────────────────────
+// ─── Draw: crop items ────────────────────────────────────────
 function drawItemShape(typeId, scale) {
   const s = scale||1;
   ctx.save(); ctx.scale(s,s);
@@ -631,8 +1441,7 @@ function drawItemShape(typeId, scale) {
       ctx.beginPath(); ctx.moveTo(-4,-11); ctx.lineTo(4,-11); ctx.stroke();
       break;
     case 'corn':
-      ctx.fillStyle='#fdd835';
-      ctx.fillRect(-5,-9,10,18);
+      ctx.fillStyle='#fdd835'; ctx.fillRect(-5,-9,10,18);
       ctx.beginPath(); ctx.arc(0,-9,5,Math.PI,0); ctx.fill();
       ctx.beginPath(); ctx.arc(0,9,5,0,Math.PI); ctx.fill();
       ctx.fillStyle='#f9a825';
@@ -659,6 +1468,10 @@ function drawCharacter(p, isWorker, workerColor) {
   const swing = moving ? Math.sin(f*Math.PI*0.5)*9 : 0;
   const bob   = moving ? Math.sin(f*Math.PI*0.5)*2 : 0;
 
+  // Check for irasutoya image
+  const imgKey = isWorker ? 'worker' : 'player';
+  const img = IMGS[imgKey];
+
   ctx.save();
   ctx.translate(x, y+bob);
 
@@ -666,114 +1479,27 @@ function drawCharacter(p, isWorker, workerColor) {
   ctx.fillStyle='rgba(0,0,0,0.18)';
   ctx.beginPath(); ctx.ellipse(0,16,13,5,0,0,Math.PI*2); ctx.fill();
 
-  // ── Backpack (draw behind body) ──
-  const bpItems = p.backpack;
-  if (bpItems.length > 0) {
-    const bx = dir===1 ? -13 : 13;
-    // Backpack body
-    ctx.fillStyle='#6d4c41';
-    ctx.beginPath(); ctx.roundRect(bx-9,-22,18,24,3); ctx.fill();
-    // Darker sides
-    ctx.fillStyle='rgba(0,0,0,0.25)';
-    ctx.fillRect(bx-9,-22,3,24);
-    // Straps
-    ctx.strokeStyle='#4e342e'; ctx.lineWidth=2.5;
-    ctx.beginPath();
-    ctx.moveTo(bx-5,-22); ctx.lineTo(bx-4,-10);
-    ctx.moveTo(bx+5,-22); ctx.lineTo(bx+4,-10);
-    ctx.stroke();
-    // Items stacked inside backpack (visible from top)
-    const visible = Math.min(bpItems.length, 5);
-    for (let i=0; i<visible; i++) {
-      const typeId = bpItems[bpItems.length-1-i];
+  if (img) {
+    // irasutoya image
+    if (dir < 0) ctx.scale(-1,1);
+    ctx.drawImage(img, -22, -52, 44, 58);
+    // Backpack count badge
+    const bpItems = p.backpack;
+    if (bpItems.length > 0) {
       ctx.save();
-      // Items peek out from top, stacked
-      ctx.translate(bx, -22 + Math.max(0, visible-i-1)*3.5);
-      ctx.scale(0.3,0.3);
-      drawItemShape(typeId,1);
+      if (dir < 0) ctx.scale(-1,1);
+      ctx.fillStyle = bpItems.length >= p.maxBP ? '#e53935' : 'rgba(0,0,0,0.6)';
+      ctx.beginPath(); ctx.arc(-20,-42,8,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(bpItems.length >= p.maxBP ? 'FULL' : bpItems.length, -20,-39);
       ctx.restore();
     }
-    // Count badge
-    if (bpItems.length >= p.maxBP) {
-      ctx.fillStyle='#e53935';
-      ctx.beginPath(); ctx.arc(bx+10,-25,7,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#fff'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center';
-      ctx.fillText('FULL',bx+10,-22);
-    } else {
-      ctx.fillStyle='rgba(0,0,0,0.6)';
-      ctx.beginPath(); ctx.arc(bx+10,-26,7,0,Math.PI*2); ctx.fill();
-      ctx.fillStyle='#ffe082'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center';
-      ctx.fillText(bpItems.length,bx+10,-23);
-    }
-    // Bottom pocket
-    ctx.fillStyle='#5d4037';
-    ctx.beginPath(); ctx.roundRect(bx-8,-1,16,7,2); ctx.fill();
-  }
-
-  // ── Legs ──
-  const legColor='#1565c0';
-  const bootColor='#212121';
-  // Left leg
-  ctx.save(); ctx.translate(-5,7); ctx.rotate(swing*0.04);
-  ctx.fillStyle=legColor; ctx.fillRect(-4,0,8,14);
-  ctx.fillStyle=bootColor; ctx.fillRect(-5,12,9,6);
-  ctx.restore();
-  // Right leg
-  ctx.save(); ctx.translate(5,7); ctx.rotate(-swing*0.04);
-  ctx.fillStyle=legColor; ctx.fillRect(-4,0,8,14);
-  ctx.fillStyle=bootColor; ctx.fillRect(-4,12,9,6);
-  ctx.restore();
-
-  // ── Body ──
-  const bodyCol = isWorker ? workerColor : '#1976d2';
-  ctx.fillStyle=bodyCol; ctx.fillRect(-10,-15,20,22);
-  // Overalls seam
-  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(-10,-3); ctx.lineTo(10,-3); ctx.stroke();
-
-  // ── Arms ──
-  ctx.fillStyle=bodyCol;
-  ctx.fillRect(-16,-12+swing,6,14);
-  ctx.fillRect(10,-12-swing,6,14);
-  // Gloves
-  ctx.fillStyle='#795548';
-  ctx.beginPath(); ctx.arc(-13,2+swing,4,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(13,2-swing,4,0,Math.PI*2); ctx.fill();
-
-  // ── Head ──
-  ctx.fillStyle='#ffcc80';
-  ctx.beginPath(); ctx.arc(0,-23,12,0,Math.PI*2); ctx.fill();
-  // Blush
-  ctx.fillStyle='rgba(255,100,100,0.35)';
-  ctx.beginPath(); ctx.ellipse(7,-22,4,2.5,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(-7,-22,4,2.5,0,0,Math.PI*2); ctx.fill();
-
-  // ── Hat ──
-  if (isWorker) {
-    ctx.fillStyle='#6d4c41';
-    ctx.fillRect(-11,-37,22,6); ctx.fillRect(-8,-45,16,12);
-    ctx.fillStyle='#4e342e'; ctx.fillRect(-11,-32,22,2);
   } else {
-    // Straw hat
-    ctx.fillStyle='#f9a825';
-    ctx.fillRect(-16,-37,32,6);
-    ctx.fillRect(-12,-46,24,13);
-    ctx.strokeStyle='#f57f17'; ctx.lineWidth=1.5;
-    ctx.strokeRect(-16,-37,32,6);
-    // Hat band
-    ctx.fillStyle='#e65100'; ctx.fillRect(-12,-37,24,3);
+    // Canvas fallback drawing (same as before)
+    drawCharacterCanvas(p, isWorker, workerColor, swing, bob);
   }
 
-  // ── Eyes ──
-  const ex = dir*4;
-  ctx.fillStyle='#212121';
-  ctx.beginPath(); ctx.arc(ex+dir*1,-24,2.2,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.arc(ex-dir*1,-26,2.2,0,Math.PI*2); ctx.fill();
-  // Pupils
-  ctx.fillStyle='#fff';
-  ctx.beginPath(); ctx.arc(ex+dir*1+0.8,-24.5,0.9,0,Math.PI*2); ctx.fill();
-
-  // ── Collect flash ──
+  // Collect flash
   if (p.collectFlash > 0) {
     ctx.globalAlpha = p.collectFlash * 0.5;
     ctx.fillStyle='#ffe082';
@@ -784,12 +1510,90 @@ function drawCharacter(p, isWorker, workerColor) {
   ctx.restore();
 }
 
-// ─── Draw: flying items (collect animation) ──────────────────
+function drawCharacterCanvas(p, isWorker, workerColor, swing, bob) {
+  const dir=p.dir, f=p.walkF;
+  const bpItems = p.backpack;
+
+  if (bpItems.length > 0) {
+    const bx = dir===1 ? -13 : 13;
+    ctx.fillStyle='#6d4c41';
+    ctx.beginPath(); ctx.roundRect(bx-9,-22,18,24,3); ctx.fill();
+    ctx.fillStyle='rgba(0,0,0,0.25)'; ctx.fillRect(bx-9,-22,3,24);
+    ctx.strokeStyle='#4e342e'; ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(bx-5,-22); ctx.lineTo(bx-4,-10);
+    ctx.moveTo(bx+5,-22); ctx.lineTo(bx+4,-10);
+    ctx.stroke();
+    const visible = Math.min(bpItems.length, 5);
+    for (let i=0; i<visible; i++) {
+      const typeId = bpItems[bpItems.length-1-i];
+      ctx.save();
+      ctx.translate(bx, -22 + Math.max(0, visible-i-1)*3.5);
+      ctx.scale(0.3,0.3); drawItemShape(typeId,1);
+      ctx.restore();
+    }
+    if (bpItems.length >= p.maxBP) {
+      ctx.fillStyle='#e53935'; ctx.beginPath(); ctx.arc(bx+10,-25,7,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#fff'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('FULL',bx+10,-22);
+    } else {
+      ctx.fillStyle='rgba(0,0,0,0.6)'; ctx.beginPath(); ctx.arc(bx+10,-26,7,0,Math.PI*2); ctx.fill();
+      ctx.fillStyle='#ffe082'; ctx.font='bold 7px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(bpItems.length,bx+10,-23);
+    }
+    ctx.fillStyle='#5d4037'; ctx.beginPath(); ctx.roundRect(bx-8,-1,16,7,2); ctx.fill();
+  }
+
+  const legColor='#1565c0', bootColor='#212121';
+  ctx.save(); ctx.translate(-5,7); ctx.rotate(swing*0.04);
+  ctx.fillStyle=legColor; ctx.fillRect(-4,0,8,14);
+  ctx.fillStyle=bootColor; ctx.fillRect(-5,12,9,6);
+  ctx.restore();
+  ctx.save(); ctx.translate(5,7); ctx.rotate(-swing*0.04);
+  ctx.fillStyle=legColor; ctx.fillRect(-4,0,8,14);
+  ctx.fillStyle=bootColor; ctx.fillRect(-4,12,9,6);
+  ctx.restore();
+
+  const bodyCol = isWorker ? workerColor : '#1976d2';
+  ctx.fillStyle=bodyCol; ctx.fillRect(-10,-15,20,22);
+  ctx.strokeStyle='rgba(0,0,0,0.2)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(-10,-3); ctx.lineTo(10,-3); ctx.stroke();
+
+  ctx.fillStyle=bodyCol;
+  ctx.fillRect(-16,-12+swing,6,14);
+  ctx.fillRect(10,-12-swing,6,14);
+  ctx.fillStyle='#795548';
+  ctx.beginPath(); ctx.arc(-13,2+swing,4,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(13,2-swing,4,0,Math.PI*2); ctx.fill();
+
+  ctx.fillStyle='#ffcc80';
+  ctx.beginPath(); ctx.arc(0,-23,12,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='rgba(255,100,100,0.35)';
+  ctx.beginPath(); ctx.ellipse(7,-22,4,2.5,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(-7,-22,4,2.5,0,0,Math.PI*2); ctx.fill();
+
+  if (isWorker) {
+    ctx.fillStyle='#6d4c41'; ctx.fillRect(-11,-37,22,6); ctx.fillRect(-8,-45,16,12);
+    ctx.fillStyle='#4e342e'; ctx.fillRect(-11,-32,22,2);
+  } else {
+    ctx.fillStyle='#f9a825'; ctx.fillRect(-16,-37,32,6); ctx.fillRect(-12,-46,24,13);
+    ctx.strokeStyle='#f57f17'; ctx.lineWidth=1.5; ctx.strokeRect(-16,-37,32,6);
+    ctx.fillStyle='#e65100'; ctx.fillRect(-12,-37,24,3);
+  }
+
+  const ex = dir*4;
+  ctx.fillStyle='#212121';
+  ctx.beginPath(); ctx.arc(ex+dir*1,-24,2.2,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(ex-dir*1,-26,2.2,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#fff';
+  ctx.beginPath(); ctx.arc(ex+dir*1+0.8,-24.5,0.9,0,Math.PI*2); ctx.fill();
+}
+
+// ─── Draw: flying items ───────────────────────────────────────
 function drawFlyItems() {
   G.flyItems.forEach(fi=>{
     const et = easeIO(fi.p);
     const t = fi.p;
-    // Quadratic bezier
     const bx = (1-t)*(1-t)*fi.sx + 2*(1-t)*t*fi.cpx + t*t*fi.tx;
     const by = (1-t)*(1-t)*fi.sy + 2*(1-t)*t*fi.cpy + t*t*fi.ty;
     const s = lerp(0.9, 0.2, et);
@@ -801,17 +1605,15 @@ function drawFlyItems() {
   });
 }
 
-// ─── Draw: items on field ────────────────────────────────────
+// ─── Draw: crop items on field ───────────────────────────────
 function drawItem(item) {
   if (item.col) return;
   const bob = Math.sin(G.time*2.2+item.bob)*3;
   ctx.save();
   ctx.translate(item.x, item.y+bob);
   ctx.scale(item.scale, item.scale);
-  // Shadow
   ctx.fillStyle='rgba(0,0,0,0.18)';
   ctx.beginPath(); ctx.ellipse(0,13,11,4,0,0,Math.PI*2); ctx.fill();
-  // Item
   drawItemShape(item.type.id, 1);
   ctx.restore();
 }
@@ -820,8 +1622,6 @@ function drawItem(item) {
 function drawJoystick() {
   const ox = G.joystick.active ? G.joystick.ox : JOY_CX;
   const oy = G.joystick.active ? G.joystick.oy : JOY_CY;
-
-  // Outer ring
   ctx.save();
   ctx.globalAlpha = 0.45;
   ctx.strokeStyle='#fff'; ctx.lineWidth=3;
@@ -831,7 +1631,6 @@ function drawJoystick() {
   ctx.globalAlpha=1;
   ctx.restore();
 
-  // Knob
   let kx=ox, ky=oy;
   if (G.joystick.active) {
     let dx=G.joystick.cx-ox, dy=G.joystick.cy-oy;
@@ -839,10 +1638,8 @@ function drawJoystick() {
     if (d>JOY_R) { dx*=JOY_R/d; dy*=JOY_R/d; }
     kx=ox+dx; ky=oy+dy;
   }
-  // Shadow
   ctx.fillStyle='rgba(0,0,0,0.28)';
   ctx.beginPath(); ctx.arc(kx+2,ky+2,JOY_KNOB,0,Math.PI*2); ctx.fill();
-  // Gradient knob
   const kg=ctx.createRadialGradient(kx-3,ky-3,2,kx,ky,JOY_KNOB);
   kg.addColorStop(0,'rgba(255,255,255,0.95)');
   kg.addColorStop(1,'rgba(180,180,180,0.8)');
@@ -850,7 +1647,6 @@ function drawJoystick() {
   ctx.globalAlpha=0.82;
   ctx.beginPath(); ctx.arc(kx,ky,JOY_KNOB,0,Math.PI*2); ctx.fill();
   ctx.globalAlpha=1;
-  // Arrow indicators
   ctx.strokeStyle='rgba(80,80,80,0.6)'; ctx.lineWidth=2;
   const arr=[[0,-1],[0,1],[-1,0],[1,0]];
   arr.forEach(([dx,dy])=>{
@@ -863,9 +1659,49 @@ function drawJoystick() {
   });
 }
 
+// ─── Draw: attack flashes / dmg pops ─────────────────────────
+function drawCombatFx() {
+  // Attack flash rings
+  G.atkFlashes.forEach(f=>{
+    ctx.save();
+    ctx.globalAlpha = f.t * 0.8;
+    ctx.strokeStyle='#ffee58';
+    ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r*(2-f.t),0,Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = f.t * 0.4;
+    ctx.fillStyle='#fff9c4';
+    ctx.beginPath(); ctx.arc(f.x,f.y,f.r*(1.2-f.t*0.5),0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.restore();
+  });
+
+  // Player attack range indicator (subtle)
+  if (G.enemies.some(e=>e.deathAnim<0)) {
+    ctx.save();
+    ctx.globalAlpha=0.06;
+    ctx.strokeStyle='#ff5252';
+    ctx.lineWidth=1.5;
+    ctx.setLineDash([4,4]);
+    ctx.beginPath(); ctx.arc(G.player.x,G.player.y,G.playerAtkRange,0,Math.PI*2); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.globalAlpha=1;
+    ctx.restore();
+  }
+
+  // Damage pop text
+  G.dmgPops.forEach(p=>{
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,p.alpha);
+    ctx.fillStyle=p.color||'#ff5252';
+    ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(p.text,p.x,p.y);
+    ctx.restore();
+  });
+}
+
 // ─── Draw: HUD ────────────────────────────────────────────────
 function drawHUD() {
-  // Top bar background
+  // Top bar
   ctx.fillStyle='rgba(27,94,32,0.92)';
   ctx.fillRect(0,0,W,50);
   ctx.fillStyle='rgba(56,142,60,0.5)';
@@ -883,17 +1719,30 @@ function drawHUD() {
   ctx.fillStyle='#ffe082'; ctx.font='bold 18px sans-serif'; ctx.textAlign='left';
   ctx.fillText(`💰 ${G.gold}`,62,31);
 
-  // Backpack slots (bottom center)
+  // ATK stat
+  ctx.fillStyle='rgba(0,0,0,0.4)';
+  ctx.beginPath(); ctx.roundRect(172,9,82,32,8); ctx.fill();
+  ctx.fillStyle='#ff8a65'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`⚔️ ATK:${G.playerAtk}`,213,29);
+
+  // Workers
+  if (G.workers.length > 0) {
+    ctx.fillStyle='rgba(0,0,0,0.4)';
+    ctx.beginPath(); ctx.roundRect(W-90,8,82,32,8); ctx.fill();
+    ctx.fillStyle='#c8f060'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(`👨‍🌾 ×${G.workers.length}`,W-49,29);
+  }
+
+  // ── Crop backpack slots (bottom center) ──
   const bp = G.player.backpack;
   const maxBP = G.player.maxBP;
   const slotW = 26, slotGap = 3;
   const totalW = maxBP*(slotW+slotGap)-slotGap;
-  const slotX0 = W/2-totalW/2;
-  const slotY = H-88;
+  const slotX0 = W/2-totalW/2 - 30;
+  const slotY = H-92;
 
   ctx.fillStyle='rgba(0,0,0,0.45)';
   ctx.beginPath(); ctx.roundRect(slotX0-5,slotY-5,totalW+10,slotW+10,8); ctx.fill();
-
   for (let i=0;i<maxBP;i++) {
     const sx = slotX0 + i*(slotW+slotGap);
     const sy = slotY;
@@ -909,19 +1758,58 @@ function drawHUD() {
       ctx.restore();
     }
   }
-  // Backpack label
   ctx.fillStyle='rgba(255,255,255,0.6)'; ctx.font='10px sans-serif'; ctx.textAlign='center';
-  ctx.fillText(`🎒 ${bp.length}/${maxBP}`,W/2,slotY+slotW+14);
+  ctx.fillText(`🌾 ${bp.length}/${maxBP}`, slotX0+totalW/2, slotY+slotW+14);
 
-  // Workers indicator
-  if (G.workers.length > 0) {
-    ctx.fillStyle='rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.roundRect(W-90,8,82,32,8); ctx.fill();
-    ctx.fillStyle='#c8f060'; ctx.font='13px sans-serif'; ctx.textAlign='center';
-    ctx.fillText(`👨‍🌾 ×${G.workers.length}`, W-49,29);
+  // ── Loot bag slots (bottom right area) ──
+  const lb = G.lootBag;
+  const maxLB = G.maxLootBag;
+  const lslotW = 26, lslotGap = 3;
+  const ltotalW = maxLB*(lslotW+lslotGap)-lslotGap;
+  const lslotX0 = W - ltotalW - 12;
+  const lslotY = H-92;
+  const lootIcons = {slime_jelly:'⚗️',bat_wing:'🪶',goblin_tooth:'🦷',wolf_fur:'🐺',dragon_scale:'🐉'};
+
+  ctx.fillStyle='rgba(0,0,0,0.45)';
+  ctx.beginPath(); ctx.roundRect(lslotX0-5,lslotY-5,ltotalW+10,lslotW+10,8); ctx.fill();
+  for (let i=0;i<maxLB;i++) {
+    const sx = lslotX0 + i*(lslotW+lslotGap);
+    const sy = lslotY;
+    ctx.fillStyle = i<lb.length ? 'rgba(255,138,101,0.3)' : 'rgba(255,255,255,0.08)';
+    ctx.strokeStyle = i<lb.length ? '#ff8a65' : 'rgba(255,255,255,0.25)';
+    ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.roundRect(sx,sy,lslotW,lslotW,4); ctx.fill(); ctx.stroke();
+    if (i<lb.length) {
+      ctx.font='14px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(lootIcons[lb[i].id]||'💎', sx+lslotW/2, sy+lslotW-4);
+    }
+  }
+  ctx.fillStyle='rgba(255,200,150,0.7)'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText(`⚔️ ${lb.length}/${maxLB}`, lslotX0+ltotalW/2, lslotY+lslotW+14);
+
+  // Enemy count indicator
+  const liveEnemies = G.enemies.filter(e=>e.deathAnim<0).length;
+  if (liveEnemies > 0) {
+    ctx.fillStyle='rgba(180,0,0,0.55)';
+    ctx.beginPath(); ctx.roundRect(8,56,110,22,6); ctx.fill();
+    ctx.fillStyle='#ff8a80'; ctx.font='bold 11px sans-serif'; ctx.textAlign='left';
+    ctx.fillText(`👹 敵 ×${liveEnemies}  ATK CD: ${G.playerAtkCD>0?G.playerAtkCD.toFixed(1):'Ready'}`,14,71);
   }
 
-  // Premium / Shop button
+  // Buyer count indicator
+  const waitingBuyers = G.buyers.filter(b=>b.state==='waiting').length;
+  if (waitingBuyers > 0 || G.lootBag.length > 0) {
+    const buyerColor = waitingBuyers > 0 && G.lootBag.length > 0 ? '#ffe082' : '#a0d080';
+    ctx.fillStyle='rgba(0,0,0,0.45)';
+    ctx.beginPath(); ctx.roundRect(8,80,150,20,6); ctx.fill();
+    ctx.fillStyle=buyerColor; ctx.font='bold 10px sans-serif'; ctx.textAlign='left';
+    const btext = waitingBuyers > 0
+      ? `🧑‍🤝‍🧑 買い手${waitingBuyers}人待ち${G.lootBag.length>0?' ← マーケットへ！':''}`
+      : `📦 討伐品あり → マーケットへ`;
+    ctx.fillText(btext, 14, 93);
+  }
+
+  // Shop button (bottom-right)
   const pulse = 0.82+Math.sin(G.time*2.8)*0.18;
   ctx.save();
   ctx.globalAlpha=pulse;
@@ -959,20 +1847,21 @@ function drawHUD() {
     const alpha = Math.min(1, G.msg.t*2.5);
     ctx.save(); ctx.globalAlpha=alpha;
     ctx.fillStyle='rgba(0,0,0,0.72)';
-    ctx.beginPath(); ctx.roundRect(W/2-125,H/2-65,250,42,10); ctx.fill();
-    ctx.fillStyle='#fff'; ctx.font='bold 15px sans-serif'; ctx.textAlign='center';
+    ctx.beginPath(); ctx.roundRect(W/2-135,H/2-65,270,42,10); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 14px sans-serif'; ctx.textAlign='center';
     ctx.fillText(G.msg.text,W/2,H/2-38);
     ctx.restore();
   }
 
-  // Tutorial hint (first 10 seconds)
-  if (G.time < 10) {
-    const a = G.time < 8 ? 1 : (10-G.time)/2;
+  // Tutorial hint
+  if (G.time < 12) {
+    const a = G.time < 9 ? 1 : (12-G.time)/3;
     ctx.save(); ctx.globalAlpha=a*0.85;
     ctx.fillStyle='rgba(0,0,0,0.65)';
-    ctx.beginPath(); ctx.roundRect(20,H/2-10,W-40,38,10); ctx.fill();
-    ctx.fillStyle='#ffe082'; ctx.font='bold 13px sans-serif'; ctx.textAlign='center';
-    ctx.fillText('左下のスティックで移動・作物に近づくと収穫！',W/2,H/2+14);
+    ctx.beginPath(); ctx.roundRect(10,H/2-10,W-20,50,10); ctx.fill();
+    ctx.fillStyle='#ffe082'; ctx.font='bold 12px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('🌾 スティックで移動・作物に近づくと収穫！',W/2,H/2+10);
+    ctx.fillText('⚔️ 敵に近づくと自動攻撃！倒してアイテムを集めよう',W/2,H/2+26);
     ctx.restore();
   }
 }
@@ -981,22 +1870,38 @@ function drawHUD() {
 function render() {
   ctx.clearRect(0,0,W,H);
   drawBg();
+
+  // Draw turrets (behind everything)
+  G.turrets.forEach(drawTurret);
+
   drawBarn();
+  drawMarket();
+
+  // Crop items
   G.items.forEach(drawItem);
-  // Draw workers behind player
+
+  // Loot items on field
+  G.lootItems.forEach(drawLootItem);
+
+  // Enemies (behind player)
+  G.enemies.forEach(drawEnemy);
+
+  // Workers
   G.workers.forEach(w=>{
     ctx.save();
     if (w.spawnA < 1) ctx.globalAlpha=w.spawnA;
     drawCharacter(w,true,w.color);
     ctx.restore();
   });
+
   drawCharacter(G.player,false,null);
   drawFlyItems();
+  drawCombatFx();
   drawJoystick();
   drawHUD();
 }
 
-// ─── Message helper ───────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────
 function showMsg(text) { G.msg = { text, t: 2.2 }; }
 
 // ─── Main loop ────────────────────────────────────────────────

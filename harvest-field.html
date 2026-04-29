@@ -55,6 +55,7 @@ const PLAY = { left: 42, right: W - 42, top: 150, bottom: 506 };
 const HUNT = { left: 54, right: W - 54, top: 232, bottom: 496 };
 const COOKER = { x: 110, y: 158 };
 const SELLER = { x: 265, y: 158 };
+const AUTO_HUNT_HELPER = { x: 58, y: 238 };
 const SHOP_BTN = { x: 324, y: 610, r: 32 };
 const HOME_BTN = { x: 28, y: 30, w: 36, h: 36 };
 const PLAYER_SPEED = 182;
@@ -415,9 +416,6 @@ function updatePlayer(dt) {
       const strength = Math.min(1, d / TOUCH_MAX);
       vx = (dx / d) * PLAYER_SPEED * strength;
       vy = (dy / d) * PLAYER_SPEED * strength;
-    } else if (d < POINTER_CANCEL_DIST) {
-      vx = 0;
-      vy = 0;
     } else {
       vx = 0;
       vy = 0;
@@ -496,11 +494,11 @@ function updateAutomation(dt) {
       let target = null;
       let best = Infinity;
       G.monsters.forEach((monster) => {
-        const d = dist2(monster.x, monster.y, 58, 238);
+        const d = dist2(monster.x, monster.y, AUTO_HUNT_HELPER.x, AUTO_HUNT_HELPER.y);
         if (d < best) { best = d; target = monster; }
       });
       if (target) {
-        G.autoTrails.push({ x1: 58, y1: 238, x2: target.x, y2: target.y, t: 1 });
+        G.autoTrails.push({ x1: AUTO_HUNT_HELPER.x, y1: AUTO_HUNT_HELPER.y, x2: target.x, y2: target.y, t: 1 });
         killMonster(target, true, true);
       }
     }

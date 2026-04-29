@@ -183,12 +183,16 @@ function spawnMonster(force) {
   });
 }
 
-function killMonster(monster, automated) {
+function killMonster(monster, automated, directPickup = false) {
   monster.alive = false;
   emitSpark(monster.x, monster.y - 10, automated ? '#fde68a' : '#ffffff', automated ? 9 : 7);
   pushPop(monster.x, monster.y - 30, `${monster.type.name}討伐`, '#fde68a', -22);
   G.slashes.push({ x: monster.x, y: monster.y - 4, t: 1, automated });
-  G.drops.push({ x: monster.x, y: monster.y, bob: Math.random() * Math.PI * 2, picked: false });
+  if (directPickup) {
+    addRawAt(monster.x, monster.y);
+  } else {
+    G.drops.push({ x: monster.x, y: monster.y, bob: Math.random() * Math.PI * 2, picked: false });
+  }
 }
 
 function addRawAt(x, y) {
@@ -483,8 +487,7 @@ function updateAutomation(dt) {
       });
       if (target) {
         G.autoTrails.push({ x1: 58, y1: 238, x2: target.x, y2: target.y, t: 1 });
-        killMonster(target, true);
-        addRawAt(target.x, target.y);
+        killMonster(target, true, true);
       }
     }
   }

@@ -34,7 +34,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;}
   <div id="shop">
     <div id="shop-panel">
       <h2>⚙️ 自動化</h2>
-      <p>売った料理のお金で、討伐 → 調理 → 販売を順番に自動化できます。</p>
+      <p>売った料理のお金で、討伐 → 調理 → 販売を順に自動化できます。</p>
       <div id="shop-items"></div>
       <div id="shop-gold"></div>
       <button id="shop-close">とじる</button>
@@ -66,7 +66,18 @@ const STATION_R = 62;
 const MAX_MONSTERS = 7;
 const MEAT_SELL_PRICE = 18;
 const COOK_TIME = 1.8;
+const ATTACK_COOLDOWN = 0.62;
+const TRANSFER_COOLDOWN = 0.18;
 const POINTER_CANCEL_DIST = 10;
+const AUTO_HUNT_INTERVALS = [0, 3.7, 2.7, 1.9];
+const AUTO_COOK_INTERVALS = [0, 1.1, 0.72, 0.4];
+const AUTO_SELL_INTERVALS = [0, 1.2, 0.78, 0.44];
+const COOK_SPEED_MULTS = [1, 0.88, 0.72, 0.55];
+const STACK_COLUMNS = [
+  { dx: 10, y: 2, color: '#7f1d1d', label: '肉', emoji: '🥩', count: () => G.raw },
+  { dx: 0, y: -4, color: '#7c2d12', label: '皿', emoji: '🍖', count: () => G.cooked },
+  { dx: -10, y: -10, color: '#a16207', label: '金', emoji: '💰', count: () => Math.floor(G.coins / MEAT_SELL_PRICE) },
+];
 
 const AUTO_SHOP = [
   { key: 'hunt', icon: '⚔️', name: '討伐係', desc: 'モンスター討伐と肉回収を徐々に自動化', costs: [55, 120, 240] },
@@ -407,6 +418,9 @@ function updatePlayer(dt) {
     } else if (d < POINTER_CANCEL_DIST) {
       vx = 0;
       vy = 0;
+    } else {
+      vx = 0;
+      vy = 0;
     }
   }
   p.vx = vx;
@@ -451,7 +465,7 @@ function updateMonsters(dt) {
     if (d < best) { best = d; target = monster; }
   });
   if (target && G.player.attackCD <= 0) {
-    G.player.attackCD = 0.62;
+    G.player.attackCD = ATTACK_COOLDOWN;
     killMonster(target, false);
   }
   G.monsters = G.monsters.filter((monster) => monster.alive);
@@ -469,10 +483,10 @@ function updateDrops() {
   G.drops = G.drops.filter((drop) => !drop.picked);
 }
 
-function autoHuntInterval() { return [0, 3.7, 2.7, 1.9][G.automation.hunt] || 1.9; }
-function autoCookInterval() { return [0, 1.1, 0.72, 0.4][G.automation.cook] || 0.4; }
-function autoSellInterval() { return [0, 1.2, 0.78, 0.44][G.automation.sell] || 0.44; }
-function cookDuration() { return COOK_TIME * ([1, 0.88, 0.72, 0.55][G.automation.cook] || 1); }
+function autoHuntInterval() { return AUTO_HUNT_INTERVALS[G.automation.hunt] || AUTO_HUNT_INTERVALS[AUTO_HUNT_INTERVALS.length - 1]; }
+function autoCookInterval() { return AUTO_COOK_INTERVALS[G.automation.cook] || AUTO_COOK_INTERVALS[AUTO_COOK_INTERVALS.length - 1]; }
+function autoSellInterval() { return AUTO_SELL_INTERVALS[G.automation.sell] || AUTO_SELL_INTERVALS[AUTO_SELL_INTERVALS.length - 1]; }
+function cookDuration() { return COOK_TIME * (COOK_SPEED_MULTS[G.automation.cook] || COOK_SPEED_MULTS[0]); }
 
 function updateAutomation(dt) {
   if (G.automation.hunt > 0) {
@@ -512,7 +526,7 @@ function updateAutomation(dt) {
 function updateCooking(dt) {
   const nearCooker = dist2(G.player.x, G.player.y, COOKER.x, COOKER.y) <= STATION_R * STATION_R;
   if (nearCooker && G.raw > 0 && G.player.cookSendCD <= 0) {
-    if (sendRawToCooker()) G.player.cookSendCD = 0.18;
+    if (sendRawToCooker()) G.player.cookSendCD = TRANSFER_COOLDOWN;
   }
   if (G.cooker.queue > 0) {
     G.cooker.progress += dt / cookDuration();
@@ -531,7 +545,7 @@ function updateCooking(dt) {
 function updateSelling(dt) {
   const nearSeller = dist2(G.player.x, G.player.y, SELLER.x, SELLER.y) <= STATION_R * STATION_R;
   if (nearSeller && G.cooked > 0 && G.player.sellSendCD <= 0) {
-    if (sellOneDish()) G.player.sellSendCD = 0.18;
+    if (sellOneDish()) G.player.sellSendCD = TRANSFER_COOLDOWN;
   }
   G.seller.glow = Math.max(0, G.seller.glow - dt * 2.2);
 }
@@ -873,9 +887,9 @@ function drawCharacter() {
   const packDir = p.dir === 1 ? -1 : 1;
   const packX = packDir * 18;
   if (G.raw || G.cooked || G.coins) {
-    drawStackColumn(packX + packDir * 10, 2, '#7f1d1d', '肉', G.raw, '🥩');
-    drawStackColumn(packX, -4, '#7c2d12', '皿', G.cooked, '🍖');
-    drawStackColumn(packX - packDir * 10, -10, '#a16207', '金', Math.floor(G.coins / MEAT_SELL_PRICE), '💰');
+    STACK_COLUMNS.forEach((stack) => {
+      drawStackColumn(packX + packDir * stack.dx, stack.y, stack.color, stack.label, stack.count(), stack.emoji);
+    });
   }
 
   ctx.fillStyle = '#2563eb';
